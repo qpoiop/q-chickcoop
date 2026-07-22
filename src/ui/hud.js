@@ -21,7 +21,7 @@ export class HUD {
       objBox: $('hudObjBox'), objLabel: $('hudObjLabel'), objText: $('hudObjText'), skipTut: $('hudSkipTut'),
       weaponIcon: $('hudWeaponIcon'), weaponName: $('hudWeaponName'),
       skillBadge: $('hudSkillBadge'), prompt: $('hudPrompt'), promptKey: $('hudPromptKey'), promptText: $('hudPromptText'),
-      touchBtns: $('hudTouchBtns'), hint: $('hudHint'),
+      touchBtns: $('hudTouchBtns'), hint: $('hudHint'), btnDash: $('btnDash'),
       boss: $('hudBoss'), bossName: $('hudBossName'), bossHp: $('hudBossHp'), bossBar: $('hudBossBar'),
       cast: $('hudCast'), castName: $('hudCastName'), castBar: $('hudCastBar'),
       endTitle: $('endTitle'), endLevel: $('endLevel'), endKills: $('endKills'), endTime: $('endTime'),
@@ -172,6 +172,12 @@ export class HUD {
       e.bossHp.textContent = Math.ceil(s.bossHp) + ' / ' + Math.ceil(s.bossMax);
       e.bossBar.style.transform = `scaleX(${Math.max(0, Math.min(1, s.bossHp / (s.bossMax || 1)))})`;
     } else e.boss.style.display = 'none';
+
+    // mobile dash button: cooldown ring + empty state
+    if (this.g.isTouch && e.btnDash) {
+      e.btnDash.dataset.empty = s.dashCharges <= 0 ? '1' : '0';
+      e.btnDash.style.setProperty('--cool', (this.g.game && this.g.game.dashFrac != null) ? this.g.game.dashFrac : 1);
+    }
 
     const showHint = s.started && !s.ended && s.time < 7 && s.panel === 'none';
     if (showHint) { e.hint.style.display = 'block'; e.hint.textContent = this.g.isTouch ? t('hud.hintMobile') : t('hud.hintDesktop'); }

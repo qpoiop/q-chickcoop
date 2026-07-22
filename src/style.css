@@ -35,8 +35,24 @@ a { color: #35e0d0; } a:hover { color: #7ff2e8; }
   text-transform:uppercase; clip-path:polygon(10px 0,100% 0,100% 100%,0 100%); transition:border-color .15s,color .15s; }
 .hud-btn:hover { border-color:#35e0d0; color:#7ff2e8; }
 
-.touch-btn { border-radius:50%; background:rgba(11,18,26,.75); border:2px solid #35e0d0;
-  font-family:'Chakra Petch'; font-weight:700; letter-spacing:1px; }
+/* Mobile action buttons — clear glyph, caption, press feedback, cooldown ring */
+.touch-wrap { display:flex; flex-direction:column; align-items:center; gap:5px; }
+.touch-cap { font-family:'Rajdhani'; font-size:10px; font-weight:600; letter-spacing:2px;
+  text-transform:uppercase; color:#8098a8; }
+.touch-btn { position:relative; border-radius:50%; background:rgba(11,18,26,.82);
+  font-family:'Chakra Petch'; font-weight:700; display:grid; place-items:center;
+  transition:transform .08s, box-shadow .12s, opacity .15s; -webkit-tap-highlight-color:transparent; }
+.touch-btn.use { width:66px; height:66px; border:2px solid #59ff9d; color:#59ff9d; font-size:26px;
+  box-shadow:0 0 16px rgba(89,255,157,.3); }
+.touch-btn.dash { width:84px; height:84px; border:2px solid #35e0d0; color:#7ff2e8; font-size:30px;
+  box-shadow:0 0 20px rgba(53,224,208,.35); }
+.touch-btn:active { transform:scale(.9); box-shadow:0 0 26px rgba(53,224,208,.6); }
+.touch-btn.dash[data-empty="1"] { opacity:.4; }
+.dash-glyph { position:relative; z-index:1; }
+/* conic cooldown fill: --cool 0..1 = fraction recharged */
+.dash-cool { position:absolute; inset:3px; border-radius:50%;
+  background:conic-gradient(rgba(53,224,208,.35) calc(var(--cool,1)*360deg), transparent 0); }
+.touch-btn.dash[data-empty="1"] .dash-cool { background:conic-gradient(rgba(255,176,59,.4) calc(var(--cool,0)*360deg), transparent 0); }
 
 .link-btn { font-family:'Rajdhani'; cursor:pointer; background:none; color:#5f7486; border:none;
   letter-spacing:2px; text-transform:uppercase; text-decoration:underline; text-underline-offset:3px; font-size:10px; }
@@ -72,7 +88,32 @@ a { color: #35e0d0; } a:hover { color: #7ff2e8; }
 .ctrl-lbl { font-size:11px; letter-spacing:2px; color:#8098a8; text-transform:uppercase; }
 .end-lbl { font-size:12px; letter-spacing:3px; color:#7f94a6; text-transform:uppercase; }
 
-#btnStart:hover { background:linear-gradient(150deg,#7a4816,#3a2208); }
+/* Start overlay: always scrollable so nothing is unreachable in short/landscape
+   viewports; `safe center` keeps content from clipping past the top. */
+#startOverlay { justify-content: safe center; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; padding-top: max(24px, env(safe-area-inset-top)); padding-bottom: 96px; }
+
+/* Epic Deploy button — animated sheen + breathing glow. */
+@keyframes deployGlow { 0%,100%{box-shadow:0 0 30px rgba(255,176,59,.35),0 0 0 rgba(255,176,59,0)} 50%{box-shadow:0 0 54px rgba(255,176,59,.7),0 0 90px rgba(255,90,30,.25)} }
+@keyframes deploySheen { 0%{transform:translateX(-140%) skewX(-20deg)} 60%,100%{transform:translateX(320%) skewX(-20deg)} }
+#btnStart { position:relative; overflow:hidden; animation:deployGlow 2.6s ease-in-out infinite; }
+#btnStart::before { content:""; position:absolute; top:0; left:0; width:36%; height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,240,210,.55),transparent); animation:deploySheen 3.4s ease-in-out infinite; pointer-events:none; }
+#btnStart:hover { background:linear-gradient(150deg,#7a4816,#3a2208); transform:translateY(-1px) scale(1.02); }
+#btnStart:active { transform:translateY(1px) scale(.99); }
+
+/* Mobile portrait: let control pills wrap cleanly and shrink the title block. */
+@media (max-width: 640px), (orientation: portrait) {
+  #startOverlay h1 { font-size: clamp(40px, 15vw, 80px) !important; }
+  #startOverlay p { font-size: 14px !important; }
+  .ctrl-pill { padding: 8px 12px; }
+  .ctrl-lbl { font-size: 10px; }
+}
+/* Landscape phones: tighten vertical rhythm so it fits/scrolls nicely. */
+@media (orientation: landscape) and (max-height: 500px) {
+  #startOverlay { gap: 12px !important; padding-top: 14px; padding-bottom: 80px; }
+  #startOverlay h1 { font-size: clamp(34px, 8vh, 64px) !important; }
+}
 
 /* Panels ------------------------------------------------------------------- */
 .panel { position:absolute; inset:0; z-index:25; background:rgba(6,9,14,.88);

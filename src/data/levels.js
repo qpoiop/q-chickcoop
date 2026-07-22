@@ -7,20 +7,28 @@
 // ============================================================================
 import { ASSETS } from './assets.js';
 
-// --- MAIN: town strip over chicken_gun___lava.glb (~104 wide x 21 deep) ---
+// --- MAIN: lava town over chicken_gun___lava.glb. The GLB is one combined
+// mesh + a huge ground plane, so the loader fits it by its structure cluster
+// (see Game._loadMapModel). Buildings frame the arena as backdrop; cover comes
+// from `covers` data. Play area is a roomy square, not a strip. ---
+// The chicken_gun town/lava GLBs are single combined meshes (a giant ground
+// plane + a tiny inseparable town) that don't fit a gameplay field, so the main
+// map is a purpose-built warm "lava yard" arena: a lit ground + amber grid +
+// cover pillars, ringed by a glowing lava moat. Reliable, readable, performant.
 export function townLevel() {
-  const hx = 48, hz = 19;
+  const hx = 52, hz = 40;
   return {
-    id: 'main', B: 52, bounds: { hx, hz },
-    spawnStart: { x: 0, z: 0 }, safe: { x: 0, z: 0, r: 8 },
-    walls: [], covers: [], platforms: [],
-    cores: [{ x: -40, z: -10 }, { x: -8, z: 11 }],
-    // Portal to the boss map — hidden until both cores are breached.
-    portal: { x: 44, z: 0, to: 'boss' },
-    spawns: [[-46, -14], [46, 14], [-44, 14], [44, -14], [-46, 10], [46, -10], [-38, -15]],
-    crates: [[-34, 8], [-18, -10], [-2, 9], [10, -9], [30, 10], [36, -8], [-44, -8], [44, 9]],
-    fog: { color: 0x0a0e14, near: 90, far: 190 }, bg: 0x1a2230,
-    light: { hemi: 0.5, dir: 1.4 },
+    id: 'main', B: 52, bounds: { hx, hz }, arena: true, lavaRing: true,
+    floorColor: 0x53422c, gridColor1: 0x8a6636, gridColor2: 0x46351f, accent: 0xffb03b,
+    spawnStart: { x: 0, z: 34 }, safe: { x: 0, z: 34, r: 7 },
+    walls: [], platforms: [],
+    covers: [[-22, 8], [22, 8], [-10, -8], [10, -8], [0, 16], [-34, -18], [34, -18], [0, -22]],
+    cores: [{ x: -36, z: -16 }, { x: 36, z: -16 }],
+    portal: { x: 0, z: -32, to: 'boss' },
+    spawns: [[-46, -32], [46, -32], [-46, 26], [46, 26], [0, -34], [-46, 0], [46, 0]],
+    crates: [[-20, 20], [20, 20], [-40, 4], [40, 4], [0, 4], [-14, -24], [14, -24]],
+    fog: { color: 0x1a0e08, near: 120, far: 300 }, bg: 0x2a1408,
+    light: { hemi: 0.7, dir: 1.7 },
   };
 }
 
@@ -45,9 +53,10 @@ export function bossArenaLevel() {
   };
 }
 
-// Map registry: model + level builder + kind. Referenced by Game map handling.
+// Map registry: optional GLB backdrop model + level builder. `model: null` =
+// pure procedural arena (no GLB). Referenced by Game map handling.
 export const MAPS = {
-  main: { id: 'main', model: ASSETS.map, build: townLevel },
+  main: { id: 'main', model: null, build: townLevel },
   boss: { id: 'boss', model: ASSETS.bossMap, build: bossArenaLevel },
 };
 

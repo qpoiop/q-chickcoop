@@ -143,7 +143,8 @@ export class Game {
   }
 
   // ---------- level data ----------
-  _levelData() { return this.map ? MAPS[this.mapId].build() : arenaLevel(); }
+  // Always the current map's level (a GLB may or may not be loaded under it).
+  _levelData() { return (MAPS[this.mapId] || { build: arenaLevel }).build(); }
 
   // ---------- world ----------
   _buildWorld() {
@@ -182,8 +183,20 @@ export class Game {
         const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), new THREE.MeshStandardMaterial({ color: 0x16222e, roughness: 0.8, metalness: 0.3 }));
         m.position.set(p.x, p.h / 2, p.z); m.receiveShadow = true; g.add(m);
       });
+      // glowing lava moat ringing the arena edge (theme + readable boundary)
+      if (L.lavaRing) {
+        const bx = (L.bounds ? L.bounds.hx : L.B), bz = (L.bounds ? L.bounds.hz : L.B);
+        const edge = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: 0xff5a1e, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.08, z); g.add(m); };
+        const t = 5;
+        edge(bx * 2 + t * 2, t, 0, -bz - t / 2); edge(bx * 2 + t * 2, t, 0, bz + t / 2);
+        edge(t, bz * 2, -bx - t / 2, 0); edge(t, bz * 2, bx + t / 2, 0);
+        const gl = new THREE.PointLight(0xff5a1e, 1.2, 60); gl.position.set(0, 3, 0); g.add(gl);
+      }
     }
-    if (this.map && !L.openArena) this._harvestMapCollision();
+    // Map-mesh collision harvest is opt-in (L.harvest): these town GLBs are a
+    // single combined mesh, so harvesting yields meaningless blanket colliders.
+    // Buildings act as backdrop; cover comes from level `covers` data + bounds.
+    if (this.map && L.harvest) this._harvestMapCollision();
 
     // security gate (optional)
     this.gate = null; this._gateObs = null; this.gateOpen = true;
@@ -298,6 +311,13 @@ export class Game {
       const fin = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.5, 4), new THREE.MeshBasicMaterial({ color: 0x7ff2e8 }));
       fin.rotation.x = Math.PI / 2; fin.position.set(0, 1.05, 1.9); aimG.add(fin);
     }
+    // character ground indicator (always shows where the player is)
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.98, 32), ringMat);
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; ring.renderOrder = 2; p.add(ring); this.playerRing = ring;
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0x7ff2e8, transparent: true, opacity: 0.9, depthWrite: false }));
+    arrow.rotation.x = Math.PI / 2; arrow.position.set(0, 0.07, 1.15); aimG.add(arrow); this.aimArrow = arrow; // points where you aim
+
     const sp = (this.L && this.L.spawnStart) ? this.L.spawnStart : { x: 0, z: 34 };
     p.position.set(sp.x, 0, sp.z); this.scene.add(p); this.player = p;
 
@@ -309,21 +329,33 @@ export class Game {
     this._attachGun(this.state.weapon);
   }
 
+  // Size the hero to CONFIG.player.height and plant its feet on the ground.
+  // Skinned meshes must be measured via SKELETON BONES — their geometry
+  // bounding box is the collapsed bind pose, not the animated silhouette, so a
+  // mesh-bbox fit blows the scale up. Static meshes use the mesh bbox.
   _calibrateHero() {
     const wrap = this.chickenModel, inner = wrap.children[0];
-    let sk = null; wrap.traverse((o) => { if (o.isSkinnedMesh) sk = o; });
-    if (!sk || !sk.skeleton) { this.chicken.fit = 1; return; }
+    const target = CONFIG.player.height || 1.6;
     inner.scale.setScalar(1); inner.position.set(0, 0, 0);
     if (this.mixer) this.mixer.update(0.1);
     wrap.updateWorldMatrix(true, true);
-    const measure = () => { const b = new THREE.Box3(), v = new THREE.Vector3(); sk.skeleton.bones.forEach((bo) => { bo.getWorldPosition(v); b.expandByPoint(wrap.worldToLocal(v.clone())); }); return b; };
-    let b = measure(); const sz = new THREE.Vector3(); b.getSize(sz);
-    const fit = 1.25 / (sz.y || 1); inner.scale.setScalar(fit);
-    wrap.updateWorldMatrix(true, true);
-    b = measure(); const ctr = new THREE.Vector3(); b.getCenter(ctr);
-    inner.position.x -= ctr.x; inner.position.z -= ctr.z; inner.position.y -= b.min.y;
-    inner.position.y += 1.25 * 0.42;
-    this.chicken.fit = fit;
+    let sk = null; wrap.traverse((o) => { if (o.isSkinnedMesh) sk = o; });
+    if (sk && sk.skeleton) {
+      const measure = () => { const b = new THREE.Box3(), v = new THREE.Vector3(); sk.skeleton.bones.forEach((bo) => { bo.getWorldPosition(v); b.expandByPoint(wrap.worldToLocal(v.clone())); }); return b; };
+      let b = measure(); const sz = new THREE.Vector3(); b.getSize(sz);
+      const fit = target / (sz.y || 1); inner.scale.setScalar(fit);
+      wrap.updateWorldMatrix(true, true);
+      b = measure(); const ctr = new THREE.Vector3(); b.getCenter(ctr);
+      inner.position.x -= ctr.x; inner.position.z -= ctr.z; inner.position.y -= b.min.y;
+      this.chicken.fit = fit;
+    } else {
+      let b = new THREE.Box3().setFromObject(inner); const sz = new THREE.Vector3(); b.getSize(sz);
+      const fit = target / (sz.y || 1); inner.scale.setScalar(fit);
+      wrap.updateWorldMatrix(true, true);
+      b = new THREE.Box3().setFromObject(inner); const ctr = new THREE.Vector3(); b.getCenter(ctr);
+      inner.position.x -= ctr.x; inner.position.z -= ctr.z; inner.position.y -= b.min.y;
+      this.chicken.fit = fit;
+    }
   }
 
   // ---------- async model loads ----------
@@ -369,18 +401,30 @@ export class Game {
     }
   }
 
-  // Initial main-map load on boot.
+  // Initial map setup on boot. A map may be a pure procedural arena (model:null)
+  // or have a decorative GLB backdrop.
   async _loadMap() {
-    if (this.map) return;
-    const level = MAPS[this.mapId].build();
-    await this._loadMapModel(MAPS[this.mapId].model, level);
-    if (!this.map || this._dead) return;
+    if (this._mapReady) return; this._mapReady = true;
+    const entry = MAPS[this.mapId], level = entry.build();
+    if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
+    if (this._dead) return;
     this._buildWorld();
     if (this.player) { const sp = level.spawnStart || { x: 0, z: 0 }; this.player.position.set(sp.x, 0, sp.z); }
   }
 
-  // Generic map GLB loader — scales to the level bounds, centers, grounds,
-  // applies per-level fog/background. Used by boot + portal transitions.
+  // Fog / background / light for a modelless arena.
+  _applyLevelEnv(level) {
+    if (level.fog) this.scene.fog = new THREE.Fog(level.fog.color, level.fog.near, level.fog.far);
+    if (level.bg != null) this.scene.background = new THREE.Color(level.bg);
+    if (level.light) this.scene.traverse((o) => { if (o.isHemisphereLight) o.intensity = level.light.hemi; if (o.isDirectionalLight) o.intensity = level.light.dir; });
+  }
+
+  // Generic map GLB loader. These town/city GLBs are a single combined mesh
+  // dominated by a huge ground plane, so fitting to the FULL bbox shrinks the
+  // buildings to nothing and off-centers them. Instead we fit to the STRUCTURE
+  // CLUSTER (tall geometry), center on it, ground it, and scale so the town
+  // slightly over-fills the play bounds (buildings frame the arena, and the
+  // ground always covers the walkable area so you can't reach the void).
   async _loadMapModel(url, level) {
     const g = await loadGLB(url); if (!g || this._dead) return null;
     const m = g.scene;
@@ -390,11 +434,22 @@ export class Game {
       o.receiveShadow = true; o.castShadow = true;
       if (o.material) o.material.metalness = Math.min(o.material.metalness ?? 0, 0.2);
     });
-    const bbox = () => { const b = new THREE.Box3(); m.updateWorldMatrix(true, true); m.traverse((o) => { if (o.isMesh && !/Lava|Invisible|sand|water/i.test(o.name)) b.expandByObject(o); }); return b; };
-    let b = bbox(); const sz = new THREE.Vector3(); b.getSize(sz);
-    const s = (level.B * 2) / Math.max(sz.x, sz.z); m.scale.setScalar(s);
-    b = bbox(); const c = new THREE.Vector3(); b.getCenter(c); const gy = b.min.y;
-    m.position.x -= c.x; m.position.z -= c.z; m.position.y -= gy;
+    const fit = level.mapFit || {};
+    const structMinH = fit.structMinH ?? 2;      // meshes taller than this = structures
+    const fill = fit.fill ?? 1.3;                 // town spans fill × play width
+    // structure-cluster bbox at scale 1
+    m.scale.setScalar(1); m.position.set(0, 0, 0); m.updateWorldMatrix(true, true);
+    const cluster = (minH) => { const box = new THREE.Box3(), tmp = new THREE.Vector3(); m.traverse((o) => { if (!o.isMesh) return; const b = new THREE.Box3().setFromObject(o); b.getSize(tmp); if (tmp.y >= minH) box.union(b); }); return box; };
+    let sb = cluster(structMinH);
+    if (sb.isEmpty()) sb = new THREE.Box3().setFromObject(m);
+    const sz = new THREE.Vector3(); sb.getSize(sz);
+    const scale = (level.B * 2 * fill) / Math.max(sz.x, sz.z || 1);
+    m.scale.setScalar(scale); m.updateWorldMatrix(true, true);
+    // recenter + ground on the scaled structure cluster
+    let sb2 = cluster(structMinH * scale);
+    if (sb2.isEmpty()) sb2 = new THREE.Box3().setFromObject(m);
+    const c = new THREE.Vector3(); sb2.getCenter(c);
+    m.position.x -= c.x; m.position.z -= c.z; m.position.y -= sb2.min.y + (fit.groundY || 0);
     this.map = m; this.scene.add(m);
     if (level.fog) this.scene.fog = new THREE.Fog(level.fog.color, level.fog.near, level.fog.far);
     if (level.bg != null) this.scene.background = new THREE.Color(level.bg);
@@ -489,8 +544,8 @@ export class Game {
     this.boss = null; this.state.bossActive = false; this.hud.hideCast();
     if (this.map) { this.scene.remove(this.map); this.map = null; }
     this.mapId = to;
-    const level = MAPS[to].build();
-    await this._loadMapModel(MAPS[to].model, level);
+    const entry = MAPS[to], level = entry.build();
+    if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
     this._buildWorld(); this._buildPlayer();
     if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
     this.game.spawnT = 2.5;
@@ -502,8 +557,9 @@ export class Game {
 
   // Reload the main map after a run that ended on the boss map (async).
   async _reloadMain() {
-    const level = MAPS.main.build();
-    await this._loadMapModel(MAPS.main.model, level); if (this._dead) return;
+    const entry = MAPS.main, level = entry.build();
+    if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
+    if (this._dead) return;
     this._buildWorld(); this._buildPlayer();
     if (this.player) { const sp = level.spawnStart; this.player.position.set(sp.x, 0, sp.z); }
   }
@@ -640,7 +696,7 @@ export class Game {
     g.userData = Object.assign(g.userData || {}, {
       hp, maxHp: hp, spd: conf.spd, dmg: conf.dmg, r: conf.s + 0.35, tier,
       spin: (Math.random() - 0.5) * 3, mesh: glbMesh ? null : (g.userData.mesh || g.children[0]), mixer, glb: glbMesh, tint: conf.c,
-      home: { x: sp[0], z: sp[1] }, aggro: false, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
+      home: { x: sp[0], z: sp[1] }, aggro: true, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
     });
     const hb = this._makeHpBar(conf.c); g.userData.hpBar = hb.group; g.userData.hpFill = hb.fill; g.userData.barY = tier === 2 ? 2.0 : 2.7;
     this.scene.add(hb.group);
@@ -700,9 +756,13 @@ export class Game {
     }
   }
   _ghost() {
-    const b = this.player.userData.body; if (!b) return;
-    const gm = new THREE.Mesh(b.geometry, new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
-    gm.position.copy(this.player.position); gm.position.y = 1.1; gm.userData = { life: 0.3 }; this.scene.add(gm); this.ghosts.push(gm);
+    // teal afterimage silhouette (works for model or primitive player)
+    const b = this.player.userData.body;
+    const geo = b ? b.geometry : (this._ghostGeo || (this._ghostGeo = new THREE.CapsuleGeometry(0.5, (CONFIG.player.height || 1.9) * 0.5, 4, 8)));
+    const y = b ? 1.1 : (CONFIG.player.height || 1.9) * 0.55;
+    const gm = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false }));
+    gm.position.copy(this.player.position); gm.position.y = y; gm.rotation.y = this.bodyFace || 0;
+    gm.userData = { life: 0.3 }; this.scene.add(gm); this.ghosts.push(gm);
   }
   _event(txt) {
     const el = this.dom.event; if (!el) return; el.textContent = txt;
@@ -839,7 +899,7 @@ export class Game {
     const np = this.player.position.clone().addScaledVector(this.vel, dt); this._collide(np, CONFIG.player.radius); this.player.position.copy(np);
 
     // dash regen
-    if (this.state.dashCharges < md.dashchg) { this.game._dregen = (this.game._dregen || 0) + dt; const cd = CONFIG.player.dashRegen * md.dashcd; if (this.game._dregen >= cd) { this.game._dregen = 0; this.state.dashCharges++; } }
+    if (this.state.dashCharges < md.dashchg) { this.game._dregen = (this.game._dregen || 0) + dt; const cd = CONFIG.player.dashRegen * md.dashcd; this.game.dashFrac = Math.min(1, this.game._dregen / cd); if (this.game._dregen >= cd) { this.game._dregen = 0; this.state.dashCharges++; } } else this.game.dashFrac = 1;
     if (this.state.dashMax !== md.dashchg) this.state.dashMax = md.dashchg;
 
     this._animatePlayer(dt, rdt, fx);
@@ -886,13 +946,27 @@ export class Game {
   _animatePlayer(dt, rdt, fx) {
     const moving = this.vel.lengthSq() > 1; const body = this.player.userData.body;
     if (body) { body.position.y = 1.1 + (moving ? Math.abs(Math.sin(this.state.time * 12)) * 0.12 : 0); body.rotation.z = -this.vel.x * 0.03; body.rotation.x = this.vel.z * 0.03; }
-    // body faces movement; gun faces aim
+    // Facing: twin-stick shooters read best when the body faces the AIM
+    // direction (clear directional feedback), falling back to movement only
+    // when configured off.
     const spd = this.vel.length(); const yawOff = this.settings.yaw * Math.PI / 180;
-    const base = spd > 1.2 ? Math.atan2(this.vel.x, this.vel.z) : this.face;
+    const base = CONFIG.player.faceAim ? this.face : (spd > 1.2 ? Math.atan2(this.vel.x, this.vel.z) : this.face);
     const targetFace = base - yawOff;
     let df = targetFace - (this.bodyFace || 0); while (df > Math.PI) df -= Math.PI * 2; while (df < -Math.PI) df += Math.PI * 2;
-    this.bodyFace = (this.bodyFace || 0) + df * Math.min(1, rdt * 12);
+    this.bodyFace = (this.bodyFace || 0) + df * Math.min(1, rdt * 14);
     if (this.faceGroup) this.faceGroup.rotation.y = this.bodyFace;
+    // procedural liveliness for models with few/no locomotion clips:
+    // hop while moving, lean into movement, tilt back on recoil.
+    if (this.chickenModel) {
+      const moveAmt = Math.min(1, spd / CONFIG.player.moveSpeed);
+      const hop = moveAmt > 0.15 ? Math.abs(Math.sin(this.state.time * 14)) * 0.18 * moveAmt : Math.sin(this.state.time * 2) * 0.02;
+      this.chickenModel.position.y = this.settings.lift + hop;
+      // lean forward into movement (in body-local space) + recoil tilt back
+      const localVX = this.vel.x * Math.cos(-this.bodyFace) - this.vel.z * Math.sin(-this.bodyFace);
+      const localVZ = this.vel.x * Math.sin(-this.bodyFace) + this.vel.z * Math.cos(-this.bodyFace);
+      this.chickenModel.rotation.x = Math.max(-0.35, Math.min(0.35, localVZ * 0.03)) - fx.recoil * 0.25;
+      this.chickenModel.rotation.z = Math.max(-0.3, Math.min(0.3, -localVX * 0.03));
+    }
     // procedural juice: dash squash-&-stretch + hit punch on the body group
     fx.recoil = Math.max(0, fx.recoil - rdt * 6);
     fx.hitPunch = Math.max(0, fx.hitPunch - rdt * 4);
@@ -905,7 +979,7 @@ export class Game {
     if (this.gunModel) this.gunModel.position.z = 0.62 - recoilZ;
     if (this.gun) this.gun.position.z = 0.95 - recoilZ;
     if (this.core) { this.core.rotation.y += dt * 3; this.core.position.y = 1.4 + Math.sin(this.state.time * 3) * 0.05; }
-    if (this.chickenModel) { this.chickenModel.rotation.y = this.settings.yaw * Math.PI / 180; this.chickenModel.scale.setScalar(this.settings.scale); this.chickenModel.position.y = this.settings.lift; }
+    if (this.chickenModel) { this.chickenModel.rotation.y = this.settings.yaw * Math.PI / 180; this.chickenModel.scale.setScalar(this.settings.scale); }
     if (this.gunModel) this.gunModel.rotation.y = this.settings.gunYaw * Math.PI / 180;
     if (this.mixer) {
       const run = Math.min(1, spd / 6);

@@ -9,15 +9,15 @@ export const ASSET_BASE = import.meta.env.BASE_URL || './';
 const p = (rel) => ASSET_BASE.replace(/\/$/, '') + '/' + rel;
 
 export const ASSETS = {
-  // Playable hero
-  player: p('caracter/chick.glb'),
+  // Playable hero. NOTE: chick.glb is unusable as a player — it renders ~0.5u
+  // tall and its only animation ("Take 01") flings the mesh ~4.6u off the
+  // ground. golden_chicken_hero is grounded, correctly sized, and animated.
+  player: p('caracter/golden_chicken_hero.glb'),
 
   // Character roster — 3 enemies + 2 bosses + 1 player (above).
-  // enemyModels keys are referenced by data/enemies.js (tiers + bosses).
   enemyModels: {
-    // 3 rank-and-file enemies
     cute:   p('caracter/lowpoly_bird_animation.glb'),
-    little: p('caracter/golden_chicken_hero.glb'),
+    little: p('caracter/chick_stylized_character.glb'),
     drone:  p('caracter/lady_bug_bird.glb'),
     // 2 bosses (bossB temporarily shares bossA's model — swap later)
     bossA:  p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
