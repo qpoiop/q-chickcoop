@@ -9,7 +9,7 @@ import { WEAPONS, WEAPON_MODEL_MAP, WEAPON_DROP_ORDER } from '../data/weapons.js
 import { BRANCHES, computeModifiers } from '../data/skills.js';
 import { ENEMY_TIERS, BOSSES, pickTier } from '../data/enemies.js';
 import { TUTORIAL } from '../data/tutorial.js';
-import { townLevel, arenaLevel } from '../data/levels.js';
+import { MAPS, arenaLevel } from '../data/levels.js';
 import { ASSETS } from '../data/assets.js';
 import { t, locName, getLang } from '../data/i18n.js';
 
@@ -112,6 +112,7 @@ export class Game {
     this.fx = { shake: 0, freeze: 0, tScale: 1, tTarget: 1, fov: 0, muzzle: 0, dashT: 0, iframe: 0, dashDir: new THREE.Vector3(), recoil: 0, hitPunch: 0, camKick: new THREE.Vector3() };
 
     this._iconTex = {};
+    this.mapId = 'main';
     this._buildWorld();
     this._buildPlayer();
     this._bindInput();
@@ -142,7 +143,7 @@ export class Game {
   }
 
   // ---------- level data ----------
-  _levelData() { return this.map ? townLevel() : arenaLevel(); }
+  _levelData() { return this.map ? MAPS[this.mapId].build() : arenaLevel(); }
 
   // ---------- world ----------
   _buildWorld() {
@@ -150,11 +151,14 @@ export class Game {
     if (this.worldG) this.scene.remove(this.worldG);
     const g = new THREE.Group(); this.worldG = g; this.scene.add(g);
 
-    if (!this.map) {
+    // Procedural props: full ground for a modelless level, or a readable arena
+    // floor/grid/pillars laid over a backdrop map (L.arena).
+    if (!this.map || L.arena) {
+      const accent = L.accent || 0x35e0d0;
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(L.B * 2 + 4, L.B * 2 + 4),
-        new THREE.MeshStandardMaterial({ color: 0x0c141d, roughness: 1, metalness: 0 }));
-      floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
-      const grid = new THREE.GridHelper(L.B * 2, 52, 0x1f3d4c, 0x14232e); grid.position.y = 0.02; g.add(grid);
+        new THREE.MeshStandardMaterial({ color: L.floorColor || 0x0c141d, roughness: 1, metalness: 0.1 }));
+      floor.rotation.x = -Math.PI / 2; floor.position.y = L.arena ? 0.01 : 0; floor.receiveShadow = true; g.add(floor);
+      const grid = new THREE.GridHelper(L.B * 2, 52, L.gridColor1 || 0x1f3d4c, L.gridColor2 || 0x14232e); grid.position.y = 0.03; g.add(grid);
       const wmat = new THREE.MeshStandardMaterial({ color: 0x1a2836, roughness: 0.7, metalness: 0.35, emissive: 0x0a1a22, emissiveIntensity: 0.4 });
       const emat = new THREE.MeshStandardMaterial({ color: 0x35e0d0, emissive: 0x35e0d0, emissiveIntensity: 1.4, transparent: true, opacity: 0.5 });
       L.walls.forEach((w) => {
@@ -164,26 +168,35 @@ export class Game {
         this.obstacles.push({ x: w.x, z: w.z, hw: w.w / 2, hd: w.d / 2, env: true });
       });
       L.covers.forEach(([x, z]) => {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 3), new THREE.MeshStandardMaterial({ color: 0x223140, roughness: 0.6, metalness: 0.4 }));
-        m.position.set(x, 1, z); m.castShadow = true; g.add(m); this.obstacles.push({ x, z, hw: 1.5, hd: 1.5, env: true });
+        if (L.arena) { // glowing accent pillar
+          const h = 3.4, m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, h, 6), new THREE.MeshStandardMaterial({ color: 0x141c28, emissive: accent, emissiveIntensity: 0.5, roughness: 0.5, metalness: 0.5 }));
+          m.position.set(x, h / 2, z); m.castShadow = true; g.add(m);
+          const cap = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.09, 8, 18), new THREE.MeshBasicMaterial({ color: accent })); cap.rotation.x = Math.PI / 2; cap.position.set(x, h, z); g.add(cap);
+          this.obstacles.push({ x, z, hw: 1.1, hd: 1.1, env: true });
+        } else {
+          const m = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 3), new THREE.MeshStandardMaterial({ color: 0x223140, roughness: 0.6, metalness: 0.4 }));
+          m.position.set(x, 1, z); m.castShadow = true; g.add(m); this.obstacles.push({ x, z, hw: 1.5, hd: 1.5, env: true });
+        }
       });
       L.platforms.forEach((p) => {
         const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), new THREE.MeshStandardMaterial({ color: 0x16222e, roughness: 0.8, metalness: 0.3 }));
         m.position.set(p.x, p.h / 2, p.z); m.receiveShadow = true; g.add(m);
       });
-    } else {
-      this._harvestMapCollision();
+    }
+    if (this.map && !L.openArena) this._harvestMapCollision();
+
+    // security gate (optional)
+    this.gate = null; this._gateObs = null; this.gateOpen = true;
+    if (L.gate) {
+      const gmat = new THREE.MeshStandardMaterial({ color: 0xff3b6b, emissive: 0xff3b6b, emissiveIntensity: 1.1, transparent: true, opacity: 0.72 });
+      const gAcross = L.gate.across, gw = L.gate.w;
+      const gate = new THREE.Mesh(new THREE.BoxGeometry(gAcross ? 1.4 : gw, 4, gAcross ? gw : 1.4), gmat);
+      gate.position.set(L.gate.x, 2, L.gate.z); g.add(gate); this.gate = gate; this.gateOpen = false;
+      this.obstacles.push(this._gateObs = { x: L.gate.x, z: L.gate.z, hw: gAcross ? 0.7 : gw / 2, hd: gAcross ? gw / 2 : 0.7 });
     }
 
-    // security gate
-    const gmat = new THREE.MeshStandardMaterial({ color: 0xff3b6b, emissive: 0xff3b6b, emissiveIntensity: 1.1, transparent: true, opacity: 0.72 });
-    const gAcross = L.gate.across, gw = L.gate.w;
-    const gate = new THREE.Mesh(new THREE.BoxGeometry(gAcross ? 1.4 : gw, 4, gAcross ? gw : 1.4), gmat);
-    gate.position.set(L.gate.x, 2, L.gate.z); g.add(gate); this.gate = gate; this.gateOpen = false;
-    this.obstacles.push(this._gateObs = { x: L.gate.x, z: L.gate.z, hw: gAcross ? 0.7 : gw / 2, hd: gAcross ? gw / 2 : 0.7 });
-
-    // data cores
-    L.cores.forEach((c, i) => {
+    // data cores (optional)
+    (L.cores || []).forEach((c, i) => {
       const grp = new THREE.Group(); grp.position.set(c.x, 0, c.z);
       const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
       base.position.y = 0.25; base.castShadow = true; grp.add(base);
@@ -192,19 +205,21 @@ export class Game {
       const ring = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.08, 8, 24), new THREE.MeshBasicMaterial({ color: 0x35e0d0 }));
       ring.rotation.x = Math.PI / 2; ring.position.y = 1.2; grp.add(ring);
       g.add(grp); this.obstacles.push({ x: c.x, z: c.z, hw: 1.6, hd: 1.6 });
-      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: cyl, ring });
+      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: cyl, ring, active: true });
     });
 
-    // extraction pad
-    const pad = new THREE.Mesh(new THREE.CircleGeometry(3.4, 32), new THREE.MeshBasicMaterial({ color: 0x59ff9d, transparent: true, opacity: 0.18 }));
-    pad.rotation.x = -Math.PI / 2; pad.position.set(L.extraction.x, 0.05, L.extraction.z); g.add(pad); this.extractPad = pad;
-    this.interact.push({ type: 'extract', id: 'Extraction', x: L.extraction.x, z: L.extraction.z, r: 3.4, done: false, mesh: pad });
+    // glowing map-transition portal (hidden until unlocked)
+    this.portalObj = null;
+    if (L.portal) {
+      const pg = this._makePortal(L.portal, 0x35e0d0); pg.visible = false; g.add(pg); this.portalObj = pg;
+      this.interact.push({ type: 'portal', id: 'Portal', to: L.portal.to, x: L.portal.x, z: L.portal.z, r: 3.4, done: false, active: false, mesh: pg });
+    }
 
     // loot crates
     L.crates.forEach(([x, z]) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.MeshStandardMaterial({ color: 0x2a3a2a, emissive: 0x1a3a1a, emissiveIntensity: 0.4, roughness: 0.6, metalness: 0.3 }));
       m.position.set(x, 0.8, z); m.castShadow = true; g.add(m);
-      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: m });
+      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: m, active: true });
     });
 
     // safe-zone ring
@@ -238,6 +253,22 @@ export class Game {
     beam.position.y = 1.1; grp.add(beam);
     grp.userData = { kind, ring, icon, icon2, x: pos.x, z: pos.z, life: 22, ph: Math.random() * 6 };
     this.worldG.add(grp); this.itemDrops.push(grp);
+  }
+
+  // Glowing map-transition / extraction portal (Duckcoop-style).
+  _makePortal(pos, color) {
+    const grp = new THREE.Group(); grp.position.set(pos.x, 0, pos.z);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.26, 14, 44), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.9, metalness: 0.4, roughness: 0.3 }));
+    ring.position.y = 2.5; grp.add(ring);
+    const swirl = new THREE.Mesh(new THREE.CircleGeometry(2.0, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.34, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    swirl.position.y = 2.5; grp.add(swirl); const swirl2 = swirl.clone(); swirl2.rotation.y = Math.PI; grp.add(swirl2);
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 6, 28, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.1, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    beam.position.y = 3; grp.add(beam);
+    const base = new THREE.Mesh(new THREE.CircleGeometry(2.4, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.2, side: THREE.DoubleSide }));
+    base.rotation.x = -Math.PI / 2; base.position.y = 0.05; grp.add(base);
+    const light = new THREE.PointLight(color, 2.4, 16); light.position.y = 2.5; grp.add(light);
+    grp.userData = { ring, swirl, swirl2, light, base, ph: 0 };
+    return grp;
   }
 
   // ---------- player ----------
@@ -338,9 +369,20 @@ export class Game {
     }
   }
 
+  // Initial main-map load on boot.
   async _loadMap() {
     if (this.map) return;
-    const g = await loadGLB(ASSETS.map); if (!g || this._dead) return;
+    const level = MAPS[this.mapId].build();
+    await this._loadMapModel(MAPS[this.mapId].model, level);
+    if (!this.map || this._dead) return;
+    this._buildWorld();
+    if (this.player) { const sp = level.spawnStart || { x: 0, z: 0 }; this.player.position.set(sp.x, 0, sp.z); }
+  }
+
+  // Generic map GLB loader — scales to the level bounds, centers, grounds,
+  // applies per-level fog/background. Used by boot + portal transitions.
+  async _loadMapModel(url, level) {
+    const g = await loadGLB(url); if (!g || this._dead) return null;
     const m = g.scene;
     m.traverse((o) => {
       if (!o.isMesh) return;
@@ -348,17 +390,16 @@ export class Game {
       o.receiveShadow = true; o.castShadow = true;
       if (o.material) o.material.metalness = Math.min(o.material.metalness ?? 0, 0.2);
     });
-    const townBox = () => { const b = new THREE.Box3(); m.updateWorldMatrix(true, true); m.traverse((o) => { if (o.isMesh && !/Lava|Invisible|sand/i.test(o.name)) b.expandByObject(o); }); return b; };
-    const box = townBox(); const sz = new THREE.Vector3(); box.getSize(sz);
-    const targetW = arenaLevel().B * 2; const s = targetW / Math.max(sz.x, sz.z); m.scale.setScalar(s);
-    const vb = new THREE.Box3(); m.traverse((o) => { if (o.isMesh && /House|Roof|Cactus|Mexican/i.test(o.name)) vb.expandByObject(o); });
-    const vc = new THREE.Vector3(); (vb.isEmpty() ? townBox() : vb).getCenter(vc);
-    const gy = townBox().min.y;
-    m.position.x -= vc.x; m.position.z -= vc.z; m.position.y -= gy;
+    const bbox = () => { const b = new THREE.Box3(); m.updateWorldMatrix(true, true); m.traverse((o) => { if (o.isMesh && !/Lava|Invisible|sand|water/i.test(o.name)) b.expandByObject(o); }); return b; };
+    let b = bbox(); const sz = new THREE.Vector3(); b.getSize(sz);
+    const s = (level.B * 2) / Math.max(sz.x, sz.z); m.scale.setScalar(s);
+    b = bbox(); const c = new THREE.Vector3(); b.getCenter(c); const gy = b.min.y;
+    m.position.x -= c.x; m.position.z -= c.z; m.position.y -= gy;
     this.map = m; this.scene.add(m);
-    this.scene.fog = new THREE.Fog(0x0a0e14, 90, 190); this.scene.background = new THREE.Color(0x1a2230);
-    this._buildWorld();
-    if (this.player) { const sp = this.L.spawnStart || { x: 0, z: 0 }; this.player.position.set(sp.x, 0, sp.z); }
+    if (level.fog) this.scene.fog = new THREE.Fog(level.fog.color, level.fog.near, level.fog.far);
+    if (level.bg != null) this.scene.background = new THREE.Color(level.bg);
+    if (level.light) this.scene.traverse((o) => { if (o.isHemisphereLight) o.intensity = level.light.hemi; if (o.isDirectionalLight) o.intensity = level.light.dir; });
+    return m;
   }
 
   _harvestMapCollision() {
@@ -369,6 +410,9 @@ export class Game {
       if (/Lava|Invisible|sand|ground|floor|road|street/i.test(o.name)) return;
       const b = new THREE.Box3().setFromObject(o); const s = new THREE.Vector3(); b.getSize(s); const c = new THREE.Vector3(); b.getCenter(c);
       if (s.y < 1.2) return; if (Math.abs(c.z) > hz + 3) return;
+      // Skip oversized footprints — those are terrain/base slabs, not walls, and
+      // would otherwise blanket the play area with an invisible collider.
+      if (s.x > 14 || s.z > 14) return;
       this.obstacles.push({ x: c.x, z: c.z, hw: Math.max(0.6, s.x / 2 * 0.82), hd: Math.max(0.6, s.z / 2 * 0.82), env: true });
     });
   }
@@ -413,19 +457,73 @@ export class Game {
     if (it.type === 'core' && !it.done) {
       it.done = true; it.glow.material.color.set(0x59ff9d); it.glow.material.emissive.set(0x59ff9d); it.ring.material.color.set(0x59ff9d);
       this.state.cores++; this._impact(it.mesh.position, 0x59ff9d, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
-      if (this.state.cores >= 2) { this._openGate(); this.state.objectiveKey = 'obj.extract'; }
+      const need = (this.L.cores || []).length;
+      if (this.state.cores >= need) { this._activatePortal(); }
       else { this.state.objectiveKey = 'obj.coreB'; }
     } else if (it.type === 'crate' && !it.done) {
       it.done = true; it.mesh.visible = false; const o = this.obstacles.find((x) => x.x === it.x && x.z === it.z); if (o) o.dead = true;
       this._impact(it.mesh.position, 0x59ff9d, 14, 5); this.fx.shake = 0.25; this.audio.pickup();
       const md = this._mods(); this.state.gold += Math.ceil((8 + Math.random() * 10) * md.gold); this._gainXp(6 * md.xp); this._event(t('evt.salvage'));
-    } else if (it.type === 'extract' && this.gateOpen) { this._win(); }
+    } else if (it.type === 'portal' && it.active) { this._enterPortal(it.to);
+    } else if (it.type === 'extract' && it.active) { this._win(); }
     this.refresh();
   }
 
-  _openGate() {
-    this.gateOpen = true; this.gate.material.color.set(0x59ff9d); this.gate.material.emissive.set(0x59ff9d);
-    this.gate.material.opacity = 0.28; this.extractPad.material.opacity = 0.4; this._event(t('evt.gate')); this.fx.shake = 0.6;
+  // Reveal the boss-map portal once the town cores are breached.
+  _activatePortal() {
+    const p = this.interact.find((x) => x.type === 'portal'); if (!p) return;
+    p.active = true; p.mesh.visible = true; this.state.objectiveKey = 'obj.portal';
+    this._event(t('evt.portal')); this.fx.shake = 0.6; this.audio.levelUp();
+  }
+
+  // Fade-through map transition to the target map id (Duckcoop-style portal).
+  async _enterPortal(to) {
+    if (this._transitioning) return; this._transitioning = true;
+    this.audio.ui(); this._fade(1, 260);
+    await new Promise((r) => setTimeout(r, 300));
+    // clear all transient entities + their hp bars
+    this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
+    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.itemDrops || []]) {
+      arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
+    }
+    this.boss = null; this.state.bossActive = false; this.hud.hideCast();
+    if (this.map) { this.scene.remove(this.map); this.map = null; }
+    this.mapId = to;
+    const level = MAPS[to].build();
+    await this._loadMapModel(MAPS[to].model, level);
+    this._buildWorld(); this._buildPlayer();
+    if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
+    this.game.spawnT = 2.5;
+    this._fade(0, 500);
+    this._transitioning = false; this.refresh();
+  }
+
+  _fade(to, ms) { const el = this.dom.fade; if (!el) return; el.style.transition = `opacity ${ms}ms`; el.style.opacity = to; }
+
+  // Reload the main map after a run that ended on the boss map (async).
+  async _reloadMain() {
+    const level = MAPS.main.build();
+    await this._loadMapModel(MAPS.main.model, level); if (this._dead) return;
+    this._buildWorld(); this._buildPlayer();
+    if (this.player) { const sp = level.spawnStart; this.player.position.set(sp.x, 0, sp.z); }
+  }
+
+  // Spawn the green extraction portal after the boss dies on the boss map.
+  _revealExtraction() {
+    const pos = this.L.extractionAfterBoss || { x: 0, z: 34 };
+    const pg = this._makePortal(pos, 0x59ff9d); this.worldG.add(pg); this.portalObj = pg;
+    this.interact.push({ type: 'extract', id: 'Extraction', x: pos.x, z: pos.z, r: 3.6, done: false, active: true, mesh: pg });
+    this.state.objectiveKey = 'obj.extract'; this._event(t('evt.extract')); this.fx.shake = 0.6;
+  }
+
+  // Floating enemy HP bar (billboarded, always-on-top). Boss uses the top bar.
+  _makeHpBar(tint) {
+    const w = 1.3, h = 0.16, grp = new THREE.Group();
+    const bg = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.08, h + 0.08), new THREE.MeshBasicMaterial({ color: 0x0a0e14, transparent: true, opacity: 0.78, depthTest: false }));
+    const fill = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: tint, depthTest: false }));
+    fill.position.z = 0.01; bg.renderOrder = 998; fill.renderOrder = 999;
+    grp.add(bg); grp.add(fill); grp.visible = false; grp.userData = { w };
+    return { group: grp, fill };
   }
 
   _collectItem(kind) {
@@ -445,8 +543,8 @@ export class Game {
   _nearestInteract() {
     let best = null, bd = 1e9;
     for (const it of this.interact) {
-      if (it.done && it.type !== 'extract') continue;
-      if (it.type === 'extract' && !this.gateOpen) continue;
+      if ((it.type === 'portal' || it.type === 'extract') && !it.active) continue;
+      if (it.done && it.type !== 'extract' && it.type !== 'portal') continue;
       const d = Math.hypot(this.player.position.x - it.x, this.player.position.z - it.z);
       if (d < it.r && d < bd) { bd = d; best = it; }
     }
@@ -544,13 +642,15 @@ export class Game {
       spin: (Math.random() - 0.5) * 3, mesh: glbMesh ? null : (g.userData.mesh || g.children[0]), mixer, glb: glbMesh, tint: conf.c,
       home: { x: sp[0], z: sp[1] }, aggro: false, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
     });
+    const hb = this._makeHpBar(conf.c); g.userData.hpBar = hb.group; g.userData.hpFill = hb.fill; g.userData.barY = tier === 2 ? 2.0 : 2.7;
+    this.scene.add(hb.group);
     this.scene.add(g); this.enemies.push(g);
   }
 
   _spawnBoss() {
     const time = this.state.time;
-    const def = BOSSES[(this.game.bossIx = (this.game.bossIx || 0)) % BOSSES.length]; this.game.bossIx++;
-    const sp = this.L.spawns[Math.floor(Math.random() * this.L.spawns.length)];
+    const def = BOSSES[Math.floor(Math.random() * BOSSES.length)]; // pick one of the two fights
+    const sp = this.L.bossSpawn ? [this.L.bossSpawn.x, this.L.bossSpawn.z] : this.L.spawns[Math.floor(Math.random() * this.L.spawns.length)];
     let g, mixer = null, glb = false;
     if (this.enemyModels && this.enemyModels[def.model]) { const em = this._makeEnemyModel(def.model, def.modelMul); g = em.group; mixer = em.mixer; glb = true; }
     else { g = new THREE.Group(); const m = new THREE.Mesh(new THREE.IcosahedronGeometry(3.4, 0), new THREE.MeshStandardMaterial({ color: def.c, emissive: def.c, emissiveIntensity: 0.6, roughness: 0.4, metalness: 0.4 })); m.castShadow = true; m.position.y = 3.6; g.add(m); g.userData.mesh = m; }
@@ -639,12 +739,16 @@ export class Game {
   closePanel() { this.state.panel = 'none'; this.audio.ui(); this.refresh(); }
 
   _reset(tutorial) {
-    this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); });
+    this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
     for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.itemDrops || []]) {
       arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
     }
-    this.hud.hideCast();
-    this.boss = null;
+    this.hud.hideCast(); this.portalObj = null;
+    this.boss = null; this.state.bossActive = false;
+    // a run always restarts on the main map — reload it if we ended on the boss map
+    const backToMain = this.map && this.mapId !== 'main';
+    this.mapId = 'main';
+    if (backToMain) { this.scene.remove(this.map); this.map = null; this._reloadMain(); }
     this._buildWorld(); this._buildPlayer();
     this._tut = !!tutorial;
     Object.assign(this.state, this._freshState(), { started: true, objectiveKey: this._tut ? 'tut:0' : 'obj.coreA', tutorial: this._tut });
@@ -757,7 +861,7 @@ export class Game {
     this.game.grace = Math.max(0, (this.game.grace || 0) - dt);
     this.game.spawnT -= dt; const rate = Math.max(0.3, 1.3 - this.state.time / 80);
     if (this.game.grace <= 0 && this.game.spawnT <= 0 && this.enemies.length < CONFIG.spawn.maxEnemies) { this._spawnEnemy(); this.game.spawnT = rate; }
-    if (!this._tut && !this.boss && this.state.time >= (this.game.nextBoss || CONFIG.spawn.bossFirst)) { this._spawnBoss(); this.game.nextBoss = this.state.time + CONFIG.spawn.bossRepeat; }
+    // Boss is fought on the boss map (spawned on portal entry) — no timed spawn on main.
 
     if (this._tut) this._updateTutorial(dt);
 
@@ -767,10 +871,12 @@ export class Game {
     this._updatePickups(dt, md);
 
     // interact prompt + core pulse (prompt key -> translated label at render)
-    const it = this._nearestInteract(); const pk = { core: 'prompt.core', crate: 'prompt.crate', extract: 'prompt.extract' };
+    const it = this._nearestInteract(); const pk = { core: 'prompt.core', crate: 'prompt.crate', extract: 'prompt.extract', portal: 'prompt.portal' };
     const newPrompt = it ? pk[it.type] : null;
     if (newPrompt !== this.state.prompt) { this.state.prompt = newPrompt; this.hud.syncPrompt(); }
     this.interact.forEach((x) => { if (x.type === 'core' && !x.done && x.glow) x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5; });
+    // portal swirl animation
+    if (this.portalObj && this.portalObj.visible) { const u = this.portalObj.userData; u.ring.rotation.z += dt * 1.4; u.swirl.rotation.z -= dt * 2.2; u.swirl2.rotation.z += dt * 2.2; u.light.intensity = 2 + Math.sin(this.state.time * 4) * 0.9; }
 
     if (this.state.hp <= 0) { this.state.hp = 0; this._end(); }
 
@@ -848,6 +954,12 @@ export class Game {
       if (u.mesh) { u.mesh.rotation.x += dt * u.spin; u.mesh.rotation.y += dt * u.spin; if (u.tier === 2) u.mesh.position.y = u.r + 0.5 + Math.sin(this.state.time * 6 + i) * 0.3; u.hitT = Math.max(0, (u.hitT || 0) - rdt); u.mesh.material.emissiveIntensity = 0.4 + (u.hitT > 0 ? 1.4 : 0) + (u.lungeT > 0 ? 1 : 0) + (1 - u.hp / u.maxHp) * 0.5; }
       else if (u.glb) { if (!u.boss) e.rotation.y = Math.atan2(to.x, to.z); if (u.mixer) u.mixer.update(rdt * (1 + u.spd * 0.05)); if (u.tier === 2 && !u.boss) e.position.y = Math.abs(Math.sin(this.state.time * 7 + i)) * 0.5; u.hitT = Math.max(0, (u.hitT || 0) - rdt); e.scale.setScalar(1 + (u.hitT > 0 ? 0.18 : 0)); }
       if (u.boss) this.state.bossHp = Math.max(0, u.hp);
+      // floating HP bar (mobs only; boss uses the top bar)
+      if (u.hpBar && !u.boss) {
+        const frac = Math.max(0, u.hp / u.maxHp);
+        if (frac < 0.999) { u.hpBar.visible = true; u.hpBar.position.set(e.position.x, u.barY, e.position.z); u.hpBar.quaternion.copy(this.cam.quaternion); const w = u.hpBar.userData.w; u.hpFill.scale.x = frac; u.hpFill.position.x = -(w / 2) * (1 - frac); }
+        else u.hpBar.visible = false;
+      }
 
       if (u.hp <= 0) {
         this.state.kills++; this.audio.kill();
@@ -859,7 +971,8 @@ export class Game {
           if (nextW && Math.random() < this.WEAPONS[nextW].dropChance) this._spawnItemDrop(e.position, 'weapon');
           else { const r = Math.random(); if (r < CONFIG.drops.healthChance) this._spawnItemDrop(e.position, 'health'); else if (r < CONFIG.drops.healthChance + CONFIG.drops.scrapChance) this._spawnItemDrop(e.position, 'scrap'); }
         }
-        if (u.boss) { clearBossCast(this, e); this.boss = null; this.state.bossActive = false; this.state.gold += Math.ceil(60 * md.gold); this._gainXp(40 * md.xp); this._event(t('evt.bossDown')); this.fx.shake = 1; this.fx.freeze = 0.28; for (let k = 0; k < 3; k++) this._drop(e.position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4)), 1); this.refresh(); }
+        if (u.boss) { clearBossCast(this, e); this.boss = null; this.state.bossActive = false; this.state.gold += Math.ceil(60 * md.gold); this._gainXp(40 * md.xp); this._event(t('evt.bossDown')); this.fx.shake = 1; this.fx.freeze = 0.28; for (let k = 0; k < 3; k++) this._drop(e.position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4)), 1); if (this.mapId === 'boss') this._revealExtraction(); this.refresh(); }
+        if (u.hpBar) this.scene.remove(u.hpBar);
         this.scene.remove(e); this.enemies.splice(i, 1); this.fx.shake = Math.min(1, this.fx.shake + (u.tier === 1 ? 0.28 : 0.12)); this.fx.freeze = Math.max(this.fx.freeze, u.tier === 1 ? 0.07 : 0.035); continue;
       }
       if (d < u.r + 1) {

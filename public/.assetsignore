@@ -1,6 +1,5 @@
 # Oversized / unused source models — not shipped to Cloudflare (25 MiB/file limit).
 scene/skibidi_toilet_77_map.glb
-scene/chicken_gun_fruzer_-_city.glb
+scene/low_poly_forest_1.glb
 scene/chicken_gun_fruzer_-_city/
 scene/chicken_gun_fruzer_dark_forest/
-scene/low_poly_forest_1.glb

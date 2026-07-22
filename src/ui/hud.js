@@ -54,12 +54,8 @@ export class HUD {
   applyI18n() {
     document.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.getAttribute('data-i18n')); });
     document.documentElement.lang = getLang();
-    // active language button styling
-    const on = '#7ff2e8', off = '#5f7486';
-    this.el.langEn.style.color = getLang() === 'en' ? on : off;
-    this.el.langKo.style.color = getLang() === 'ko' ? on : off;
-    this.el.langEn.style.borderColor = getLang() === 'en' ? '#35e0d0' : '#223140';
-    this.el.langKo.style.borderColor = getLang() === 'ko' ? '#35e0d0' : '#223140';
+    this.el.langEn.classList.toggle('active', getLang() === 'en');
+    this.el.langKo.classList.toggle('active', getLang() === 'ko');
     if (this.el.loading) this.el.loading.textContent = t('loading');
   }
 

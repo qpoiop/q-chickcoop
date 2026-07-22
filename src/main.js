@@ -7,7 +7,7 @@ const $ = (id) => document.getElementById(id);
 const dom = {
   mount: $('mount'),
   flash: $('flashRef'), level: $('levelRef'), event: $('eventRef'),
-  dash: $('dashRef'), low: $('lowRef'), hitDir: $('hitDirRef'),
+  dash: $('dashRef'), low: $('lowRef'), hitDir: $('hitDirRef'), fade: $('fadeRef'),
   joyBase1: $('joyBase1'), joyKnob1: $('joyKnob1'), joyBase2: $('joyBase2'), joyKnob2: $('joyKnob2'),
 };
 
@@ -33,10 +33,10 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       const base = import.meta.env.BASE_URL || '/';
       const reg = await navigator.serviceWorker.register(`${base}sw.js?v=${BUILD_ID}`, { updateViaCache: 'none' });
 
-      const banner = $('updateBanner');
+      const banner = $('updateToast');
       const offerUpdate = (worker) => {
         if (!worker) return;
-        banner.style.display = 'block';
+        banner.style.display = 'inline-block';
         banner.onclick = () => { worker.postMessage({ type: 'SKIP_WAITING' }); banner.style.display = 'none'; };
       };
       if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
@@ -55,12 +55,12 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   });
 }
 
-// Install-to-home-screen prompt (Android/desktop Chrome).
+// Install-to-home-screen prompt (Android/desktop Chrome) — shown as a bottom toast.
 let deferredPrompt = null;
-const installBtn = $('btnInstall');
+const installBtn = $('installToast');
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault(); deferredPrompt = e;
-  if (installBtn) { installBtn.style.display = 'inline'; }
+  if (installBtn) installBtn.style.display = 'inline-block';
 });
 if (installBtn) installBtn.onclick = async () => {
   if (!deferredPrompt) return;

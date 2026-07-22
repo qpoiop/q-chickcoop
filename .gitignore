@@ -8,7 +8,6 @@ dev-dist
 
 # Oversized / unused source models — not shipped (also in public/.assetsignore)
 public/scene/skibidi_toilet_77_map.glb
-public/scene/chicken_gun_fruzer_-_city.glb
+public/scene/low_poly_forest_1.glb
 public/scene/chicken_gun_fruzer_-_city/
 public/scene/chicken_gun_fruzer_dark_forest/
-public/scene/low_poly_forest_1.glb
