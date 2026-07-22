@@ -20,22 +20,42 @@ import { ASSETS } from './assets.js';
 // First / main map = the chicken-gun lava TOWN model (4 MB, instant, on-theme).
 // Real streets + buildings (collision harvested from the mesh); the play area is
 // the town itself, no procedural grid / no giant safe ring.
-// The lava town GLB is a long STREET (~201×61 in model space, centered at
-// (-37.4,-9.7), floor y=-2.5). Hand-tuned transform places the street on the
-// play area; bounds match the street's shape (wide, shallow).
-export function townLevel() {
-  const hx = 46, hz = 16;
+// TUTORIAL = a small, clean tiled training bay. Compact; just teaches the
+// basics (move / fire / dash / pickup / fight), then hands off to the city.
+export function tutorialLevel() {
+  const hx = 24, hz = 18;
   return {
-    id: 'main', B: 46, bounds: { hx, hz }, harvest: true,
-    mapFit: { scale: 0.458, center: { x: -37.4, z: -9.7 }, minY: -2.5, offX: -18 },
-    spawnStart: { x: 4, z: 12 },
+    id: 'tutorial', B: 24, bounds: { hx, hz }, arena: true, lavaRing: true,
+    floorColor: 0x2c3644, gridColor1: 0x4f7c92, gridColor2: 0x26313c, accent: 0x35e0d0, edgeColor: 0x35e0d0,
+    spawnStart: { x: 0, z: 8 },
+    walls: [], platforms: [], covers: [[-12, -6], [12, -6], [0, -12]],
+    cores: [],
+    spawns: [[-18, -10], [18, -10], [0, -14], [-18, 4], [18, 4]],
+    crates: [[-9, 3]],
+    fog: { color: 0x0c1218, near: 55, far: 150 }, bg: 0x141c26,
+    light: { hemi: 0.75, dir: 1.6 },
+  };
+}
+
+// MAIN = the URBAN city map (chicken_gun_fruzer city GLB). It is a long avenue
+// (~125×569 in model space, centered (5,-220), floor y=-18.6); a hand-tuned
+// transform drops a playable section onto the bounds. Building collision is
+// harvested (size-capped).
+export function cityLevel() {
+  const hx = 40, hz = 40;
+  return {
+    id: 'main', B: 40, bounds: { hx, hz }, harvest: true,
+    // Fit to the BUILDING block (House/Bank/Church cluster: center (6,-4.6),
+    // ~123×137, floor y=-18.6). Meme props (giant Shrek head etc.) are hidden.
+    mapFit: { scale: 0.6, center: { x: 6, z: -4.6 }, minY: -18.6 },
+    spawnStart: { x: 0, z: 28 },
     walls: [], platforms: [], covers: [],
-    cores: [{ x: -18, z: -8 }, { x: 30, z: 6 }],
-    portal: { x: 6, z: -12, to: 'boss' },
-    spawns: [[-28, -12], [36, -12], [-28, 12], [36, 12], [4, -13], [-30, 2], [40, 0]],
-    crates: [[-14, 8], [18, -6], [-6, -10], [16, 8], [6, 2], [-10, -6], [32, 4], [26, -8]],
-    fog: { color: 0x0a0e14, near: 80, far: 220 }, bg: 0x1a2230,
-    light: { hemi: 0.55, dir: 1.5 },
+    cores: [{ x: -22, z: -12 }, { x: 24, z: -10 }],
+    portal: { x: 0, z: -30, to: 'boss' },
+    spawns: [[-34, -28], [34, -28], [-34, 24], [34, 24], [0, -34], [-36, 0], [36, 0]],
+    crates: [[-16, 10], [18, -8], [-6, -14], [14, 12], [4, 4], [-26, -4], [28, 6]],
+    fog: { color: 0x0a0e14, near: 70, far: 230 }, bg: 0x1a2230,
+    light: { hemi: 0.6, dir: 1.6 },
   };
 }
 
@@ -63,8 +83,9 @@ export function bossArenaLevel() {
 // Map registry: optional GLB backdrop model + level builder. `model: null` =
 // pure procedural arena (no GLB). Referenced by Game map handling.
 export const MAPS = {
-  main: { id: 'main', model: ASSETS.map, build: townLevel }, // lava town GLB (4 MB)
-  boss: { id: 'boss', model: null, build: bossArenaLevel },  // pure arena → instant portal
+  tutorial: { id: 'tutorial', model: null, build: tutorialLevel },       // small tiled bay
+  main: { id: 'main', model: ASSETS.cityMap, build: cityLevel },         // urban city GLB
+  boss: { id: 'boss', model: null, build: bossArenaLevel },              // pure arena
 };
 
 // Procedural fallback arena (used only if a map GLB fails to load).

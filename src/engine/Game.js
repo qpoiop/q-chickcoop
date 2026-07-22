@@ -116,7 +116,7 @@ export class Game {
     this.fx = { shake: 0, freeze: 0, tScale: 1, tTarget: 1, fov: 0, muzzle: 0, dashT: 0, iframe: 0, dashDir: new THREE.Vector3(), recoil: 0, hitPunch: 0, camKick: new THREE.Vector3() };
 
     this._iconTex = {};
-    this.mapId = 'main';
+    this.mapId = 'tutorial'; // maps load per-run via _goToMap; arena fallback for the home bg
     this._buildWorld();
     this._buildPlayer();
     this._bindInput();
@@ -126,7 +126,7 @@ export class Game {
     this._loadEnemyModels();
     this._loadWeaponModels();
     this._loadEffectModels();
-    this._loadMap();
+    this._warmMap(MAPS.main.model); // preload the city GLB in the background
 
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: CONFIG.spawn.grace };
     this.refresh();
@@ -419,15 +419,11 @@ export class Game {
     }
   }
 
-  // Initial map setup on boot. A map may be a pure procedural arena (model:null)
-  // or have a decorative GLB backdrop.
-  async _loadMap() {
-    if (this._mapReady) return; this._mapReady = true;
-    const entry = MAPS[this.mapId], level = entry.build();
-    if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
-    if (this._dead) return;
-    this._buildWorld();
-    if (this.player) { const sp = level.spawnStart || { x: 0, z: 0 }; this.player.position.set(sp.x, 0, sp.z); }
+  // Preload a map GLB into the cache (background) so entering it is instant.
+  async _warmMap(url) {
+    if (!url) return; this._mapSrc = this._mapSrc || {};
+    if (this._mapSrc[url]) return;
+    const g = await loadGLB(url); if (g && !this._dead) this._mapSrc[url] = g.scene;
   }
 
   // Fog / background / light for a modelless arena.
@@ -444,11 +440,20 @@ export class Game {
   // the town fills the bounds. `level.mapFit.scale` (+off/groundY/yaw) overrides
   // the auto-fit for hand-tuned maps.
   async _loadMapModel(url, level) {
-    const g = await loadGLB(url); if (!g || this._dead) return null;
-    const m = g.scene;
+    // cache the raw scene so re-entering a map doesn't re-download it (the city
+    // is 25 MB); map geometry is static, so a plain clone is safe.
+    this._mapSrc = this._mapSrc || {};
+    let src = this._mapSrc[url];
+    if (!src) { const g = await loadGLB(url); if (!g || this._dead) return null; src = g.scene; this._mapSrc[url] = src; }
+    const m = src.clone(true);
     m.traverse((o) => {
       if (!o.isMesh) return;
       if (/Invisible|collider|collision/i.test(o.name)) { o.visible = false; o.castShadow = false; o.receiveShadow = false; return; }
+      // hide meme props embedded in these scene-rip GLBs (giant Shrek head,
+      // zombies, meme photos) — identified by material name.
+      const mm = Array.isArray(o.material) ? o.material[0] : o.material;
+      const mn = (mm && mm.name) || '';
+      if (/shrek|zombie|shrig|skibidi|toilet|maib|metkeys|photo_/i.test(mn) || /shrek|zombie|skibidi/i.test(o.name)) { o.visible = false; return; }
       o.receiveShadow = true; o.castShadow = true;
       if (o.material) o.material.metalness = Math.min(o.material.metalness ?? 0, 0.2);
     });
@@ -592,41 +597,38 @@ export class Game {
     this._event(t('evt.portal')); this.fx.shake = 0.6; this.audio.levelUp();
   }
 
-  // Fade-through map transition to the target map id (Duckcoop-style portal).
-  async _enterPortal(to) {
+  _enterPortal(to) { return this._goToMap(to); }
+
+  // Fade-through transition to any map (tutorial → city → boss, or restart).
+  // Clears the run's transient entities, swaps the map, rebuilds, sets the
+  // objective, and spawns the boss when entering the boss arena.
+  async _goToMap(to) {
     if (this._transitioning) return; this._transitioning = true;
-    this.audio.ui(); this._fade(1, 260);
+    this.audio.ui(); this._fade(1, 240);
     if (this.dom.trans) this.dom.trans.style.display = 'grid';
-    await new Promise((r) => setTimeout(r, 300));
-    // clear all transient entities + their hp bars
+    await new Promise((r) => setTimeout(r, 260));
     this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
     for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.itemDrops || []]) {
       arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
     }
-    this.boss = null; this.state.bossActive = false; this.hud.hideCast();
+    this.boss = null; this.state.bossActive = false; this.hud.hideCast(); this.portalObj = null;
     if (this.map) { this.scene.remove(this.map); this.map = null; }
     this.mapId = to;
     const entry = MAPS[to], level = entry.build();
     if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
+    if (this._dead) { this._transitioning = false; return; }
     this._buildWorld(); this._buildPlayer();
     if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
-    this.game.spawnT = 2.5;
-    await new Promise((r) => setTimeout(r, 350)); // let the new map settle a beat
+    else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
+    else if (to === 'main') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
+    this.game.spawnT = 2.5; this.game.fireT = 0;
+    await new Promise((r) => setTimeout(r, 260));
     if (this.dom.trans) this.dom.trans.style.display = 'none';
-    this._fade(0, 500);
+    this._fade(0, 450);
     this._transitioning = false; this.refresh();
   }
 
   _fade(to, ms) { const el = this.dom.fade; if (!el) return; el.style.transition = `opacity ${ms}ms`; el.style.opacity = to; }
-
-  // Reload the main map after a run that ended on the boss map (async).
-  async _reloadMain() {
-    const entry = MAPS.main, level = entry.build();
-    if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
-    if (this._dead) return;
-    this._buildWorld(); this._buildPlayer();
-    if (this.player) { const sp = level.spawnStart; this.player.position.set(sp.x, 0, sp.z); }
-  }
 
   // Spawn the green extraction portal after the boss dies on the boss map.
   _revealExtraction() {
@@ -896,31 +898,25 @@ export class Game {
     this.refresh();
   }
 
+  // Start a fresh run. Tutorial runs on the small training bay; skipping (or a
+  // redeploy) drops straight into the city. _goToMap does the map load + build.
   _reset(tutorial) {
-    this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
-    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.itemDrops || []]) {
-      arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
-    }
-    this.hud.hideCast(); this.portalObj = null;
-    this.boss = null; this.state.bossActive = false;
-    // a run always restarts on the main map — reload it if we ended on the boss map
-    const backToMain = this.map && this.mapId !== 'main';
-    this.mapId = 'main';
-    if (backToMain) { this.scene.remove(this.map); this.map = null; this._reloadMain(); }
-    this._buildWorld(); this._buildPlayer();
     this._tut = !!tutorial;
-    Object.assign(this.state, this._freshState(), { started: true, objectiveKey: this._tut ? 'tut:0' : 'obj.coreA', tutorial: this._tut });
+    Object.assign(this.state, this._freshState(), { started: true, tutorial: this._tut });
     this.tut = { step: 0, move: 0, shots: 0, dashed: false, killBase: 0, timer: 0, dummied: false };
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: this._tut ? CONFIG.spawn.tutGrace : CONFIG.spawn.grace };
     this.fx = { shake: 0, freeze: 0, tScale: 1, tTarget: 1, fov: 0, muzzle: 0, dashT: 0, iframe: 0, dashDir: new THREE.Vector3(), recoil: 0, hitPunch: 0, camKick: new THREE.Vector3() };
     this.refresh();
+    this._goToMap(this._tut ? 'tutorial' : 'main');
   }
 
   _tutAdvance() {
     if (!this._tut) return; this.tut.step++; const s = this.tut.step;
     if (s >= TUTORIAL.length) {
-      this._tut = false; this._tutSeen = true; this.state.tutorial = false; this.state.objectiveKey = 'obj.coreA';
-      this.game.grace = 1.2; this.game.spawnT = 1; this._event(t('evt.tutDone')); this.refresh(); return;
+      this._tut = false; this._tutSeen = true; this.state.tutorial = false;
+      this._event(t('evt.tutDone'));
+      this._goToMap('main'); // training done → cross into the city
+      return;
     }
     const step = TUTORIAL[s]; this.state.objectiveKey = 'tut:' + s; this._event(getLang() === 'ko' ? (step.toastKo || '') : (step.toast || '')); this.tut.killBase = this.state.kills; this.tut.timer = 0;
     if (s === 3) this._spawnItemDrop({ x: this.player.position.x + Math.cos(this.face) * 6, z: this.player.position.z + Math.sin(this.face) * 6 }, 'weapon');
