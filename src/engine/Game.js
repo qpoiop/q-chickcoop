@@ -53,6 +53,7 @@ export class Game {
       started: false, ended: false, win: false, panel: 'none',
       level: 1, hp: 100, maxHp: CONFIG.player.baseMaxHp, xp: 0, xpToNext: CONFIG.progress.xpToNext,
       gold: 0, kills: 0, time: 0, skillPoints: 0, weapon: 'flare', ranks: {},
+      killStreak: 0, streakBest: 0,
       dashCharges: 2, dashMax: 2, objectiveKey: 'obj.coreA', cores: 0,
       prompt: null, promptKey: 'E', bossActive: false, bossHp: 0, bossMax: 1, bossName: '',
       owned: { flare: true }, tutorial: false,
@@ -1104,6 +1105,9 @@ export class Game {
     this._updateEnemyBullets(dt);
     this._updatePickups(dt, md);
 
+    // kill-streak window: reset the combo if no kill lands in time
+    if (this.state.killStreak > 0) { this.game.streakT -= dt; if (this.game.streakT <= 0) { this.state.killStreak = 0; this.hud.hideCombo(); } }
+
     // channeled interaction (hold E / USE to fill the gauge) + core pulse
     this._updateChannel(dt);
     this.interact.forEach((x) => {
@@ -1233,6 +1237,11 @@ export class Game {
 
       if (u.hp <= 0) {
         this.state.kills++; this.audio.kill();
+        // kill-streak / combo: consecutive kills inside a rolling window
+        this.state.killStreak = (this.state.killStreak || 0) + 1;
+        this.game.streakT = 2.8;
+        if (this.state.killStreak > (this.state.streakBest || 0)) this.state.streakBest = this.state.killStreak;
+        if (this.state.killStreak >= 2) this.hud.showCombo(this.state.killStreak);
         this._impact(e.position, (u.mesh && u.mesh.material) ? u.mesh.material.color.getHex() : (u.tint || 0xff3b6b), u.boss ? 40 : 11, u.boss ? 11 : 6);
         this._drop(e.position, u.tier);
         if (u.boss) { this._spawnItemDrop(e.position, 'weapon'); this._spawnItemDrop(e.position, 'health'); }
