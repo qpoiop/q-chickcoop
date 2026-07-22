@@ -158,19 +158,18 @@
   <div id="joyBase1" class="joy-base" style="border-color:rgba(53,224,208,.4)"><div id="joyKnob1" class="joy-knob" style="background:rgba(53,224,208,.55);box-shadow:0 0 18px rgba(53,224,208,.6)"></div></div>
   <div id="joyBase2" class="joy-base" style="border-color:rgba(255,176,59,.45)"><div id="joyKnob2" class="joy-knob" style="background:rgba(255,176,59,.6);box-shadow:0 0 18px rgba(255,176,59,.6)"></div></div>
 
-  <!-- update banner (service worker) -->
-  <button id="updateBanner" data-i18n="home.update" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:40;pointer-events:auto;cursor:pointer;font-family:'Rajdhani';font-weight:600;letter-spacing:2px;background:rgba(11,18,26,.95);color:#7ff2e8;border:1px solid #35e0d0;padding:9px 18px;box-shadow:0 0 22px rgba(53,224,208,.3)">⟳ Update available</button>
+  <!-- map-transition fade -->
+  <div id="fadeRef" style="position:absolute;inset:0;z-index:19;background:#06090e;opacity:0;pointer-events:none;transition:opacity .3s"></div>
 
   <!-- ===== START OVERLAY ===== -->
   <div id="startOverlay" style="position:absolute;inset:0;z-index:20;overflow:hidden;background:radial-gradient(90% 90% at 50% 35%,#122028,#06090e 85%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px">
     <div style="position:absolute;left:50%;top:38%;width:min(80vw,760px);height:min(80vw,760px);transform:translate(-50%,-50%);pointer-events:none;background:radial-gradient(circle,rgba(255,140,50,.16),transparent 62%);animation:breathe 6s ease-in-out infinite"></div>
     <div id="startParticles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
 
-    <!-- language switch (top-right) -->
-    <div style="position:absolute;top:18px;right:18px;display:flex;align-items:center;gap:6px;z-index:2">
-      <span data-i18n="home.lang" style="font-size:10px;letter-spacing:2px;color:#5f7486;text-transform:uppercase;margin-right:2px">Language</span>
-      <button id="langEn" class="lang-btn">EN</button>
-      <button id="langKo" class="lang-btn">한국어</button>
+    <!-- language switch (segmented, top-right, safe-area aware) -->
+    <div class="lang-seg" style="position:absolute;top:calc(16px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));z-index:3">
+      <button id="langEn" class="lang-seg-btn">EN</button>
+      <button id="langKo" class="lang-seg-btn">한국어</button>
     </div>
 
     <div style="position:relative">
@@ -211,10 +210,7 @@
     </div>
     <!-- landscape recommendation (iOS can't lock orientation) -->
     <div data-i18n="home.landscape" style="display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:#ffb03b;background:rgba(40,24,8,.5);border:1px solid #5a3410;padding:8px 16px;border-radius:2px;max-width:560px">↻ Landscape mode recommended</div>
-    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center">
-      <button id="btnInstall" data-i18n="home.install" class="link-btn" style="display:none;font-size:13px;color:#7ff2e8;border:1px solid #35e0d0;padding:8px 16px;text-decoration:none">＋ Add to Home Screen</button>
-      <button id="btnSkipTutStart" class="link-btn" style="font-size:13px" data-i18n="home.skip">Skip Tutorial →</button>
-    </div>
+    <button id="btnSkipTutStart" class="link-btn" style="font-size:13px" data-i18n="home.skip">Skip Tutorial →</button>
   </div>
 
   <!-- ===== GAME OVER / WIN ===== -->
@@ -230,6 +226,12 @@
 
   <!-- ===== DYNAMIC PANELS ===== -->
   <div id="panelRoot"></div>
+
+  <!-- bottom toast layer: install / update (over everything, non-blocking) -->
+  <div id="bottomToasts" style="position:absolute;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:41;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none">
+    <button id="updateToast" class="toast-card" style="display:none;pointer-events:auto"><span data-i18n="home.update">Update</span></button>
+    <button id="installToast" class="toast-card" style="display:none;pointer-events:auto"><span data-i18n="home.install">Add to Home Screen</span></button>
+  </div>
 
   <!-- loading -->
   <div id="loading" style="position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:#06090e;color:#7ff2e8;font-family:'Chakra Petch';letter-spacing:4px">LOADING…</div>
