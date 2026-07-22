@@ -20,12 +20,13 @@ export class HUD {
       dashPips: $('hudDashPips'), gold: $('hudGold'), kills: $('hudKills'), time: $('hudTime'),
       objBox: $('hudObjBox'), objLabel: $('hudObjLabel'), objText: $('hudObjText'), skipTut: $('hudSkipTut'),
       weaponIcon: $('hudWeaponIcon'), weaponName: $('hudWeaponName'),
-      skillBadge: $('hudSkillBadge'), prompt: $('hudPrompt'), promptKey: $('hudPromptKey'), promptText: $('hudPromptText'),
+      skillBadge: $('hudSkillBadge'), prompt: $('hudPrompt'), promptKey: $('hudPromptKey'), promptGlyph: $('hudPromptGlyph'), promptText: $('hudPromptText'), promptHint: $('hudPromptHint'),
       touchBtns: $('hudTouchBtns'), hint: $('hudHint'), btnDash: $('btnDash'),
       boss: $('hudBoss'), bossName: $('hudBossName'), bossHp: $('hudBossHp'), bossBar: $('hudBossBar'),
       cast: $('hudCast'), castName: $('hudCastName'), castBar: $('hudCastBar'),
       endTitle: $('endTitle'), endLevel: $('endLevel'), endKills: $('endKills'), endTime: $('endTime'),
       skipStart: $('btnSkipTutStart'), langEn: $('langEn'), langKo: $('langKo'),
+      btnPause: $('btnPause'), pauseOverlay: $('pauseOverlay'), musicState: $('musicState'),
     };
     this._dashCount = -1;
     this._buildStartParticles();
@@ -43,10 +44,17 @@ export class HUD {
     $('btnArsenal').onclick = () => g.openPanel('weapons');
     $('btnSkills').onclick = () => g.openPanel('skills');
     $('btnDash').ontouchstart = (e) => { e.preventDefault(); g._dash(); };
-    $('btnUse').ontouchstart = (e) => { e.preventDefault(); g._use(); };
+    const bu = $('btnUse');
+    const useDown = (e) => { e.preventDefault(); g._touchUseHeld = true; };
+    const useUp = () => { g._touchUseHeld = false; };
+    bu.ontouchstart = useDown; bu.ontouchend = useUp; bu.ontouchcancel = useUp;
     $('hudWeaponBox').onclick = () => g.cycleWeapon(1);
     this.el.langEn.onclick = () => this._setLang('en');
     this.el.langKo.onclick = () => this._setLang('ko');
+    $('btnPause').onclick = () => g.togglePause();
+    $('btnResume').onclick = () => g.togglePause();
+    $('btnMusic').onclick = () => g.toggleMusic();
+    $('btnQuit').onclick = () => g.quitToHome();
   }
 
   _setLang(l) { setLang(l); this.applyI18n(); this.g.audio && this.g.audio.ui && this.g.audio.ui(); this.g.refresh(); }
@@ -105,7 +113,11 @@ export class HUD {
     this._syncDashPips(Math.max(s.dashMax || 2, md.dashchg), s.dashCharges);
 
     e.touchBtns.style.display = this.g.isTouch ? 'flex' : 'none';
-    e.promptKey.textContent = this.g.isTouch ? '⊕' : 'E';
+
+    // pause button + overlay
+    e.btnPause.style.display = (s.started && !s.ended) ? 'block' : 'none';
+    e.pauseOverlay.style.display = (s.panel === 'pause') ? 'flex' : 'none';
+    e.musicState.textContent = this.g.audio.enabled ? 'ON' : 'OFF';
 
     if (s.ended) {
       e.endTitle.textContent = s.win ? t('end.win') : t('end.lose');
@@ -137,8 +149,13 @@ export class HUD {
 
   syncPrompt() {
     const s = this.g.state, e = this.el;
-    if (s.prompt) { e.prompt.style.display = 'flex'; e.promptText.textContent = t(s.prompt); }
-    else e.prompt.style.display = 'none';
+    if (s.prompt) {
+      e.prompt.style.display = 'flex';
+      e.promptText.textContent = t(s.prompt);
+      e.promptGlyph.textContent = this.g.isTouch ? '⊕' : 'E';
+      e.promptKey.style.setProperty('--frac', s.channelFrac || 0);
+      e.promptHint.textContent = (s.channelFrac || 0) > 0.02 ? Math.round((s.channelFrac || 0) * 100) + '%' : t('touch.hold');
+    } else e.prompt.style.display = 'none';
   }
 
   // Boss cast gauge (bottom-center danger meter).

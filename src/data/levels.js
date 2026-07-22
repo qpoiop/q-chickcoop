@@ -18,21 +18,21 @@ import { ASSETS } from './assets.js';
 // First / tutorial map = a clean research-lab arena: tiled floor + teal grid +
 // an energy boundary. Purpose-built (no GLB) so scale/centering are correct.
 export function townLevel() {
-  const hx = 66, hz = 54;
+  const hx = 50, hz = 40;
   return {
-    id: 'main', B: 66, bounds: { hx, hz }, arena: true, lavaRing: true,
+    id: 'main', B: 50, bounds: { hx, hz }, arena: true, lavaRing: true,
     floorColor: 0x3a4552, gridColor1: 0x5a8ea6, gridColor2: 0x2c3b48, accent: 0x35e0d0, edgeColor: 0x35e0d0,
-    spawnStart: { x: 0, z: 44 }, safe: { x: 0, z: 44, r: 8 },
+    spawnStart: { x: 0, z: 32 }, safe: { x: 0, z: 32, r: 7 },
     walls: [
-      { x: -24, z: 6, w: 2, d: 20, h: 2.2 }, { x: 24, z: 6, w: 2, d: 20, h: 2.2 },
-      { x: 0, z: -6, w: 30, d: 2, h: 2.2 }, { x: -40, z: 20, w: 14, d: 2, h: 2.2 }, { x: 40, z: 20, w: 14, d: 2, h: 2.2 },
+      { x: -20, z: 4, w: 2, d: 16, h: 2.2 }, { x: 20, z: 4, w: 2, d: 16, h: 2.2 },
+      { x: 0, z: -6, w: 24, d: 2, h: 2.2 }, { x: -34, z: 16, w: 12, d: 2, h: 2.2 }, { x: 34, z: 16, w: 12, d: 2, h: 2.2 },
     ], platforms: [],
-    covers: [[-28, 10], [28, 10], [-14, -8], [14, -8], [0, 22], [-46, -22], [46, -22], [0, -30], [-30, 32], [30, 32], [-16, 18], [16, 18], [-52, -6], [52, -6]],
-    cores: [{ x: -46, z: -22 }, { x: 46, z: -22 }],
-    portal: { x: 0, z: -44, to: 'boss' },
-    spawns: [[-60, -44], [60, -44], [-60, 38], [60, 38], [0, -48], [-60, 0], [60, 0]],
-    crates: [[-26, 26], [26, 26], [-54, 6], [54, 6], [0, 8], [-18, -34], [18, -34]],
-    fog: { color: 0x0c1218, near: 140, far: 380 }, bg: 0x141c26,
+    covers: [[-24, 8], [24, 8], [-12, -8], [12, -8], [0, 18], [-38, -18], [38, -18], [0, -26], [-26, 26], [26, 26]],
+    cores: [{ x: -38, z: -18 }, { x: 38, z: -18 }],
+    portal: { x: 0, z: -34, to: 'boss' },
+    spawns: [[-44, -34], [44, -34], [-44, 26], [44, 26], [0, -38], [-44, 0], [44, 0]],
+    crates: [[-22, 22], [22, 22], [-42, 4], [42, 4], [0, 6], [-14, -28], [14, -28]],
+    fog: { color: 0x0c1218, near: 120, far: 320 }, bg: 0x141c26,
     light: { hemi: 0.75, dir: 1.7 },
   };
 }

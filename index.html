@@ -99,10 +99,13 @@
       </button>
     </div>
 
-    <!-- interaction prompt -->
-    <div id="hudPrompt" style="display:none;position:absolute;left:50%;bottom:130px;transform:translateX(-50%);align-items:center;gap:10px;background:rgba(8,12,18,.9);border:1px solid #35e0d0;padding:9px 16px;box-shadow:0 0 22px rgba(53,224,208,.3);animation:bob 1.4s infinite">
-      <span id="hudPromptKey" style="width:28px;height:28px;display:grid;place-items:center;border:1.5px solid #35e0d0;color:#7ff2e8;font-family:'Chakra Petch';font-weight:700;font-size:14px">E</span>
-      <span id="hudPromptText" style="font-family:'Rajdhani';font-size:15px;font-weight:600;letter-spacing:1px;color:#dfeef6;text-transform:uppercase"></span>
+    <!-- interaction prompt with hold-to-channel gauge -->
+    <div id="hudPrompt" style="display:none;position:absolute;left:50%;bottom:130px;transform:translateX(-50%);align-items:center;gap:11px;background:rgba(8,12,18,.9);border:1px solid #35e0d0;padding:9px 16px 9px 12px;box-shadow:0 0 22px rgba(53,224,208,.3)">
+      <div id="hudPromptKey" class="prompt-key"><span class="prompt-ring"></span><span id="hudPromptGlyph">E</span></div>
+      <div>
+        <div id="hudPromptText" style="font-family:'Chakra Petch';font-size:15px;font-weight:700;letter-spacing:1px;color:#dfeef6;text-transform:uppercase"></div>
+        <div id="hudPromptHint" style="font-family:'Rajdhani';font-size:10px;letter-spacing:2px;color:#5f7486;text-transform:uppercase">Hold</div>
+      </div>
     </div>
 
     <!-- mobile action buttons: labelled, with press feedback + dash cooldown ring -->
@@ -119,6 +122,9 @@
 
     <!-- controls hint -->
     <div id="hudHint" style="display:none;position:absolute;left:50%;bottom:92px;transform:translateX(-50%);text-align:center;font-size:12px;letter-spacing:3px;color:#5f7486;text-transform:uppercase;animation:pulseGlow 2.2s infinite"></div>
+
+    <!-- pause / settings button -->
+    <button id="btnPause" title="Menu (Esc)" style="display:none;pointer-events:auto;position:absolute;top:18px;left:50%;transform:translateX(-50%);background:rgba(11,18,26,.82);border:1px solid #2a3a4a;color:#9fb1c0;width:40px;height:34px;font-size:14px;cursor:pointer;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)">⏸</button>
   </div>
 
   <!-- damage flash -->
@@ -234,6 +240,15 @@
       <div><div id="endTime" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">0:00</div><div class="end-lbl" data-i18n="end.time">Time</div></div>
     </div>
     <button id="btnRestart" data-i18n="end.redeploy" style="font-family:'Rajdhani';cursor:pointer;margin-top:8px;background:linear-gradient(150deg,#1a4a4a,#0e2a2a);color:#7ff2e8;border:1.5px solid #35e0d0;padding:14px 44px;font-size:18px;font-weight:700;letter-spacing:4px;text-transform:uppercase;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">Redeploy</button>
+  </div>
+
+  <!-- ===== PAUSE / SETTINGS ===== -->
+  <div id="pauseOverlay" style="display:none;position:absolute;inset:0;z-index:26;background:rgba(6,9,14,.92);flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;animation:popIn .2s ease-out">
+    <div class="panel-eyebrow" data-i18n="pause.eyebrow">Paused</div>
+    <h2 class="panel-title" data-i18n="pause.title" style="margin-bottom:8px">SYSTEM MENU</h2>
+    <button id="btnResume" class="menu-btn" data-i18n="pause.resume">Resume</button>
+    <button id="btnMusic" class="menu-btn"><span data-i18n="pause.music">Music</span> · <span id="musicState">ON</span></button>
+    <button id="btnQuit" class="menu-btn danger" data-i18n="pause.quit">Quit to Home</button>
   </div>
 
   <!-- ===== DYNAMIC PANELS ===== -->

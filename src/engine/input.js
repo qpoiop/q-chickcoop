@@ -27,15 +27,17 @@ export class Input {
 
   _bind() {
     const el = this.el;
+    this.useHeld = false;
     this._kd = (e) => {
       const k = e.key.toLowerCase();
       this.keys[k] = true;
       if (k === ' ') { e.preventDefault(); this.cb.onDash(); }
-      if (k === 'e') this.cb.onUse();
+      if (k === 'e') this.useHeld = true; // channeled interact (hold to fill the gauge)
       if (k >= '1' && k <= '9') this.cb.onWeapon && this.cb.onWeapon(+k - 1);
       if (k === 'q') this.cb.onCycle && this.cb.onCycle();
+      if (k === 'escape') this.cb.onPause && this.cb.onPause();
     };
-    this._ku = (e) => { this.keys[e.key.toLowerCase()] = false; };
+    this._ku = (e) => { const k = e.key.toLowerCase(); this.keys[k] = false; if (k === 'e') this.useHeld = false; };
     window.addEventListener('keydown', this._kd);
     window.addEventListener('keyup', this._ku);
 
