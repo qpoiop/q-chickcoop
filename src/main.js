@@ -7,7 +7,7 @@ const $ = (id) => document.getElementById(id);
 const dom = {
   mount: $('mount'),
   flash: $('flashRef'), level: $('levelRef'), event: $('eventRef'),
-  dash: $('dashRef'), low: $('lowRef'), hitDir: $('hitDirRef'), fade: $('fadeRef'),
+  dash: $('dashRef'), low: $('lowRef'), hitDir: $('hitDirRef'), fade: $('fadeRef'), trans: $('transOverlay'),
   joyBase1: $('joyBase1'), joyKnob1: $('joyKnob1'), joyBase2: $('joyBase2'), joyKnob2: $('joyKnob2'),
 };
 

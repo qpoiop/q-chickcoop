@@ -9,10 +9,12 @@
 //   modelMul   : extra scale applied to the fitted GLB
 // ============================================================================
 
+// atkRange = distance it attacks from; windup = telegraph seconds before the
+// hit; ranged tiers keep distance and fire projectiles (projSpeed, cd).
 export const ENEMY_TIERS = [
-  { key: 'grunt', hp: 16, spd: 5.0, dmg: 8,  c: 0xff3b6b, s: 0.90, geo: 'oct', sight: 16, model: 'cute',   modelMul: 1.0 },
-  { key: 'brute', hp: 46, spd: 3.4, dmg: 15, c: 0xff7a5c, s: 1.30, geo: 'box', sight: 14, model: 'little', modelMul: 1.0 },
-  { key: 'drone', hp: 10, spd: 7.4, dmg: 6,  c: 0xffd23f, s: 0.66, geo: 'tet', sight: 22, model: 'drone',  modelMul: 0.72 },
+  { key: 'grunt', hp: 18, spd: 5.2, dmg: 9,  c: 0xff3b6b, s: 0.95, geo: 'oct', sight: 999, model: 'cute',   modelMul: 0.95, atkRange: 1.9, windup: 0.32, atkCd: 0.9 },
+  { key: 'brute', hp: 60, spd: 3.2, dmg: 18, c: 0xff7a5c, s: 1.45, geo: 'box', sight: 999, model: 'little', modelMul: 1.6,  atkRange: 2.4, windup: 0.55, atkCd: 1.3 },
+  { key: 'drone', hp: 16, spd: 4.8, dmg: 10, c: 0xffd23f, s: 0.85, geo: 'tet', sight: 999, model: 'drone',  modelMul: 1.05, ranged: true, atkRange: 24, keep: 15, windup: 0.75, atkCd: 2.2, projSpeed: 22 },
 ];
 
 // ---------------------------------------------------------------------------

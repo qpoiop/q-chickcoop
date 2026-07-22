@@ -156,7 +156,7 @@ export class Panels {
 
     const right = `<div style="text-align:right"><div style="font-family:'Chakra Petch';font-size:30px;font-weight:700;color:#59ff9d;line-height:1">${s.skillPoints}</div><div style="font-size:11px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">${t('tt.points')}</div></div>`;
     const div = this._mount(this._header(t('tt.eyebrow'), t('tt.title'), right) + `
-      <div style="flex:1;overflow:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(10px,1.6vw,22px);align-content:start">${cols}</div>
+      <div style="flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:clamp(10px,1.6vw,22px);align-content:start">${cols}</div>
       <div style="margin-top:14px;display:flex;gap:clamp(10px,2vw,26px);flex-wrap:wrap;padding-top:14px;border-top:1px solid #223140;font-family:'Chakra Petch';font-size:13px;color:#9fb1c0">${statLine}</div>`);
     div.querySelectorAll('[data-buy]').forEach((b) => { b.onclick = () => this.g.buySkill(b.dataset.buy); this._hoverBorder(b); });
   }
