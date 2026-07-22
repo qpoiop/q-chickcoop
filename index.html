@@ -105,10 +105,16 @@
       <span id="hudPromptText" style="font-family:'Rajdhani';font-size:15px;font-weight:600;letter-spacing:1px;color:#dfeef6;text-transform:uppercase"></span>
     </div>
 
-    <!-- mobile action buttons -->
-    <div id="hudTouchBtns" style="display:none;position:absolute;right:22px;bottom:100px;flex-direction:column;gap:14px;pointer-events:auto">
-      <button id="btnUse" class="touch-btn" style="width:70px;height:70px;border-color:#59ff9d;color:#59ff9d;font-size:13px">USE</button>
-      <button id="btnDash" class="touch-btn" style="width:82px;height:82px;border-color:#35e0d0;color:#7ff2e8;font-size:15px;box-shadow:0 0 18px rgba(53,224,208,.3)">DASH</button>
+    <!-- mobile action buttons: labelled, with press feedback + dash cooldown ring -->
+    <div id="hudTouchBtns" style="display:none;position:absolute;right:calc(20px + env(safe-area-inset-right));bottom:calc(96px + env(safe-area-inset-bottom));flex-direction:column;gap:16px;align-items:center;pointer-events:auto">
+      <div class="touch-wrap">
+        <button id="btnUse" class="touch-btn use">⊕</button>
+        <span class="touch-cap" data-i18n="touch.use">Interact</span>
+      </div>
+      <div class="touch-wrap">
+        <button id="btnDash" class="touch-btn dash"><span class="dash-cool"></span><span class="dash-glyph">⇢</span></button>
+        <span class="touch-cap" data-i18n="touch.dash">Dodge</span>
+      </div>
     </div>
 
     <!-- controls hint -->
