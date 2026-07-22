@@ -1,6 +1,6 @@
-# Only the lava town map is used (4 MB). Exclude the heavy/unused scene models.
+# The urban city map is the main stage. Exclude the other unused scene models.
+scene/chicken_gun___lava.glb
 scene/skibidi_toilet_77_map.glb
-scene/chicken_gun_fruzer_-_city.glb
+scene/low_poly_forest_1.glb
 scene/chicken_gun_fruzer_-_city/
 scene/chicken_gun_fruzer_dark_forest/
-scene/low_poly_forest_1.glb

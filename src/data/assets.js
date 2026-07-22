@@ -39,9 +39,8 @@ export const ASSETS = {
     storm: p('effect/lightningv1.glb'),
   },
 
-  // Level geometry — main (lava town) + boss (detailed city) maps
-  map: p('scene/chicken_gun___lava.glb'),
-  bossMap: p('scene/chicken_gun_fruzer_-_city.glb'),
+  // Level geometry — urban city map for the main 시가전 stage.
+  cityMap: p('scene/chicken_gun_fruzer_-_city.glb'),
 
   // Audio
   bgm: p('bgm/leberch-comedy-cartoon-375836.mp3'),
