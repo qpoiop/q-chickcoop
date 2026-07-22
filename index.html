@@ -99,17 +99,17 @@
       </button>
     </div>
 
-    <!-- interaction prompt with hold-to-channel gauge -->
-    <div id="hudPrompt" style="display:none;position:absolute;left:50%;bottom:130px;transform:translateX(-50%);align-items:center;gap:11px;background:rgba(8,12,18,.9);border:1px solid #35e0d0;padding:9px 16px 9px 12px;box-shadow:0 0 22px rgba(53,224,208,.3)">
+    <!-- interaction prompt: world-anchored above the target (position set by JS) -->
+    <div id="hudPrompt" style="display:none;position:absolute;left:0;top:0;transform:translate(-50%,-100%);flex-direction:column;align-items:center;gap:4px;filter:drop-shadow(0 2px 10px rgba(0,0,0,.6))">
       <div id="hudPromptKey" class="prompt-key"><span class="prompt-ring"></span><span id="hudPromptGlyph">E</span></div>
-      <div>
-        <div id="hudPromptText" style="font-family:'Chakra Petch';font-size:15px;font-weight:700;letter-spacing:1px;color:#dfeef6;text-transform:uppercase"></div>
-        <div id="hudPromptHint" style="font-family:'Rajdhani';font-size:10px;letter-spacing:2px;color:#5f7486;text-transform:uppercase">Hold</div>
+      <div style="display:flex;flex-direction:column;align-items:center;background:rgba(8,12,18,.86);border:1px solid #35e0d0;padding:3px 10px;border-radius:2px">
+        <div id="hudPromptText" style="font-family:'Chakra Petch';font-size:13px;font-weight:700;letter-spacing:1px;color:#dfeef6;text-transform:uppercase"></div>
+        <div id="hudPromptHint" style="font-family:'Rajdhani';font-size:9px;letter-spacing:2px;color:#7ff2e8;text-transform:uppercase">Hold</div>
       </div>
     </div>
 
-    <!-- mobile action buttons: labelled, with press feedback + dash cooldown ring -->
-    <div id="hudTouchBtns" style="display:none;position:absolute;right:calc(20px + env(safe-area-inset-right));bottom:calc(96px + env(safe-area-inset-bottom));flex-direction:column;gap:16px;align-items:center;pointer-events:auto">
+    <!-- mobile action buttons: compact horizontal row, bottom-right thumb zone -->
+    <div id="hudTouchBtns" style="display:none;position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(58px + env(safe-area-inset-bottom));flex-direction:row;gap:14px;align-items:flex-end;pointer-events:auto">
       <div class="touch-wrap">
         <button id="btnUse" class="touch-btn use">⊕</button>
         <span class="touch-cap" data-i18n="touch.use">Interact</span>
