@@ -120,8 +120,12 @@ over many unverified ones. Log what was done + what's next at the bottom.
       stashed on `this._streetSpawn` (map-keyed) because `_buildWorld` rebuilds
       `this.L` from a fresh `entry.build()`. Verified: player at (-2,8) on BG_01
       road, y=0, no console errors.
-- [ ] Verify player cannot walk off the map edge (bounds vs actual ground extent);
-      add perimeter blockers if needed.
+- [x] **Walk-off-map guard** (2026-07-23): the ±62 bounds square overshot the city
+      footprint (55/1024 sampled cells were void). `_loadMapModel` now builds a
+      coarse walkable grid (ground near street level only) once at load; movement
+      does an O(1) `_walkable` lookup with per-axis slide, blocking void + rooftops.
+      Verified: void points blocked, both cores + portal reachable, streets
+      traversable, no errors.
 - [ ] Mobile-landscape home: confirm/fix Deploy button clipping at 844×390 & 915×412.
 
 ### P1 — Duckcoop-feel core
@@ -148,4 +152,8 @@ over many unverified ones. Log what was done + what's next at the bottom.
   Deployed (PR #10).
 - 2026-07-23 (hourly loop #1) — P0 street-level spawn: player boots onto the road,
   not a rooftop. Fixed the `this.L` rebuild bug that discarded the computed spawn.
-  Gates 1–3 green, no console errors. **Next:** P0 walk-off-map-edge guard.
+  Gates 1–3 green, no console errors.
+- 2026-07-23 (hourly loop #2) — P0 walk-off-map guard: coarse walkable grid built
+  at load (street-level ground only); O(1) per-frame lookup blocks void/rooftops.
+  Verified void blocked + objectives reachable + streets traversable. **Next:** P0
+  mobile-landscape Deploy-button clipping.

@@ -519,8 +519,35 @@ export class Game {
     // 0) stands on it — robust against per-model pivot/scale (fixes sinking).
     const gh = probe(sp.x, sp.z);
     if (gh) { m.position.y -= gh.point.y; this._mapGroundY = 0; }
+
+    // Walkable grid: sample the (now snapped) map on a coarse cell grid and mark a
+    // cell walkable only where there is ground near STREET level. This blocks
+    // walking off the edge into the void AND onto tall rooftops — bounds alone are
+    // a square that overshoots the actual city footprint. Built once at load;
+    // per-frame movement does a cheap O(1) lookup (see _walkable / _simulate).
+    this._walk = null;
+    if (level.harvest && level.bounds) {
+      m.updateMatrixWorld(true);
+      const cell = 3, bx2 = level.bounds.hx, bz2 = level.bounds.hz;
+      const nx = Math.ceil((bx2 * 2) / cell) + 1, nz = Math.ceil((bz2 * 2) / cell) + 1;
+      const bits = new Uint8Array(nx * nz);
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+        const x = -bx2 + i * cell, z = -bz2 + j * cell; const h = probe(x, z);
+        if (h && h.point.y > -3 && h.point.y < 5) bits[j * nx + i] = 1;
+      }
+      this._walk = { cell, bx: bx2, bz: bz2, nx, nz, bits };
+    }
     this._applyLevelEnv(level);
     return m;
+  }
+
+  // O(1) walkable lookup against the grid built in _loadMapModel. Non-harvest
+  // (procedural) maps have no grid → everything within bounds is walkable.
+  _walkable(x, z) {
+    const w = this._walk; if (!w) return true;
+    const i = Math.round((x + w.bx) / w.cell), j = Math.round((z + w.bz) / w.cell);
+    if (i < 0 || j < 0 || i >= w.nx || j >= w.nz) return false;
+    return w.bits[j * w.nx + i] === 1;
   }
 
   _harvestMapCollision() {
@@ -1031,7 +1058,15 @@ export class Game {
     const base = CONFIG.player.moveSpeed * md.spd * sprint;
     if (fx.dashT > 0) this.vel.set(this.fx.dashDir.x * CONFIG.player.dashSpeed, 0, this.fx.dashDir.z * CONFIG.player.dashSpeed);
     else { const target = new THREE.Vector3(ix * base, 0, iz * base); this.vel.lerp(target, Math.min(1, rdt * CONFIG.player.accel)); }
-    const np = this.player.position.clone().addScaledVector(this.vel, dt); this._collide(np, CONFIG.player.radius); this.player.position.copy(np);
+    const np = this.player.position.clone().addScaledVector(this.vel, dt); this._collide(np, CONFIG.player.radius);
+    // stay on walkable street ground (block void / rooftops), sliding per-axis
+    if (this._walk && !this._walkable(np.x, np.z)) {
+      const cur = this.player.position;
+      if (this._walkable(np.x, cur.z)) np.z = cur.z;
+      else if (this._walkable(cur.x, np.z)) np.x = cur.x;
+      else { np.x = cur.x; np.z = cur.z; }
+    }
+    this.player.position.copy(np);
 
     // dash regen
     if (this.state.dashCharges < md.dashchg) { this.game._dregen = (this.game._dregen || 0) + dt; const cd = CONFIG.player.dashRegen * md.dashcd; this.game.dashFrac = Math.min(1, this.game._dregen / cd); if (this.game._dregen >= cd) { this.game._dregen = 0; this.state.dashCharges++; } } else this.game.dashFrac = 1;
