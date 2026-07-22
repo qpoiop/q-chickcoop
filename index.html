@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>CHICKCOPE — Barnyard Override</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="root" id="root">
+
+  <div id="mount" class="mount"></div>
+
+  <!-- dash vignette pulse -->
+  <div id="dashRef" class="fx-layer" style="z-index:3;background:radial-gradient(circle,transparent 40%,rgba(53,224,208,.28) 100%);opacity:0;transition:opacity .12s"></div>
+  <!-- vignette -->
+  <div class="fx-layer" style="background:radial-gradient(120% 90% at 50% 44%,transparent 52%,rgba(4,7,11,.78) 100%);z-index:2"></div>
+  <!-- low-hp pulse -->
+  <div id="lowRef" class="fx-layer" style="z-index:3;box-shadow:inset 0 0 160px rgba(255,59,107,.55);opacity:0"></div>
+
+  <!-- ===== HUD ===== -->
+  <div class="fx-layer" style="z-index:5">
+
+    <!-- top-left: level + bars + dash -->
+    <div style="position:absolute;top:18px;left:20px;display:flex;flex-direction:column;gap:9px;width:min(340px,44vw)">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div class="hex-badge">
+          <span id="hudLevel" style="font-family:'Chakra Petch';font-weight:700;font-size:20px;color:#7ff2e8;line-height:1">1</span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">
+            <span>HULL</span><span id="hudHpTxt" style="font-family:'Chakra Petch';color:#dfeef6">100 / 100</span>
+          </div>
+          <div style="height:11px;background:#0e1620;border:1px solid #223140;position:relative;overflow:hidden;clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%)">
+            <div id="hudHpBar" style="position:absolute;inset:0;transform-origin:left;transform:scaleX(1);background:linear-gradient(90deg,#ff3b6b,#ff7a5c);box-shadow:0 0 12px rgba(255,59,107,.6);transition:transform .12s"></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;padding-left:55px">
+        <div style="height:6px;background:#0e1620;border:1px solid #1c2a38;position:relative;overflow:hidden">
+          <div id="hudXpBar" style="position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#35e0d0,#59ff9d);box-shadow:0 0 10px rgba(53,224,208,.6);transition:transform .18s"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:10px;letter-spacing:2px;color:#5f7486;text-transform:uppercase">Dash</span>
+          <div id="hudDashPips" style="display:flex;gap:4px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- top-right: stats + objective -->
+    <div style="position:absolute;top:18px;right:20px;display:flex;flex-direction:column;align-items:flex-end;gap:9px">
+      <div style="display:flex;gap:9px">
+        <div class="stat-chip">
+          <div style="font-size:10px;letter-spacing:2px;color:#8a7c3a;text-transform:uppercase">Scrap</div>
+          <div id="hudGold" style="font-family:'Chakra Petch';font-size:19px;font-weight:700;color:#ffd23f;line-height:1.1">0</div>
+        </div>
+        <div class="stat-chip">
+          <div style="font-size:10px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Kills</div>
+          <div id="hudKills" style="font-family:'Chakra Petch';font-size:19px;font-weight:700;color:#dfeef6;line-height:1.1">0</div>
+        </div>
+        <div class="stat-chip" style="min-width:0">
+          <div style="font-size:10px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Time</div>
+          <div id="hudTime" style="font-family:'Chakra Petch';font-size:19px;color:#bcd;line-height:1.1">0:00</div>
+        </div>
+      </div>
+      <div id="hudObjBox" style="background:rgba(11,18,26,.82);border:1px solid #223140;border-left:2px solid #35e0d0;padding:7px 13px;max-width:300px;text-align:right">
+        <div id="hudObjLabel" style="font-size:10px;letter-spacing:3px;color:#35e0d0;text-transform:uppercase">Objective</div>
+        <div id="hudObjText" style="font-family:'Rajdhani';font-size:14px;font-weight:600;color:#dfeef6">Breach Data Core A</div>
+        <button id="hudSkipTut" class="link-btn" style="pointer-events:auto;display:none;margin-top:5px">Skip Tutorial →</button>
+      </div>
+    </div>
+
+    <!-- weapon readout bottom-left -->
+    <div style="position:absolute;bottom:18px;left:20px;display:flex;align-items:center;gap:11px;background:rgba(11,18,26,.82);border:1px solid #2a3a4a;padding:9px 14px;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%)">
+      <div id="hudWeaponIcon" style="width:34px;height:34px;display:grid;place-items:center;border:1.5px solid #ffb03b;color:#ffb03b;font-family:'Chakra Petch';font-weight:700;box-shadow:0 0 12px rgba(255,176,59,.5)">☄</div>
+      <div>
+        <div style="font-size:11px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Weapon</div>
+        <div id="hudWeaponName" style="font-family:'Chakra Petch';font-size:16px;font-weight:600;color:#dfeef6;letter-spacing:1px">Cork Popper</div>
+      </div>
+    </div>
+
+    <!-- action buttons bottom-right -->
+    <div style="position:absolute;bottom:18px;right:20px;display:flex;gap:10px;pointer-events:auto">
+      <button id="btnInventory" class="hud-btn">Inventory</button>
+      <button id="btnArsenal" class="hud-btn">Arsenal</button>
+      <button id="btnSkills" class="hud-btn" style="position:relative">
+        Tech Tree
+        <span id="hudSkillBadge" style="display:none;position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;place-items:center;background:#35e0d0;color:#062;font-family:'Chakra Petch';font-weight:700;font-size:12px;border-radius:10px;animation:pulseGlow 1.4s infinite">0</span>
+      </button>
+    </div>
+
+    <!-- interaction prompt -->
+    <div id="hudPrompt" style="display:none;position:absolute;left:50%;bottom:130px;transform:translateX(-50%);align-items:center;gap:10px;background:rgba(8,12,18,.9);border:1px solid #35e0d0;padding:9px 16px;box-shadow:0 0 22px rgba(53,224,208,.3);animation:bob 1.4s infinite">
+      <span id="hudPromptKey" style="width:28px;height:28px;display:grid;place-items:center;border:1.5px solid #35e0d0;color:#7ff2e8;font-family:'Chakra Petch';font-weight:700;font-size:14px">E</span>
+      <span id="hudPromptText" style="font-family:'Rajdhani';font-size:15px;font-weight:600;letter-spacing:1px;color:#dfeef6;text-transform:uppercase"></span>
+    </div>
+
+    <!-- mobile action buttons -->
+    <div id="hudTouchBtns" style="display:none;position:absolute;right:22px;bottom:100px;flex-direction:column;gap:14px;pointer-events:auto">
+      <button id="btnUse" class="touch-btn" style="width:70px;height:70px;border-color:#59ff9d;color:#59ff9d;font-size:13px">USE</button>
+      <button id="btnDash" class="touch-btn" style="width:82px;height:82px;border-color:#35e0d0;color:#7ff2e8;font-size:15px;box-shadow:0 0 18px rgba(53,224,208,.3)">DASH</button>
+    </div>
+
+    <!-- controls hint -->
+    <div id="hudHint" style="display:none;position:absolute;left:50%;bottom:92px;transform:translateX(-50%);text-align:center;font-size:12px;letter-spacing:3px;color:#5f7486;text-transform:uppercase;animation:pulseGlow 2.2s infinite"></div>
+  </div>
+
+  <!-- damage flash -->
+  <div id="flashRef" class="fx-layer" style="z-index:6;background:radial-gradient(circle,transparent 55%,rgba(255,59,107,.55) 100%);opacity:0;transition:opacity .12s"></div>
+
+  <!-- damage direction indicator -->
+  <div id="hitDirRef" style="position:absolute;left:50%;top:50%;width:0;height:0;z-index:6;pointer-events:none;opacity:0;transition:opacity .2s">
+    <div style="position:absolute;left:-26px;top:-150px;width:52px;height:64px;transform-origin:26px 176px;background:radial-gradient(ellipse at 50% 0,rgba(255,59,107,.9),rgba(255,59,107,0) 70%);clip-path:polygon(50% 0,100% 60%,50% 42%,0 60%)"></div>
+  </div>
+
+  <!-- boss health bar -->
+  <div id="hudBoss" style="display:none;position:absolute;top:96px;left:50%;transform:translateX(-50%);z-index:6;width:min(560px,64vw);pointer-events:none;text-align:center">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+      <span style="font-size:11px;letter-spacing:4px;color:#ff2d55;text-transform:uppercase">⚠ Boss</span>
+      <span id="hudBossName" style="font-family:'Chakra Petch';font-weight:700;font-size:15px;letter-spacing:3px;color:#ffd0d8;text-transform:uppercase">PRIME ROOSTER</span>
+      <span id="hudBossHp" style="font-family:'Chakra Petch';font-size:13px;color:#ff8fa3"></span>
+    </div>
+    <div style="height:13px;background:#180a10;border:1px solid #5a2230;position:relative;overflow:hidden;clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,8px 100%)">
+      <div id="hudBossBar" style="position:absolute;inset:0;transform-origin:left;transform:scaleX(1);background:linear-gradient(90deg,#ff2d55,#ff7a5c);box-shadow:0 0 16px rgba(255,45,85,.7);transition:transform .12s"></div>
+    </div>
+  </div>
+
+  <!-- level-up toast -->
+  <div id="levelRef" style="position:absolute;left:50%;top:24%;transform:translateX(-50%);z-index:7;pointer-events:none;opacity:0;text-align:center">
+    <div style="font-family:'Chakra Petch';font-weight:700;font-size:34px;letter-spacing:6px;color:#59ff9d;text-shadow:0 0 24px rgba(89,255,157,.7)">LEVEL UP</div>
+    <div style="font-size:14px;letter-spacing:3px;color:#7ff2e8;text-transform:uppercase">+1 Skill Point</div>
+  </div>
+  <!-- event toast -->
+  <div id="eventRef" style="position:absolute;left:50%;top:34%;transform:translateX(-50%);z-index:7;pointer-events:none;opacity:0;text-align:center;font-family:'Chakra Petch';font-weight:700;font-size:26px;letter-spacing:4px;color:#7ff2e8;text-shadow:0 0 22px rgba(53,224,208,.6)"></div>
+
+  <!-- mobile joysticks -->
+  <div id="joyBase1" class="joy-base" style="border-color:rgba(53,224,208,.4)"><div id="joyKnob1" class="joy-knob" style="background:rgba(53,224,208,.55);box-shadow:0 0 18px rgba(53,224,208,.6)"></div></div>
+  <div id="joyBase2" class="joy-base" style="border-color:rgba(255,176,59,.45)"><div id="joyKnob2" class="joy-knob" style="background:rgba(255,176,59,.6);box-shadow:0 0 18px rgba(255,176,59,.6)"></div></div>
+
+  <!-- ===== START OVERLAY ===== -->
+  <div id="startOverlay" style="position:absolute;inset:0;z-index:20;overflow:hidden;background:radial-gradient(90% 90% at 50% 35%,#122028,#06090e 85%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center;padding:24px">
+    <div style="position:absolute;left:50%;top:38%;width:min(80vw,760px);height:min(80vw,760px);transform:translate(-50%,-50%);pointer-events:none;background:radial-gradient(circle,rgba(255,140,50,.16),transparent 62%);animation:breathe 6s ease-in-out infinite"></div>
+    <div id="startParticles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+
+    <div style="position:relative">
+      <div style="font-size:13px;letter-spacing:9px;color:#ffb03b;text-transform:uppercase;margin-bottom:8px;animation:pulseGlow 3s infinite">Barnyard Override · Action Prototype</div>
+      <h1 style="margin:0;font-family:'Chakra Petch';font-weight:700;font-size:clamp(44px,9vw,100px);line-height:.92;letter-spacing:2px;color:#eef6fb;text-shadow:0 0 46px rgba(255,176,59,.4)">CHICK<span style="color:#ffb03b">COPE</span></h1>
+    </div>
+    <p style="position:relative;max-width:560px;margin:0;font-size:16px;line-height:1.55;color:#c3d2de">You're a battle-chicken dropped into a lava-ringed shanty town. Roam the streets, hold off the swarm of rival birds, grab glowing weapon drops, and cash your scrap for bigger guns in the Arsenal. Level up a branching tech tree, breach the two cores to unlock the gate, and survive the boss to extract.</p>
+    <button id="btnStart" style="position:relative;font-family:'Rajdhani';cursor:pointer;margin-top:4px;background:linear-gradient(150deg,#5a3410,#2a1806);color:#ffd9a0;border:1.5px solid #ffb03b;padding:15px 50px;font-size:20px;font-weight:700;letter-spacing:5px;text-transform:uppercase;box-shadow:0 0 34px rgba(255,176,59,.35);clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">Deploy</button>
+    <div style="position:relative;display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;justify-content:center;max-width:640px">
+      <div class="ctrl-pill">
+        <div style="display:grid;grid-template-columns:repeat(3,20px);grid-template-rows:20px 20px;gap:3px">
+          <span></span><span class="kbd" style="grid-column:2">W</span><span></span>
+          <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
+        </div>
+        <span class="ctrl-lbl">Move</span>
+      </div>
+      <div class="ctrl-pill">
+        <span style="display:grid;place-items:center;width:22px;height:30px;border:1px solid #35506080;border-radius:11px;background:#12222c"><span style="width:2px;height:8px;background:#7ff2e8;margin-top:3px"></span></span>
+        <span class="ctrl-lbl">Aim + Hold&nbsp;Fire</span>
+      </div>
+      <div class="ctrl-pill">
+        <span class="kbd" style="min-width:60px;letter-spacing:2px">SPACE</span>
+        <span class="ctrl-lbl">Dash</span>
+      </div>
+      <div class="ctrl-pill">
+        <span class="kbd" style="width:22px">E</span>
+        <span class="ctrl-lbl">Interact</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px 18px;background:rgba(11,18,26,.5);border:1px solid #223140;border-radius:2px;max-width:600px;flex-wrap:wrap;justify-content:center">
+      <span style="font-size:11px;letter-spacing:3px;color:#ff9a3b;text-transform:uppercase;font-weight:600">Mobile</span>
+      <span style="width:1px;height:14px;background:#2a3a4a"></span>
+      <span style="font-size:12px;letter-spacing:1px;color:#8098a8">Left stick — move</span>
+      <span style="color:#2a3a4a">·</span>
+      <span style="font-size:12px;letter-spacing:1px;color:#8098a8">Right stick — aim &amp; fire</span>
+      <span style="color:#2a3a4a">·</span>
+      <span style="font-size:12px;letter-spacing:1px;color:#8098a8">Auto-fire when idle · DASH / USE</span>
+    </div>
+    <button id="btnSkipTutStart" class="link-btn" style="font-size:13px">Skip Tutorial →</button>
+  </div>
+
+  <!-- ===== GAME OVER / WIN ===== -->
+  <div id="endOverlay" style="display:none;position:absolute;inset:0;z-index:20;background:radial-gradient(80% 80% at 50% 40%,rgba(30,10,16,.7),rgba(6,9,14,.95));flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px;animation:popIn .3s ease-out">
+    <div id="endTitle" style="font-family:'Chakra Petch';font-weight:700;font-size:clamp(40px,9vw,80px);letter-spacing:4px;color:#ff3b6b;text-shadow:0 0 40px rgba(255,59,107,.45)">FRAME DOWN</div>
+    <div style="display:flex;gap:34px;flex-wrap:wrap;justify-content:center">
+      <div><div id="endLevel" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">1</div><div class="end-lbl">Level</div></div>
+      <div><div id="endKills" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">0</div><div class="end-lbl">Kills</div></div>
+      <div><div id="endTime" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">0:00</div><div class="end-lbl">Time</div></div>
+    </div>
+    <button id="btnRestart" style="font-family:'Rajdhani';cursor:pointer;margin-top:8px;background:linear-gradient(150deg,#1a4a4a,#0e2a2a);color:#7ff2e8;border:1.5px solid #35e0d0;padding:14px 44px;font-size:18px;font-weight:700;letter-spacing:4px;text-transform:uppercase;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">Redeploy</button>
+  </div>
+
+  <!-- ===== DYNAMIC PANELS (inventory / arsenal / tech tree) ===== -->
+  <div id="panelRoot"></div>
+
+  <!-- loading -->
+  <div id="loading" style="position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:#06090e;color:#7ff2e8;font-family:'Chakra Petch';letter-spacing:4px">LOADING…</div>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
