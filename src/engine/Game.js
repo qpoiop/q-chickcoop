@@ -108,7 +108,7 @@ export class Game {
     const bloom = new UnrealBloomPass(new THREE.Vector2(mount.clientWidth, mount.clientHeight), CONFIG.render.bloom, 0.7, 0.85);
     this.bloom = bloom; comp.addPass(bloom); comp.addPass(new OutputPass()); this.composer = comp;
 
-    this.enemies = []; this.bullets = []; this.enemyBullets = []; this.orbs = []; this.coins = []; this.parts = []; this.ghosts = []; this.fxSprites = [];
+    this.enemies = []; this.bullets = []; this.enemyBullets = []; this.orbs = []; this.coins = []; this.parts = []; this.ghosts = []; this.fxSprites = []; this.dmgNums = [];
     this.aim = new THREE.Vector3(0, 0, 1); this.face = 0;
     this.vel = new THREE.Vector3(); this.ray = new THREE.Raycaster();
     this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -673,7 +673,7 @@ export class Game {
     if (this.dom.trans) this.dom.trans.style.display = 'grid';
     await new Promise((r) => setTimeout(r, 260));
     this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
-    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.itemDrops || []]) {
+    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.dmgNums || [], this.itemDrops || []]) {
       arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
     }
     this.boss = null; this.state.bossActive = false; this.hud.hideCast(); this.portalObj = null;
@@ -957,7 +957,7 @@ export class Game {
   quitToHome() {
     // stop the run and return to the start screen
     this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
-    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.itemDrops || []]) {
+    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.dmgNums || [], this.itemDrops || []]) {
       arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
     }
     this.hud.hideCast(); this.boss = null;
@@ -1179,6 +1179,7 @@ export class Game {
         if (b.position.distanceTo(e.position) < e.userData.r + 0.3) {
           e.userData.hp -= b.userData.dmg; b.userData.hit.push(e); e.userData.aggro = true;
           this._impact(e.position, b.userData.crit ? 0xffffff : b.userData.col, b.userData.crit ? 7 : 4, 4); e.userData.hitT = 0.08; this.audio.hit();
+          this._damageNumber({ x: e.position.x, y: (e.userData.r || 1) + 1, z: e.position.z }, b.userData.dmg, b.userData.crit);
           if (b.userData.pierce > 0) b.userData.pierce--; else dead = true; break;
         }
       }
@@ -1301,7 +1302,46 @@ export class Game {
     else if (st.step === 5) { st.timer += dt; if (st.timer > 4) this._tutAdvance(); }
   }
 
+  // Floating damage number on a hit. Pooled canvas-texture billboards (reused,
+  // capped at 28 live) so there is no per-hit allocation — mobile-safe juice.
+  _damageNumber(pos, amount, crit) {
+    if (!this.scene) return;
+    this._dmgPool = this._dmgPool || [];
+    let sp;
+    if (this.dmgNums.length >= 28) { sp = this.dmgNums.shift(); }
+    else if (this._dmgPool.length) { sp = this._dmgPool.pop(); }
+    else {
+      const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+      const tex = new THREE.CanvasTexture(c);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false }));
+      sprite.renderOrder = 6; sprite.userData = { c, ctx: c.getContext('2d'), tex };
+      sp = sprite;
+    }
+    const u = sp.userData, ctx = u.ctx, n = Math.max(1, Math.round(amount));
+    ctx.clearRect(0, 0, 128, 64);
+    ctx.font = (crit ? 'bold 48px' : 'bold 36px') + " 'Chakra Petch', Arial, sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 7; ctx.strokeStyle = 'rgba(0,0,0,.9)'; ctx.strokeText(n, 64, 32);
+    ctx.fillStyle = crit ? '#ffd23f' : '#ffffff'; ctx.fillText(n, 64, 32);
+    u.tex.needsUpdate = true;
+    const base = crit ? 2.6 : 1.8;
+    u.base = base; u.life = 0.72; u.max = 0.72; u.vy = 3.6; u.crit = crit;
+    sp.material.opacity = 1;
+    sp.scale.set(base, base * 0.5, 1);
+    sp.position.set(pos.x + (Math.random() - 0.5) * 0.7, (pos.y || 1.3) + 0.7, pos.z + (Math.random() - 0.5) * 0.7);
+    if (!sp.parent) this.scene.add(sp);
+    this.dmgNums.push(sp);
+  }
+
   _animateDetached(rdt) {
+    for (let i = this.dmgNums.length - 1; i >= 0; i--) {
+      const s = this.dmgNums[i], u = s.userData; u.life -= rdt;
+      s.position.y += u.vy * rdt; u.vy = Math.max(0, u.vy - 6 * rdt);
+      const f = Math.max(0, u.life / u.max); s.material.opacity = Math.min(1, f * 1.7);
+      const pop = u.life > u.max - 0.08 ? 1 + (u.max - u.life) * 4 : 1;
+      s.scale.set(u.base * pop, u.base * 0.5 * pop, 1);
+      if (u.life <= 0) { this.scene.remove(s); this.dmgNums.splice(i, 1); this._dmgPool.push(s); }
+    }
     for (let i = this.parts.length - 1; i >= 0; i--) { const p = this.parts[i]; p.userData.life -= rdt; p.userData.v.y -= 10 * rdt; p.position.addScaledVector(p.userData.v, rdt); p.scale.setScalar(Math.max(0.01, p.userData.life * 2.2)); if (p.userData.life <= 0) { this.scene.remove(p); this.parts.splice(i, 1); } }
     for (let i = this.ghosts.length - 1; i >= 0; i--) { const gh = this.ghosts[i]; gh.userData.life -= rdt; gh.material.opacity = Math.max(0, gh.userData.life * 1.6); if (gh.userData.life <= 0) { this.scene.remove(gh); this.ghosts.splice(i, 1); } }
     for (let i = this.fxSprites.length - 1; i >= 0; i--) { const s = this.fxSprites[i]; s.userData.life -= rdt; if (s.userData.mixer) s.userData.mixer.update(rdt); const o = Math.max(0, s.userData.life / s.userData.max); s.traverse((m) => { if (m.isMesh && m.material) m.material.opacity = o * (s.userData.grow ? 0.9 : 1); }); if (s.userData.grow) s.scale.setScalar(0.1 + (1 - o) * s.userData.grow); else s.rotation.y += rdt * 3; if (s.userData.life <= 0) { this.scene.remove(s); this.fxSprites.splice(i, 1); } }
