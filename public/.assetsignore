@@ -1,5 +1,3 @@
-# Oversized / unused source models — not shipped to Cloudflare (25 MiB/file limit).
-scene/skibidi_toilet_77_map.glb
-scene/low_poly_forest_1.glb
-scene/chicken_gun_fruzer_-_city/
-scene/chicken_gun_fruzer_dark_forest/
+# Both maps are pure procedural arenas now — no scene GLBs are loaded at
+# runtime, so none of them ship (keeps the deploy lean, transitions instant).
+scene/
