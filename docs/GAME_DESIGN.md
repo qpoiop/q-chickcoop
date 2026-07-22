@@ -94,8 +94,13 @@ boss arena. Twin-stick controls, weapon progression, roguelite skill tree.
 Each hour, in order. Stop and fix the first failing gate before adding features.
 
 1. **Build gate** — `npm run build` must pass clean.
-2. **Mobile screen check** — serve preview, load in a phone-landscape viewport,
-   screenshot home + gameplay. Confirm no clipping, HUD/controls visible.
+2. **Mobile screen check** — the automation Chrome has a FIXED layout viewport
+   (`resize_window` changes neither `innerWidth` nor the screenshot), so instead
+   **mount the page in an IFRAME** sized to the phone-landscape CSS box (844×390,
+   915×412): the iframe gets its own layout viewport, CSS media queries fire, and
+   `iframe.contentWindow.innerWidth` reads the real width. Measure element rects
+   (`getBoundingClientRect`) for clipping/overflow, and screenshot the iframe for a
+   visual check. This is the verified mobile-render harness — use it every loop.
 3. **Logic/play check** — via `window.__CHICKCOOP`: verify grounding, bounds,
    weapon pickup (no auto-swap), enemy aggro gate, interaction channel, no console
    errors.
@@ -126,12 +131,13 @@ over many unverified ones. Log what was done + what's next at the bottom.
       does an O(1) `_walkable` lookup with per-axis slide, blocking void + rooftops.
       Verified: void points blocked, both cores + portal reachable, streets
       traversable, no errors.
-- [ ] ⚠️ BLOCKED (tooling) — Mobile-landscape home Deploy-button clipping. The
-      automation Chrome has a FIXED layout viewport: `window.innerWidth` stays 1512
-      and screenshots stay 1492×812 regardless of `resize_window`, so CSS media
-      queries never fire and the phone-landscape layout can't be reproduced/verified
-      here. Needs a real device, CDP `Emulation.setDeviceMetricsOverride`, or a
-      responsive harness. Do NOT blind-edit CSS that can't be verified.
+- [x] **Mobile-landscape home clipping** (2026-07-23): `#startOverlay` inline style
+      had `overflow:hidden` + `justify-content:center`, beating the stylesheet — so
+      on short landscape viewports content taller than the screen clipped top+bottom
+      and was unscrollable (62px at 844×390, 74px at 915×412). Fixed to
+      `overflow-y:auto` + `justify-content:safe center`; landscape padding tightened.
+      **Verified via iframe** at 844×390 & 915×412: overflow-y auto/scrollable,
+      Deploy button fully visible, all content reachable, no console errors.
 
 ### P1 — Duckcoop-feel core
 - [ ] Dedicated attack clip layered over idle/run on fire (chuck_movie has Attack).
@@ -165,7 +171,9 @@ over many unverified ones. Log what was done + what's next at the bottom.
 - 2026-07-23 (hourly loop #2) — P0 walk-off-map guard: coarse walkable grid built
   at load (street-level ground only); O(1) per-frame lookup blocks void/rooftops.
   Verified void blocked + objectives reachable + streets traversable.
-- 2026-07-23 (hourly loop #3) — P0 mobile-landscape clipping is BLOCKED by the
-  automation's fixed viewport (can't reproduce/verify). Took next verifiable item:
-  P1 damage numbers (pooled billboards). Gates 1/3/4 green; gate 2 (mobile render)
-  unavailable by tooling. **Next:** kill-streak counter, then dedicated attack clip.
+- 2026-07-23 (hourly loop #3) — P1 damage numbers (pooled billboards). Gates 1/3/4
+  green; gate 2 was blocked by the fixed viewport at the time.
+- 2026-07-23 (hourly loop #4) — UNBLOCKED gate 2 with an iframe render harness, then
+  fixed P0 mobile-landscape home clipping (`#startOverlay` inline overflow/justify).
+  Verified at 844×390 & 915×412: Deploy button visible, content scrollable, no
+  errors. **Next:** kill-streak counter, then dedicated attack clip.

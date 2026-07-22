@@ -152,8 +152,9 @@ body.playing #bottomToasts { display:none !important; }
 @media (orientation: landscape) and (max-height: 560px) {
   /* top-align + generous top padding so the title is never clipped; everything
      below scrolls. */
-  #startOverlay { justify-content: flex-start !important; gap: 12px !important;
-    padding: calc(52px + env(safe-area-inset-top)) 20px 88px !important; }
+  #startOverlay { justify-content: flex-start !important; gap: 9px !important;
+    overflow-y: auto !important;
+    padding: calc(20px + env(safe-area-inset-top)) 20px 44px !important; }
   #startOverlay h1 { font-size: clamp(28px, 8vh, 52px) !important; }
   #startOverlay > div:first-of-type { margin-top: 0 !important; }
   #startOverlay p { font-size: 12.5px !important; max-width: 640px !important; line-height: 1.4 !important; }
