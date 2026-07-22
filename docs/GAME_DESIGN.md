@@ -115,8 +115,11 @@ over many unverified ones. Log what was done + what's next at the bottom.
 ## 6. Prioritized Backlog (loop pulls top open item)
 
 ### P0 — correctness / blocking
-- [ ] **Street-level spawn**: probe city mesh for a road coordinate; set
-      `spawnStart` to an intersection, not a rooftop. Verify feet on street.
+- [x] **Street-level spawn** (2026-07-23): `_loadMapModel` scans candidate XZ,
+      raycasts down, picks the lowest road/sidewalk surface nearest centre; result
+      stashed on `this._streetSpawn` (map-keyed) because `_buildWorld` rebuilds
+      `this.L` from a fresh `entry.build()`. Verified: player at (-2,8) on BG_01
+      road, y=0, no console errors.
 - [ ] Verify player cannot walk off the map edge (bounds vs actual ground extent);
       add perimeter blockers if needed.
 - [ ] Mobile-landscape home: confirm/fix Deploy button clipping at 844×390 & 915×412.
@@ -142,4 +145,7 @@ over many unverified ones. Log what was done + what's next at the bottom.
 - 2026-07-23 — Asset optimization (city 25.4→1.44 MB, public 58→13 MB), city 2.5×,
   face-move direction, gun visible, occlusion fade, sight-gated mobs, LOS auto-fire,
   PWA toasts hidden in play, SVG interaction/dash icons, weapon pickup no auto-swap.
-  Deployed (PR #10). **Next:** P0 street-level spawn.
+  Deployed (PR #10).
+- 2026-07-23 (hourly loop #1) — P0 street-level spawn: player boots onto the road,
+  not a rooftop. Fixed the `this.L` rebuild bug that discarded the computed spawn.
+  Gates 1–3 green, no console errors. **Next:** P0 walk-off-map-edge guard.
