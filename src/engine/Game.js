@@ -555,10 +555,17 @@ export class Game {
       if (this.game.channel >= 1) { this.game.channel = 0; this.game.channelIt = null; this._completeInteract(it); return; }
       frac = this.game.channel;
     } else { this.game.channel = 0; this.game.channelIt = null; }
+    // world-anchored prompt: project the interactable's position to the screen so
+    // the "해킹/회수 + gauge" floats ON the model, not as a big center layer.
     const key = it ? { core: 'prompt.core', crate: 'prompt.crate', extract: 'prompt.extract', portal: 'prompt.portal' }[it.type] : null;
-    if (key !== this.state.prompt || Math.abs((this.state.channelFrac || 0) - frac) > 0.001) {
-      this.state.prompt = key; this.state.channelFrac = frac; this.hud.syncPrompt();
-    }
+    if (it) {
+      const yOff = it.type === 'core' ? 3.2 : it.type === 'crate' ? 1.9 : 3.4;
+      const v = new THREE.Vector3(it.x, yOff, it.z).project(this.cam);
+      const w = this.rend.domElement.clientWidth, h = this.rend.domElement.clientHeight;
+      const onScreen = v.z < 1 && Math.abs(v.x) < 1.3 && Math.abs(v.y) < 1.3;
+      this.hud.setWorldPrompt(onScreen, (v.x * 0.5 + 0.5) * w, (-v.y * 0.5 + 0.5) * h, key, frac, this.isTouch);
+    } else this.hud.setWorldPrompt(false);
+    this.state.prompt = key; this.state.channelFrac = frac;
   }
 
   _completeInteract(it) {

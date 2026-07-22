@@ -147,15 +147,18 @@ export class HUD {
     });
   }
 
-  syncPrompt() {
-    const s = this.g.state, e = this.el;
-    if (s.prompt) {
-      e.prompt.style.display = 'flex';
-      e.promptText.textContent = t(s.prompt);
-      e.promptGlyph.textContent = this.g.isTouch ? '⊕' : 'E';
-      e.promptKey.style.setProperty('--frac', s.channelFrac || 0);
-      e.promptHint.textContent = (s.channelFrac || 0) > 0.02 ? Math.round((s.channelFrac || 0) * 100) + '%' : t('touch.hold');
-    } else e.prompt.style.display = 'none';
+  syncPrompt() { /* handled per-frame by setWorldPrompt */ }
+
+  // Position the interaction prompt at a screen point (above the 3D target).
+  setWorldPrompt(visible, sx, sy, key, frac, touch) {
+    const e = this.el;
+    if (!visible || !key) { if (e.prompt.style.display !== 'none') e.prompt.style.display = 'none'; return; }
+    e.prompt.style.display = 'flex';
+    e.prompt.style.left = sx + 'px'; e.prompt.style.top = sy + 'px';
+    e.promptText.textContent = t(key);
+    e.promptGlyph.textContent = touch ? '⊕' : 'E';
+    e.promptKey.style.setProperty('--frac', frac || 0);
+    e.promptHint.textContent = (frac || 0) > 0.02 ? Math.round((frac || 0) * 100) + '%' : t('touch.hold');
   }
 
   // Boss cast gauge (bottom-center danger meter).
