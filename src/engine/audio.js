@@ -72,13 +72,13 @@ export class Audio {
 
   shoot(weaponKey) {
     const map = {
-      flare:   { freq: 260, type: 'triangle', dur: 0.1, slide: -120, gain: 0.4 },
-      pulse:   { freq: 620, type: 'square',   dur: 0.05, slide: -60,  gain: 0.22 },
-      arc:     { freq: 500, type: 'sawtooth', dur: 0.09, slide: 120,  gain: 0.3 },
-      scatter: { freq: 200, type: 'square',   dur: 0.12, slide: -80,  gain: 0.42 },
-      lance:   { freq: 720, type: 'sawtooth', dur: 0.12, slide: 260,  gain: 0.3 },
+      flare: { freq: 260, type: 'triangle', dur: 0.1,  slide: -120, gain: 0.4 },
+      nerf:  { freq: 520, type: 'square',   dur: 0.05, slide: -70,  gain: 0.24 },
+      laser: { freq: 720, type: 'sawtooth', dur: 0.11, slide: 240,  gain: 0.3 },
+      space: { freq: 90,  type: 'sine',     dur: 0.28, slide: -50,  gain: 0.5 },
+      water: { freq: 380, type: 'sawtooth', dur: 0.05, slide: -40,  gain: 0.16 },
     };
-    this._blip(map[weaponKey] || map.pulse);
+    this._blip(map[weaponKey] || map.nerf);
   }
   hit()    { this._blip({ freq: 180, type: 'square', dur: 0.05, gain: 0.25, slide: -60 }); }
   kill()   { this._blip({ freq: 420, type: 'triangle', dur: 0.14, gain: 0.35, slide: 180 }); }

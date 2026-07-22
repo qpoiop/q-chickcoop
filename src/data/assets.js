@@ -10,23 +10,27 @@ const p = (rel) => ASSET_BASE.replace(/\/$/, '') + '/' + rel;
 
 export const ASSETS = {
   // Playable hero
-  player: p('caracter/golden_chicken_hero.glb'),
+  player: p('caracter/chick.glb'),
 
-  // Enemy roster (keyed by logical model name used in data/enemies.js)
+  // Character roster — 3 enemies + 2 bosses + 1 player (above).
+  // enemyModels keys are referenced by data/enemies.js (tiers + bosses).
   enemyModels: {
-    cute:   p('caracter/chick.glb'),
-    little: p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
+    // 3 rank-and-file enemies
+    cute:   p('caracter/lowpoly_bird_animation.glb'),
+    little: p('caracter/golden_chicken_hero.glb'),
     drone:  p('caracter/lady_bug_bird.glb'),
-    boss:   p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
+    // 2 bosses (bossB temporarily shares bossA's model — swap later)
+    bossA:  p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
+    bossB:  p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
   },
 
-  // Weapon frames (keyed by logical gun model)
+  // Weapon frames — one gun model per weapon key (data/weapons.js WEAPON_MODEL_MAP).
   weaponModels: {
     flare: p('item/flare_gun.glb'),
+    nerf:  p('item/nerf_gun.glb'),
     laser: p('item/laser_gun.glb'),
     space: p('item/space_gun.glb'),
-    bubble: p('item/bubble_gun.glb'),
-    nerf:  p('item/nerf_gun.glb'),
+    water: p('item/water_gun.glb'),
   },
 
   // Combat FX

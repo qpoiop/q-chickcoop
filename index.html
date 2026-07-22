@@ -6,7 +6,12 @@
 <meta name="theme-color" content="#0a0e14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>CHICKCOPE — Barnyard Override</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CHICKCOOP">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<title>CHICKCOOP — Barnyard Override</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
@@ -34,7 +39,7 @@
         </div>
         <div style="flex:1;display:flex;flex-direction:column;gap:5px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">
-            <span>HULL</span><span id="hudHpTxt" style="font-family:'Chakra Petch';color:#dfeef6">100 / 100</span>
+            <span data-i18n="hud.hull">HULL</span><span id="hudHpTxt" style="font-family:'Chakra Petch';color:#dfeef6">100 / 100</span>
           </div>
           <div style="height:11px;background:#0e1620;border:1px solid #223140;position:relative;overflow:hidden;clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%)">
             <div id="hudHpBar" style="position:absolute;inset:0;transform-origin:left;transform:scaleX(1);background:linear-gradient(90deg,#ff3b6b,#ff7a5c);box-shadow:0 0 12px rgba(255,59,107,.6);transition:transform .12s"></div>
@@ -46,7 +51,7 @@
           <div id="hudXpBar" style="position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#35e0d0,#59ff9d);box-shadow:0 0 10px rgba(53,224,208,.6);transition:transform .18s"></div>
         </div>
         <div style="display:flex;align-items:center;gap:7px">
-          <span style="font-size:10px;letter-spacing:2px;color:#5f7486;text-transform:uppercase">Dash</span>
+          <span data-i18n="hud.dash" style="font-size:10px;letter-spacing:2px;color:#5f7486;text-transform:uppercase">Dash</span>
           <div id="hudDashPips" style="display:flex;gap:4px"></div>
         </div>
       </div>
@@ -56,22 +61,22 @@
     <div style="position:absolute;top:18px;right:20px;display:flex;flex-direction:column;align-items:flex-end;gap:9px">
       <div style="display:flex;gap:9px">
         <div class="stat-chip">
-          <div style="font-size:10px;letter-spacing:2px;color:#8a7c3a;text-transform:uppercase">Scrap</div>
+          <div data-i18n="hud.scrap" style="font-size:10px;letter-spacing:2px;color:#8a7c3a;text-transform:uppercase">Scrap</div>
           <div id="hudGold" style="font-family:'Chakra Petch';font-size:19px;font-weight:700;color:#ffd23f;line-height:1.1">0</div>
         </div>
         <div class="stat-chip">
-          <div style="font-size:10px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Kills</div>
+          <div data-i18n="hud.kills" style="font-size:10px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Kills</div>
           <div id="hudKills" style="font-family:'Chakra Petch';font-size:19px;font-weight:700;color:#dfeef6;line-height:1.1">0</div>
         </div>
         <div class="stat-chip" style="min-width:0">
-          <div style="font-size:10px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Time</div>
+          <div data-i18n="hud.time" style="font-size:10px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Time</div>
           <div id="hudTime" style="font-family:'Chakra Petch';font-size:19px;color:#bcd;line-height:1.1">0:00</div>
         </div>
       </div>
       <div id="hudObjBox" style="background:rgba(11,18,26,.82);border:1px solid #223140;border-left:2px solid #35e0d0;padding:7px 13px;max-width:300px;text-align:right">
         <div id="hudObjLabel" style="font-size:10px;letter-spacing:3px;color:#35e0d0;text-transform:uppercase">Objective</div>
         <div id="hudObjText" style="font-family:'Rajdhani';font-size:14px;font-weight:600;color:#dfeef6">Breach Data Core A</div>
-        <button id="hudSkipTut" class="link-btn" style="pointer-events:auto;display:none;margin-top:5px">Skip Tutorial →</button>
+        <button id="hudSkipTut" class="link-btn" style="pointer-events:auto;display:none;margin-top:5px" data-i18n="home.skip">Skip Tutorial →</button>
       </div>
     </div>
 
@@ -79,17 +84,17 @@
     <div style="position:absolute;bottom:18px;left:20px;display:flex;align-items:center;gap:11px;background:rgba(11,18,26,.82);border:1px solid #2a3a4a;padding:9px 14px;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%)">
       <div id="hudWeaponIcon" style="width:34px;height:34px;display:grid;place-items:center;border:1.5px solid #ffb03b;color:#ffb03b;font-family:'Chakra Petch';font-weight:700;box-shadow:0 0 12px rgba(255,176,59,.5)">☄</div>
       <div>
-        <div style="font-size:11px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Weapon</div>
+        <div data-i18n="hud.weapon" style="font-size:11px;letter-spacing:2px;color:#7f94a6;text-transform:uppercase">Weapon</div>
         <div id="hudWeaponName" style="font-family:'Chakra Petch';font-size:16px;font-weight:600;color:#dfeef6;letter-spacing:1px">Cork Popper</div>
       </div>
     </div>
 
     <!-- action buttons bottom-right -->
     <div style="position:absolute;bottom:18px;right:20px;display:flex;gap:10px;pointer-events:auto">
-      <button id="btnInventory" class="hud-btn">Inventory</button>
-      <button id="btnArsenal" class="hud-btn">Arsenal</button>
+      <button id="btnInventory" class="hud-btn" data-i18n="hud.inventory">Inventory</button>
+      <button id="btnArsenal" class="hud-btn" data-i18n="hud.arsenal">Arsenal</button>
       <button id="btnSkills" class="hud-btn" style="position:relative">
-        Tech Tree
+        <span data-i18n="hud.tech">Tech Tree</span>
         <span id="hudSkillBadge" style="display:none;position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;place-items:center;background:#35e0d0;color:#062;font-family:'Chakra Petch';font-weight:700;font-size:12px;border-radius:10px;animation:pulseGlow 1.4s infinite">0</span>
       </button>
     </div>
@@ -121,12 +126,23 @@
   <!-- boss health bar -->
   <div id="hudBoss" style="display:none;position:absolute;top:96px;left:50%;transform:translateX(-50%);z-index:6;width:min(560px,64vw);pointer-events:none;text-align:center">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
-      <span style="font-size:11px;letter-spacing:4px;color:#ff2d55;text-transform:uppercase">⚠ Boss</span>
+      <span data-i18n="boss.tag" style="font-size:11px;letter-spacing:4px;color:#ff2d55;text-transform:uppercase">⚠ Boss</span>
       <span id="hudBossName" style="font-family:'Chakra Petch';font-weight:700;font-size:15px;letter-spacing:3px;color:#ffd0d8;text-transform:uppercase">PRIME ROOSTER</span>
       <span id="hudBossHp" style="font-family:'Chakra Petch';font-size:13px;color:#ff8fa3"></span>
     </div>
     <div style="height:13px;background:#180a10;border:1px solid #5a2230;position:relative;overflow:hidden;clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,8px 100%)">
       <div id="hudBossBar" style="position:absolute;inset:0;transform-origin:left;transform:scaleX(1);background:linear-gradient(90deg,#ff2d55,#ff7a5c);box-shadow:0 0 16px rgba(255,45,85,.7);transition:transform .12s"></div>
+    </div>
+  </div>
+
+  <!-- boss skill cast / danger gauge (bottom-center) -->
+  <div id="hudCast" style="display:none;position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:6;width:min(420px,62vw);pointer-events:none;text-align:center">
+    <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:4px">
+      <span data-i18n="cast.label" style="font-size:10px;letter-spacing:4px;color:#ff5b3b;text-transform:uppercase">DANGER</span>
+      <span id="hudCastName" style="font-family:'Chakra Petch';font-weight:700;font-size:13px;letter-spacing:2px;color:#ff7a5c;text-transform:uppercase">—</span>
+    </div>
+    <div style="height:9px;background:#160a08;border:1px solid #5a3020;position:relative;overflow:hidden;clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 100%,0 100%)">
+      <div id="hudCastBar" style="position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#ff2d55,#fff);box-shadow:0 0 14px rgba(255,90,60,.7)"></div>
     </div>
   </div>
 
@@ -142,62 +158,77 @@
   <div id="joyBase1" class="joy-base" style="border-color:rgba(53,224,208,.4)"><div id="joyKnob1" class="joy-knob" style="background:rgba(53,224,208,.55);box-shadow:0 0 18px rgba(53,224,208,.6)"></div></div>
   <div id="joyBase2" class="joy-base" style="border-color:rgba(255,176,59,.45)"><div id="joyKnob2" class="joy-knob" style="background:rgba(255,176,59,.6);box-shadow:0 0 18px rgba(255,176,59,.6)"></div></div>
 
+  <!-- update banner (service worker) -->
+  <button id="updateBanner" data-i18n="home.update" style="display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:40;pointer-events:auto;cursor:pointer;font-family:'Rajdhani';font-weight:600;letter-spacing:2px;background:rgba(11,18,26,.95);color:#7ff2e8;border:1px solid #35e0d0;padding:9px 18px;box-shadow:0 0 22px rgba(53,224,208,.3)">⟳ Update available</button>
+
   <!-- ===== START OVERLAY ===== -->
-  <div id="startOverlay" style="position:absolute;inset:0;z-index:20;overflow:hidden;background:radial-gradient(90% 90% at 50% 35%,#122028,#06090e 85%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center;padding:24px">
+  <div id="startOverlay" style="position:absolute;inset:0;z-index:20;overflow:hidden;background:radial-gradient(90% 90% at 50% 35%,#122028,#06090e 85%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px">
     <div style="position:absolute;left:50%;top:38%;width:min(80vw,760px);height:min(80vw,760px);transform:translate(-50%,-50%);pointer-events:none;background:radial-gradient(circle,rgba(255,140,50,.16),transparent 62%);animation:breathe 6s ease-in-out infinite"></div>
     <div id="startParticles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
 
-    <div style="position:relative">
-      <div style="font-size:13px;letter-spacing:9px;color:#ffb03b;text-transform:uppercase;margin-bottom:8px;animation:pulseGlow 3s infinite">Barnyard Override · Action Prototype</div>
-      <h1 style="margin:0;font-family:'Chakra Petch';font-weight:700;font-size:clamp(44px,9vw,100px);line-height:.92;letter-spacing:2px;color:#eef6fb;text-shadow:0 0 46px rgba(255,176,59,.4)">CHICK<span style="color:#ffb03b">COPE</span></h1>
+    <!-- language switch (top-right) -->
+    <div style="position:absolute;top:18px;right:18px;display:flex;align-items:center;gap:6px;z-index:2">
+      <span data-i18n="home.lang" style="font-size:10px;letter-spacing:2px;color:#5f7486;text-transform:uppercase;margin-right:2px">Language</span>
+      <button id="langEn" class="lang-btn">EN</button>
+      <button id="langKo" class="lang-btn">한국어</button>
     </div>
-    <p style="position:relative;max-width:560px;margin:0;font-size:16px;line-height:1.55;color:#c3d2de">You're a battle-chicken dropped into a lava-ringed shanty town. Roam the streets, hold off the swarm of rival birds, grab glowing weapon drops, and cash your scrap for bigger guns in the Arsenal. Level up a branching tech tree, breach the two cores to unlock the gate, and survive the boss to extract.</p>
-    <button id="btnStart" style="position:relative;font-family:'Rajdhani';cursor:pointer;margin-top:4px;background:linear-gradient(150deg,#5a3410,#2a1806);color:#ffd9a0;border:1.5px solid #ffb03b;padding:15px 50px;font-size:20px;font-weight:700;letter-spacing:5px;text-transform:uppercase;box-shadow:0 0 34px rgba(255,176,59,.35);clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">Deploy</button>
-    <div style="position:relative;display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;justify-content:center;max-width:640px">
+
+    <div style="position:relative">
+      <div data-i18n="home.eyebrow" style="font-size:13px;letter-spacing:9px;color:#ffb03b;text-transform:uppercase;margin-bottom:8px;animation:pulseGlow 3s infinite">Barnyard Override · Action Prototype</div>
+      <h1 style="margin:0;font-family:'Chakra Petch';font-weight:700;font-size:clamp(44px,9vw,100px);line-height:.92;letter-spacing:2px;color:#eef6fb;text-shadow:0 0 46px rgba(255,176,59,.4)">CHICK<span style="color:#ffb03b">COOP</span></h1>
+    </div>
+    <p data-i18n="home.desc" style="position:relative;max-width:560px;margin:0;font-size:16px;line-height:1.55;color:#c3d2de"></p>
+    <button id="btnStart" data-i18n="home.deploy" style="position:relative;font-family:'Rajdhani';cursor:pointer;margin-top:4px;background:linear-gradient(150deg,#5a3410,#2a1806);color:#ffd9a0;border:1.5px solid #ffb03b;padding:15px 50px;font-size:20px;font-weight:700;letter-spacing:5px;text-transform:uppercase;box-shadow:0 0 34px rgba(255,176,59,.35);clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">Deploy</button>
+    <div style="position:relative;display:flex;gap:14px;margin-top:6px;flex-wrap:wrap;justify-content:center;max-width:640px">
       <div class="ctrl-pill">
         <div style="display:grid;grid-template-columns:repeat(3,20px);grid-template-rows:20px 20px;gap:3px">
           <span></span><span class="kbd" style="grid-column:2">W</span><span></span>
           <span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span>
         </div>
-        <span class="ctrl-lbl">Move</span>
+        <span class="ctrl-lbl" data-i18n="home.move">Move</span>
       </div>
       <div class="ctrl-pill">
         <span style="display:grid;place-items:center;width:22px;height:30px;border:1px solid #35506080;border-radius:11px;background:#12222c"><span style="width:2px;height:8px;background:#7ff2e8;margin-top:3px"></span></span>
-        <span class="ctrl-lbl">Aim + Hold&nbsp;Fire</span>
+        <span class="ctrl-lbl" data-i18n="home.aimfire">Aim + Hold Fire</span>
       </div>
       <div class="ctrl-pill">
         <span class="kbd" style="min-width:60px;letter-spacing:2px">SPACE</span>
-        <span class="ctrl-lbl">Dash</span>
+        <span class="ctrl-lbl" data-i18n="home.dash">Dash</span>
       </div>
       <div class="ctrl-pill">
         <span class="kbd" style="width:22px">E</span>
-        <span class="ctrl-lbl">Interact</span>
+        <span class="ctrl-lbl" data-i18n="home.interact">Interact</span>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px 18px;background:rgba(11,18,26,.5);border:1px solid #223140;border-radius:2px;max-width:600px;flex-wrap:wrap;justify-content:center">
-      <span style="font-size:11px;letter-spacing:3px;color:#ff9a3b;text-transform:uppercase;font-weight:600">Mobile</span>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;padding:10px 18px;background:rgba(11,18,26,.5);border:1px solid #223140;border-radius:2px;max-width:600px;flex-wrap:wrap;justify-content:center">
+      <span data-i18n="home.mobile" style="font-size:11px;letter-spacing:3px;color:#ff9a3b;text-transform:uppercase;font-weight:600">Mobile</span>
       <span style="width:1px;height:14px;background:#2a3a4a"></span>
-      <span style="font-size:12px;letter-spacing:1px;color:#8098a8">Left stick — move</span>
+      <span data-i18n="home.mLeft" style="font-size:12px;letter-spacing:1px;color:#8098a8">Left stick — move</span>
       <span style="color:#2a3a4a">·</span>
-      <span style="font-size:12px;letter-spacing:1px;color:#8098a8">Right stick — aim &amp; fire</span>
+      <span data-i18n="home.mRight" style="font-size:12px;letter-spacing:1px;color:#8098a8">Right stick — aim &amp; fire</span>
       <span style="color:#2a3a4a">·</span>
-      <span style="font-size:12px;letter-spacing:1px;color:#8098a8">Auto-fire when idle · DASH / USE</span>
+      <span data-i18n="home.mAuto" style="font-size:12px;letter-spacing:1px;color:#8098a8">Auto-fire when idle · DASH / USE</span>
     </div>
-    <button id="btnSkipTutStart" class="link-btn" style="font-size:13px">Skip Tutorial →</button>
+    <!-- landscape recommendation (iOS can't lock orientation) -->
+    <div data-i18n="home.landscape" style="display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:1px;color:#ffb03b;background:rgba(40,24,8,.5);border:1px solid #5a3410;padding:8px 16px;border-radius:2px;max-width:560px">↻ Landscape mode recommended</div>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center">
+      <button id="btnInstall" data-i18n="home.install" class="link-btn" style="display:none;font-size:13px;color:#7ff2e8;border:1px solid #35e0d0;padding:8px 16px;text-decoration:none">＋ Add to Home Screen</button>
+      <button id="btnSkipTutStart" class="link-btn" style="font-size:13px" data-i18n="home.skip">Skip Tutorial →</button>
+    </div>
   </div>
 
   <!-- ===== GAME OVER / WIN ===== -->
   <div id="endOverlay" style="display:none;position:absolute;inset:0;z-index:20;background:radial-gradient(80% 80% at 50% 40%,rgba(30,10,16,.7),rgba(6,9,14,.95));flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px;animation:popIn .3s ease-out">
     <div id="endTitle" style="font-family:'Chakra Petch';font-weight:700;font-size:clamp(40px,9vw,80px);letter-spacing:4px;color:#ff3b6b;text-shadow:0 0 40px rgba(255,59,107,.45)">FRAME DOWN</div>
     <div style="display:flex;gap:34px;flex-wrap:wrap;justify-content:center">
-      <div><div id="endLevel" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">1</div><div class="end-lbl">Level</div></div>
-      <div><div id="endKills" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">0</div><div class="end-lbl">Kills</div></div>
-      <div><div id="endTime" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">0:00</div><div class="end-lbl">Time</div></div>
+      <div><div id="endLevel" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">1</div><div class="end-lbl" data-i18n="end.level">Level</div></div>
+      <div><div id="endKills" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">0</div><div class="end-lbl" data-i18n="end.kills">Kills</div></div>
+      <div><div id="endTime" style="font-family:'Chakra Petch';font-size:38px;color:#eef6fb">0:00</div><div class="end-lbl" data-i18n="end.time">Time</div></div>
     </div>
-    <button id="btnRestart" style="font-family:'Rajdhani';cursor:pointer;margin-top:8px;background:linear-gradient(150deg,#1a4a4a,#0e2a2a);color:#7ff2e8;border:1.5px solid #35e0d0;padding:14px 44px;font-size:18px;font-weight:700;letter-spacing:4px;text-transform:uppercase;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">Redeploy</button>
+    <button id="btnRestart" data-i18n="end.redeploy" style="font-family:'Rajdhani';cursor:pointer;margin-top:8px;background:linear-gradient(150deg,#1a4a4a,#0e2a2a);color:#7ff2e8;border:1.5px solid #35e0d0;padding:14px 44px;font-size:18px;font-weight:700;letter-spacing:4px;text-transform:uppercase;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)">Redeploy</button>
   </div>
 
-  <!-- ===== DYNAMIC PANELS (inventory / arsenal / tech tree) ===== -->
+  <!-- ===== DYNAMIC PANELS ===== -->
   <div id="panelRoot"></div>
 
   <!-- loading -->
