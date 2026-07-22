@@ -1,4 +1,4 @@
-name = "chickcope"
+name = "chickcoop"
 compatibility_date = "2024-12-01"
 
 # Serve the Vite build output as static assets from a Cloudflare Worker.

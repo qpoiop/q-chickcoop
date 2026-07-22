@@ -28,8 +28,10 @@ export const CONFIG = {
     bossFirst: 60, bossRepeat: 95,
   },
 
-  // Drop chances from a slain non-boss enemy (cumulative thresholds)
-  drops: { weapon: 0.05, health: 0.14, scrap: 0.24, healAmount: 35 },
+  // Drops from a slain non-boss enemy. Weapon drop chance is per-weapon
+  // (WEAPONS[k].dropChance) for the next unowned progression frame; health/scrap
+  // roll afterwards. healAmount = HP restored by a health pickup.
+  drops: { healthChance: 0.09, scrapChance: 0.12, healAmount: 35 },
 
   // Bloom-lightning FX cadence
   fx: { boltInterval: 0.11 },

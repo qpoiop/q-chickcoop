@@ -1,13 +1,15 @@
 import { WEAPONS } from '../data/weapons.js';
 import { computeModifiers } from '../data/skills.js';
+import { TUTORIAL } from '../data/tutorial.js';
+import { t, locName, getLang, setLang } from '../data/i18n.js';
 
 // HUD — mirrors game state into the static markup declared in index.html.
 // sync()  : structural/state-change updates (overlays, weapon, pips, objective)
-// tick()  : cheap per-frame numeric updates (bars, counters, boss)
-// All element lookups are cached once; no per-frame querySelector.
+// tick()  : cheap per-frame numeric updates (bars, counters, boss, cast gauge)
+// applyI18n(): (re)writes every [data-i18n] label — called on load + lang switch.
 
 const $ = (id) => document.getElementById(id);
-const fmtTime = (t) => { const m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + String(s).padStart(2, '0'); };
+const fmtTime = (t2) => { const m = Math.floor(t2 / 60), s = Math.floor(t2 % 60); return m + ':' + String(s).padStart(2, '0'); };
 
 export class HUD {
   constructor(game) {
@@ -21,12 +23,14 @@ export class HUD {
       skillBadge: $('hudSkillBadge'), prompt: $('hudPrompt'), promptKey: $('hudPromptKey'), promptText: $('hudPromptText'),
       touchBtns: $('hudTouchBtns'), hint: $('hudHint'),
       boss: $('hudBoss'), bossName: $('hudBossName'), bossHp: $('hudBossHp'), bossBar: $('hudBossBar'),
+      cast: $('hudCast'), castName: $('hudCastName'), castBar: $('hudCastBar'),
       endTitle: $('endTitle'), endLevel: $('endLevel'), endKills: $('endKills'), endTime: $('endTime'),
-      skipStart: $('btnSkipTutStart'),
+      skipStart: $('btnSkipTutStart'), langEn: $('langEn'), langKo: $('langKo'),
     };
     this._dashCount = -1;
     this._buildStartParticles();
     this._wire();
+    this.applyI18n();
   }
 
   _wire() {
@@ -40,9 +44,25 @@ export class HUD {
     $('btnSkills').onclick = () => g.openPanel('skills');
     $('btnDash').ontouchstart = (e) => { e.preventDefault(); g._dash(); };
     $('btnUse').ontouchstart = (e) => { e.preventDefault(); g._use(); };
+    this.el.langEn.onclick = () => this._setLang('en');
+    this.el.langKo.onclick = () => this._setLang('ko');
   }
 
-  // Loading screen is dismissed once first frame renders.
+  _setLang(l) { setLang(l); this.applyI18n(); this.g.audio && this.g.audio.ui && this.g.audio.ui(); this.g.refresh(); }
+
+  // Write all translatable chrome; safe to call any time.
+  applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.getAttribute('data-i18n')); });
+    document.documentElement.lang = getLang();
+    // active language button styling
+    const on = '#7ff2e8', off = '#5f7486';
+    this.el.langEn.style.color = getLang() === 'en' ? on : off;
+    this.el.langKo.style.color = getLang() === 'ko' ? on : off;
+    this.el.langEn.style.borderColor = getLang() === 'en' ? '#35e0d0' : '#223140';
+    this.el.langKo.style.borderColor = getLang() === 'ko' ? '#35e0d0' : '#223140';
+    if (this.el.loading) this.el.loading.textContent = t('loading');
+  }
+
   hideLoading() { if (this.el.loading) this.el.loading.style.display = 'none'; }
 
   _buildStartParticles() {
@@ -58,41 +78,40 @@ export class HUD {
     host.appendChild(frag);
   }
 
-  // ---- structural sync (on state changes) ----
+  _objText() {
+    const k = this.g.state.objectiveKey || 'obj.coreA';
+    if (k.startsWith('tut:')) { const st = TUTORIAL[+k.slice(4)]; return getLang() === 'ko' ? st.textKo : st.text; }
+    return t(k);
+  }
+
+  // ---- structural sync ----
   sync() {
     const s = this.g.state, e = this.el;
     e.start.style.display = (!s.started && !s.ended) ? 'flex' : 'none';
     e.end.style.display = s.ended ? 'flex' : 'none';
     e.skipStart.style.display = this.g._tutSeen ? 'none' : 'inline';
 
-    // weapon readout
     const w = WEAPONS[s.weapon] || WEAPONS.flare;
     e.weaponIcon.textContent = w.icon; e.weaponIcon.style.borderColor = w.color; e.weaponIcon.style.color = w.color; e.weaponIcon.style.boxShadow = `0 0 12px ${w.glow}`;
-    e.weaponName.textContent = w.name;
+    e.weaponName.textContent = locName(w);
 
-    // objective + tutorial state
-    e.objLabel.textContent = s.tutorial ? 'Tutorial' : 'Objective';
+    e.objLabel.textContent = s.tutorial ? t('hud.tutorial') : t('hud.objective');
     const accent = s.tutorial ? '#ff9a3b' : '#35e0d0';
     e.objLabel.style.color = accent; e.objBox.style.borderLeftColor = accent;
-    e.objText.textContent = s.objective;
+    e.objText.textContent = this._objText();
     e.skipTut.style.display = s.tutorial ? 'inline' : 'none';
 
-    // skill points badge
     if (s.skillPoints > 0) { e.skillBadge.style.display = 'grid'; e.skillBadge.textContent = s.skillPoints; }
     else e.skillBadge.style.display = 'none';
 
-    // dash pips (rebuild only when count changes)
     const md = computeModifiers(s.ranks);
-    const dashMax = Math.max(s.dashMax || 2, md.dashchg);
-    this._syncDashPips(dashMax, s.dashCharges);
+    this._syncDashPips(Math.max(s.dashMax || 2, md.dashchg), s.dashCharges);
 
-    // mobile controls + hint
     e.touchBtns.style.display = this.g.isTouch ? 'flex' : 'none';
     e.promptKey.textContent = this.g.isTouch ? '⊕' : 'E';
 
-    // end screen
     if (s.ended) {
-      e.endTitle.textContent = s.win ? 'SECTOR CLEARED' : 'FRAME DOWN';
+      e.endTitle.textContent = s.win ? t('end.win') : t('end.lose');
       e.endTitle.style.color = s.win ? '#59ff9d' : '#ff3b6b';
       e.endTitle.style.textShadow = `0 0 40px ${s.win ? 'rgba(89,255,157,.5)' : 'rgba(255,59,107,.45)'}`;
       e.end.style.background = `radial-gradient(80% 80% at 50% 40%,${s.win ? 'rgba(10,30,20,.7)' : 'rgba(30,10,16,.7)'},rgba(6,9,14,.95))`;
@@ -121,11 +140,25 @@ export class HUD {
 
   syncPrompt() {
     const s = this.g.state, e = this.el;
-    if (s.prompt) { e.prompt.style.display = 'flex'; e.promptText.textContent = s.prompt; }
+    if (s.prompt) { e.prompt.style.display = 'flex'; e.promptText.textContent = t(s.prompt); }
     else e.prompt.style.display = 'none';
   }
 
-  // ---- fast numeric updates (~12.5 Hz during play) ----
+  // Boss cast gauge (bottom-center danger meter).
+  showCast(name, pct, colorHex) {
+    const e = this.el; if (!e.cast) return;
+    e.cast.style.display = 'block';
+    e.castName.textContent = name;
+    e.castBar.style.transform = `scaleX(${Math.max(0, Math.min(1, pct))})`;
+    if (colorHex != null) {
+      const hex = '#' + colorHex.toString(16).padStart(6, '0');
+      e.castBar.style.background = `linear-gradient(90deg,${hex},#fff)`;
+      e.castName.style.color = hex;
+    }
+  }
+  hideCast() { if (this.el.cast) this.el.cast.style.display = 'none'; }
+
+  // ---- fast numeric updates ----
   tick() {
     const s = this.g.state, e = this.el, md = computeModifiers(s.ranks);
     const maxHpShown = s.maxHp + Math.round(md.hp);
@@ -134,21 +167,18 @@ export class HUD {
     e.hpBar.style.transform = `scaleX(${Math.max(0, s.hp / s.maxHp)})`;
     e.xpBar.style.transform = `scaleX(${Math.max(0, Math.min(1, s.xp / s.xpToNext))})`;
     e.gold.textContent = s.gold; e.kills.textContent = s.kills; e.time.textContent = fmtTime(s.time);
+    e.objText.textContent = this._objText();
 
-    // dash charge fill without rebuilding
-    const dashMax = Math.max(s.dashMax || 2, md.dashchg);
-    this._syncDashPips(dashMax, s.dashCharges);
+    this._syncDashPips(Math.max(s.dashMax || 2, md.dashchg), s.dashCharges);
 
-    // boss bar
     if (s.bossActive) {
-      e.boss.style.display = 'block'; e.bossName.textContent = s.bossName || 'PRIME ROOSTER';
+      e.boss.style.display = 'block'; e.bossName.textContent = s.bossName || 'BOSS';
       e.bossHp.textContent = Math.ceil(s.bossHp) + ' / ' + Math.ceil(s.bossMax);
       e.bossBar.style.transform = `scaleX(${Math.max(0, Math.min(1, s.bossHp / (s.bossMax || 1)))})`;
     } else e.boss.style.display = 'none';
 
-    // hint (first seconds)
     const showHint = s.started && !s.ended && s.time < 7 && s.panel === 'none';
-    if (showHint) { e.hint.style.display = 'block'; e.hint.textContent = this.g.isTouch ? 'Left stick — move · Right stick — aim & fire · DASH to dodge' : 'WASD move · aim mouse · SPACE dash · E interact'; }
+    if (showHint) { e.hint.style.display = 'block'; e.hint.textContent = this.g.isTouch ? t('hud.hintMobile') : t('hud.hintDesktop'); }
     else e.hint.style.display = 'none';
   }
 }

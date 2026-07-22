@@ -1,7 +1,7 @@
 {
-  "name": "chickcope",
+  "name": "chickcoop",
   "version": "1.0.0",
-  "description": "CHICKCOPE — AAA-style twin-stick action roguelite (Three.js)",
+  "description": "CHICKCOOP — AAA-style twin-stick action roguelite (Three.js)",
   "type": "module",
   "scripts": {
     "dev": "vite",
