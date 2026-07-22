@@ -140,7 +140,12 @@ over many unverified ones. Log what was done + what's next at the bottom.
       Deploy button fully visible, all content reachable, no console errors.
 
 ### P1 — Duckcoop-feel core
-- [ ] Dedicated attack clip layered over idle/run on fire (chuck_movie has Attack).
+- [x] **Dedicated attack clip** (2026-07-23): `AngrybirdRed_Attack` played as an
+      ADDITIVE layer (delta over bind pose, root position tracks dropped so the body
+      doesn't slide) over idle/run, one-shot, retriggered per shot with a rate guard
+      so fast weapons don't buzz. Verified: blendMode=Additive, plays on fire at
+      weight 0.9, no body teleport (model local pos 0), locomotion blend intact,
+      distinct lunge pose on screen, no console errors.
 - [ ] Boss fight: 2 phases, bigger telegraphs, one arena hazard, reward beat.
 - [x] **Damage numbers** (2026-07-23): pooled canvas-texture billboards (reused,
       capped 28 live, no per-hit alloc) pop above a struck enemy — white normal,
@@ -181,5 +186,8 @@ over many unverified ones. Log what was done + what's next at the bottom.
   fixed P0 mobile-landscape home clipping (`#startOverlay` inline overflow/justify).
   Verified at 844×390 & 915×412: Deploy button visible, content scrollable, no errors.
 - 2026-07-23 (hourly loop #5) — P1 kill-streak combo badge (×N, tiered COMBO/RAMPAGE/
-  CARNAGE, 2.8s window). All gates green (mobile via iframe). **Next:** dedicated
-  attack clip layered over locomotion, then boss 2-phase.
+  CARNAGE, 2.8s window). All gates green (mobile via iframe).
+- 2026-07-23 (hourly loop #6) — P1 dedicated attack clip (additive layer over
+  idle/run, root-position tracks dropped, per-shot retrigger). Verified additive +
+  no teleport + locomotion intact + no errors. Animation-only, no UI impact.
+  **Next:** boss fight 2-phase (bigger telegraphs, arena hazard, reward beat).
