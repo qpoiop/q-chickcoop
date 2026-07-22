@@ -95,8 +95,8 @@ export class Game {
 
     scene.add(new THREE.HemisphereLight(0x5878a0, 0x0a0e14, 0.5));
     const dir = new THREE.DirectionalLight(0xdfeeff, 1.4);
-    dir.position.set(20, 44, 12); dir.castShadow = true; dir.shadow.mapSize.set(2048, 2048);
-    const sc = dir.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.far = 140;
+    dir.position.set(20, 44, 12); dir.castShadow = true; dir.shadow.mapSize.set(1024, 1024); // 1k is plenty top-down; 2k is a big perf cost
+    const sc = dir.shadow.camera; sc.left = -80; sc.right = 80; sc.top = 80; sc.bottom = -80; sc.far = 150;
     scene.add(dir);
     const rim = new THREE.PointLight(0x35e0d0, 0.5, 18); rim.position.set(0, 5, 0); scene.add(rim); this.rim = rim;
 
@@ -385,7 +385,7 @@ export class Game {
     BOSSES.forEach((b) => { wanted[b.model] = ASSETS.enemyModels[b.model]; });
     for (const [key, url] of Object.entries(wanted)) {
       const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
-      tuneMaterials(g.scene, { metalness: 0.3 });
+      tuneMaterials(g.scene, { metalness: 0.3, shadow: false }); // no shadow-cast: cheaper with many skinned mobs
       this.enemyModels[key] = { scene: g.scene, clips: g.animations, fit: fitHeight(g.scene, 1.4) };
     }
   }
@@ -510,7 +510,7 @@ export class Game {
   _bindInput() {
     this.input = new Input(this.rend.domElement, {
       base1: this.dom.joyBase1, knob1: this.dom.joyKnob1, base2: this.dom.joyBase2, knob2: this.dom.joyKnob2,
-    }, { onDash: () => this._dash(), onUse: () => this._use(), onWeapon: (i) => this.selectWeaponSlot(i), onCycle: () => this.cycleWeapon(1), onMode: () => this.refresh() });
+    }, { onDash: () => this._dash(), onWeapon: (i) => this.selectWeaponSlot(i), onCycle: () => this.cycleWeapon(1), onMode: () => this.refresh(), onPause: () => this.togglePause() });
   }
 
   _dash() {
@@ -527,9 +527,27 @@ export class Game {
     this.refresh();
   }
 
-  _use() {
-    if (!this.state.started || this.state.ended) return;
-    const it = this._nearestInteract(); if (!it) return;
+  // Seconds to channel each interaction (hold E / USE to fill the gauge).
+  _channelTime(it) { return { core: 1.6, crate: 0.9, portal: 0.7, extract: 0.7 }[it.type] || 1; }
+
+  // Drive the channel each frame from held input; fires _completeInteract at 100%.
+  _updateChannel(dt) {
+    const it = this._nearestInteract();
+    const held = (this.input && this.input.useHeld) || this._touchUseHeld;
+    let frac = 0;
+    if (it && held) {
+      if (this.game.channelIt !== it) { this.game.channel = 0; this.game.channelIt = it; }
+      this.game.channel = (this.game.channel || 0) + dt / this._channelTime(it);
+      if (this.game.channel >= 1) { this.game.channel = 0; this.game.channelIt = null; this._completeInteract(it); return; }
+      frac = this.game.channel;
+    } else { this.game.channel = 0; this.game.channelIt = null; }
+    const key = it ? { core: 'prompt.core', crate: 'prompt.crate', extract: 'prompt.extract', portal: 'prompt.portal' }[it.type] : null;
+    if (key !== this.state.prompt || Math.abs((this.state.channelFrac || 0) - frac) > 0.001) {
+      this.state.prompt = key; this.state.channelFrac = frac; this.hud.syncPrompt();
+    }
+  }
+
+  _completeInteract(it) {
     if (it.type === 'core' && !it.done) {
       it.done = true; it.glow.material.color.set(0x59ff9d); it.glow.material.emissive.set(0x59ff9d); it.ring.material.color.set(0x59ff9d);
       this.state.cores++; this._impact(it.mesh.position, 0x59ff9d, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
@@ -771,9 +789,20 @@ export class Game {
     el.style.transition = 'none'; el.style.opacity = 1;
     requestAnimationFrame(() => { el.style.transition = 'opacity .5s'; el.style.opacity = 0; });
   }
+  // Impact sparks reuse one shared geometry + a per-color cached material, so a
+  // heavy firefight doesn't allocate thousands of geometries/materials (the main
+  // GC-stutter source when the screen fills with enemies).
+  _partMaterial(color) {
+    this._partMats = this._partMats || {};
+    if (!this._partMats[color]) this._partMats[color] = new THREE.MeshBasicMaterial({ color });
+    return this._partMats[color];
+  }
   _impact(pos, color, count, pow) {
-    for (let i = 0; i < count; i++) {
-      const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({ color }));
+    this._partGeo = this._partGeo || new THREE.BoxGeometry(0.2, 0.2, 0.2);
+    const mat = this._partMaterial(color);
+    const cap = Math.min(count, 22); // cosmetic cap
+    for (let i = 0; i < cap; i++) {
+      const p = new THREE.Mesh(this._partGeo, mat);
       p.position.copy(pos); p.position.y = Math.max(0.6, pos.y);
       const a = Math.random() * Math.PI * 2, sp = (pow || 3) * (0.4 + Math.random());
       p.userData = { v: new THREE.Vector3(Math.cos(a) * sp, Math.random() * sp * 0.9 + 1, Math.sin(a) * sp), life: 0.45 + Math.random() * 0.3 };
@@ -822,6 +851,25 @@ export class Game {
   skipTutorial() { this._tutSeen = true; this.audio.resume(); this._reset(false); }
   openPanel(name) { this.state.panel = name; this.audio.ui(); this.refresh(); }
   closePanel() { this.state.panel = 'none'; this.audio.ui(); this.refresh(); }
+
+  togglePause() {
+    if (!this.state.started || this.state.ended) return;
+    if (this.state.panel === 'pause') this.state.panel = 'none';
+    else if (this.state.panel === 'none') this.state.panel = 'pause';
+    else return;
+    this.audio.ui(); this.refresh();
+  }
+  toggleMusic() { this.audio.setMusic(!this.audio.enabled); this.audio.ui(); this.refresh(); }
+  quitToHome() {
+    // stop the run and return to the start screen
+    this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
+    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.itemDrops || []]) {
+      arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
+    }
+    this.hud.hideCast(); this.boss = null;
+    Object.assign(this.state, this._freshState());
+    this.refresh();
+  }
 
   _reset(tutorial) {
     this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
@@ -955,10 +1003,8 @@ export class Game {
     this._updateEnemyBullets(dt);
     this._updatePickups(dt, md);
 
-    // interact prompt + core pulse (prompt key -> translated label at render)
-    const it = this._nearestInteract(); const pk = { core: 'prompt.core', crate: 'prompt.crate', extract: 'prompt.extract', portal: 'prompt.portal' };
-    const newPrompt = it ? pk[it.type] : null;
-    if (newPrompt !== this.state.prompt) { this.state.prompt = newPrompt; this.hud.syncPrompt(); }
+    // channeled interaction (hold E / USE to fill the gauge) + core pulse
+    this._updateChannel(dt);
     this.interact.forEach((x) => { if (x.type === 'core' && !x.done && x.glow) x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5; });
     // portal swirl animation
     if (this.portalObj && this.portalObj.visible) { const u = this.portalObj.userData; u.ring.rotation.z += dt * 1.4; u.swirl.rotation.z -= dt * 2.2; u.swirl2.rotation.z += dt * 2.2; u.light.intensity = 2 + Math.sin(this.state.time * 4) * 0.9; }

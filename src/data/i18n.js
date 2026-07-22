@@ -33,7 +33,7 @@ const STR = {
     'hud.inventory': 'Inventory', 'hud.arsenal': 'Shop', 'hud.tech': 'Tech Tree',
     'hud.hintDesktop': 'WASD move · aim mouse · SPACE dash · E interact',
     'hud.hintMobile': 'Left stick — move · Right stick — aim & fire · DASH to dodge',
-    'touch.use': 'Interact', 'touch.dash': 'Dodge',
+    'touch.use': 'Interact', 'touch.dash': 'Dodge', 'touch.hold': 'Hold',
     'prompt.core': 'Breach', 'prompt.crate': 'Salvage', 'prompt.extract': 'Extract', 'prompt.portal': 'Enter',
     'boss.tag': '⚠ Boss', 'cast.label': 'DANGER',
     'obj.coreA': 'Breach Data Core A', 'obj.coreB': 'Breach Data Core B', 'obj.extract': 'Reach Extraction',
@@ -55,6 +55,7 @@ const STR = {
     'tt.dmg': 'DMG', 'tt.rate': 'Rate', 'tt.move': 'Move', 'tt.hull': 'Max Hull', 'tt.armor': 'Armor',
     'tt.crit': 'Crit', 'tt.dashChg': 'Dash', 'tt.xp': 'XP', 'tt.scrap': 'Scrap', 'tt.chg': '{n} chg',
     'end.win': 'SECTOR CLEARED', 'end.lose': 'FRAME DOWN', 'end.level': 'Level', 'end.kills': 'Kills', 'end.time': 'Time', 'end.redeploy': 'Redeploy',
+    'pause.eyebrow': 'Paused', 'pause.title': 'SYSTEM MENU', 'pause.resume': 'Resume', 'pause.music': 'Music', 'pause.quit': 'Quit to Home',
     'loading': 'LOADING…', 'trans.loading': 'Entering…',
   },
   ko: {
@@ -69,7 +70,7 @@ const STR = {
     'hud.inventory': '인벤토리', 'hud.arsenal': '상점', 'hud.tech': '기술 트리',
     'hud.hintDesktop': 'WASD 이동 · 마우스 조준 · SPACE 대시 · E 상호작용',
     'hud.hintMobile': '왼쪽 스틱 — 이동 · 오른쪽 스틱 — 조준 & 사격 · DASH 회피',
-    'touch.use': '상호작용', 'touch.dash': '회피',
+    'touch.use': '상호작용', 'touch.dash': '회피', 'touch.hold': '길게',
     'prompt.core': '해킹', 'prompt.crate': '회수', 'prompt.extract': '탈출', 'prompt.portal': '진입',
     'boss.tag': '⚠ 보스', 'cast.label': '위험',
     'obj.coreA': '데이터 코어 A 해킹', 'obj.coreB': '데이터 코어 B 해킹', 'obj.extract': '탈출 지점으로 이동',
@@ -91,6 +92,7 @@ const STR = {
     'tt.dmg': '피해', 'tt.rate': '연사', 'tt.move': '이동', 'tt.hull': '최대 체력', 'tt.armor': '방어',
     'tt.crit': '치명', 'tt.dashChg': '대시', 'tt.xp': '경험치', 'tt.scrap': '고철', 'tt.chg': '{n} 충전',
     'end.win': '구역 정리 완료', 'end.lose': '격추됨', 'end.level': '레벨', 'end.kills': '처치', 'end.time': '시간', 'end.redeploy': '재출격',
+    'pause.eyebrow': '일시정지', 'pause.title': '시스템 메뉴', 'pause.resume': '계속하기', 'pause.music': '음악', 'pause.quit': '홈으로 나가기',
     'loading': '로딩 중…', 'trans.loading': '이동 중…',
   },
 };
