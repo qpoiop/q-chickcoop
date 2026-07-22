@@ -338,7 +338,10 @@ export class Game {
     const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0x7ff2e8, transparent: true, opacity: 0.9, depthWrite: false }));
     arrow.rotation.x = Math.PI / 2; arrow.position.set(0, 0.07, 1.15); aimG.add(arrow); this.aimArrow = arrow; // points where you aim
 
-    const sp = (this.L && this.L.spawnStart) ? this.L.spawnStart : { x: 0, z: 34 };
+    // Prefer a street-level spawn computed at map load (see _loadMapModel); it
+    // overrides the static level.spawnStart for the matching map.
+    const ov = this._streetSpawn;
+    const sp = (ov && ov.map === this.mapId) ? ov : ((this.L && this.L.spawnStart) ? this.L.spawnStart : { x: 0, z: 34 });
     p.position.set(sp.x, 0, sp.z); this.scene.add(p); this.player = p;
 
     this.muzzle = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -486,13 +489,36 @@ export class Game {
       target.getCenter(c); m.position.x -= c.x - (fit.offX || 0); m.position.z -= c.z - (fit.offZ || 0); m.position.y -= target.min.y + (fit.groundY || 0);
     }
     this.map = m; this.scene.add(m);
-    // Snap the actual ground SURFACE under the spawn to y=0 so the player (feet
-    // at 0) stands on it — robust against per-model pivot/scale (fixes sinking).
-    const sp = level.spawnStart || { x: 0, z: 0 };
     m.updateMatrixWorld(true);
-    const rc = new THREE.Raycaster(new THREE.Vector3(sp.x, 400, sp.z), new THREE.Vector3(0, -1, 0), 0, 2000);
-    const hit = rc.intersectObject(m, true).find((h) => h.object.visible);
-    if (hit) { m.position.y -= hit.point.y; this._mapGroundY = 0; }
+    const down = new THREE.Vector3(0, -1, 0);
+    const probe = (x, z) => { const rc = new THREE.Raycaster(new THREE.Vector3(x, 800, z), down, 0, 4000); return rc.intersectObject(m, true).find((h) => h.object.visible) || null; };
+
+    // Pick a STREET-level spawn: scan candidate points, prefer one standing on a
+    // road/sidewalk mesh at the lowest common surface (so the player starts on the
+    // avenue, not on a rooftop). Falls back to the level's spawnStart.
+    // NOTE: _buildWorld() rebuilds this.L from a fresh entry.build(), so mutating
+    // `level` here is lost — we stash the override on the instance instead and
+    // _buildPlayer reads it (keyed by map id).
+    this._streetSpawn = null;
+    let sp = level.spawnStart || { x: 0, z: 0 };
+    if (level.harvest) {
+      const streetRe = /road|street|asphalt|sidewalk|crosswalk|pavement|ground|floor|bg_/i;
+      const B = (level.bounds ? Math.min(level.bounds.hx, level.bounds.hz) : level.B) - 6;
+      let best = null;
+      for (let z = B; z >= -B; z -= 6) for (let x = -B; x <= B; x += 6) {
+        const h = probe(x, z); if (!h) continue;
+        if (!streetRe.test(h.object.name || '')) continue;
+        const y = h.point.y, dOrigin = x * x + z * z;
+        // lowest surface = street level; among those, nearest the map centre
+        if (!best || y < best.y - 0.6 || (Math.abs(y - best.y) <= 0.6 && dOrigin < best.d)) best = { x, z, y, d: dOrigin };
+      }
+      if (best) { sp = { x: best.x, z: best.z }; this._streetSpawn = { map: level.id, x: sp.x, z: sp.z }; }
+    }
+
+    // Snap the ground SURFACE under the chosen spawn to y=0 so the player (feet at
+    // 0) stands on it — robust against per-model pivot/scale (fixes sinking).
+    const gh = probe(sp.x, sp.z);
+    if (gh) { m.position.y -= gh.point.y; this._mapGroundY = 0; }
     this._applyLevelEnv(level);
     return m;
   }
