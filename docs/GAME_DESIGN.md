@@ -146,7 +146,14 @@ over many unverified ones. Log what was done + what's next at the bottom.
       so fast weapons don't buzz. Verified: blendMode=Additive, plays on fire at
       weight 0.9, no body teleport (model local pos 0), locomotion blend intact,
       distinct lunge pose on screen, no console errors.
-- [ ] Boss fight: 2 phases, bigger telegraphs, one arena hazard, reward beat.
+- [x] **Boss 2-phase / arena hazard** (2026-07-23): at ≤50% HP the boss ENRAGES —
+      move speed ×1.3, skill cooldowns ×0.55, an impact burst + shake + "BOSS
+      ENRAGED" banner/event, and a recurring arena hazard: telegraphed falling
+      meteors (ring warns ~1.2s, then shockwave + AoE damage if you're inside).
+      Verified: phase 1→2 at 45% HP, spd 2.2→2.86, cdMul 1→0.55, meteors spawn +
+      telegraph on-screen, enrage event fires, no console errors. (Red model tint is
+      best-effort — some boss materials lack an emissive channel; other cues cover it.)
+- [ ] Boss reward beat polish (bigger death payoff / slow-mo).
 - [x] **Damage numbers** (2026-07-23): pooled canvas-texture billboards (reused,
       capped 28 live, no per-hit alloc) pop above a struck enemy — white normal,
       gold crit, outlined, float-up + fade. Verified: 10 hits → 10 numbers with
@@ -190,4 +197,7 @@ over many unverified ones. Log what was done + what's next at the bottom.
 - 2026-07-23 (hourly loop #6) — P1 dedicated attack clip (additive layer over
   idle/run, root-position tracks dropped, per-shot retrigger). Verified additive +
   no teleport + locomotion intact + no errors. Animation-only, no UI impact.
-  **Next:** boss fight 2-phase (bigger telegraphs, arena hazard, reward beat).
+- 2026-07-23 (hourly loop #7) — P1 boss 2-phase: enrage at 50% HP (faster, quicker
+  skills, banner) + telegraphed meteor arena hazard. Verified phase flip, buffs,
+  meteors, no errors. **Next:** off-screen threat arrows (mobile), then enemy
+  archetypes.
