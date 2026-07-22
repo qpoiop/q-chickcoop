@@ -1,6 +1,2 @@
-# The urban city map is the main stage. Exclude the other unused scene models.
-scene/chicken_gun___lava.glb
-scene/skibidi_toilet_77_map.glb
-scene/low_poly_forest_1.glb
-scene/chicken_gun_fruzer_-_city/
-scene/chicken_gun_fruzer_dark_forest/
+# All shipped assets are meshopt+webp optimized and well under Cloudflare's
+# 25 MiB/file limit. Nothing to exclude — kept as a placeholder.

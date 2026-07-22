@@ -42,19 +42,21 @@ export function tutorialLevel() {
 // transform drops a playable section onto the bounds. Building collision is
 // harvested (size-capped).
 export function cityLevel() {
-  const hx = 40, hz = 40;
+  const hx = 62, hz = 62;
   return {
-    id: 'main', B: 40, bounds: { hx, hz }, harvest: true,
+    id: 'main', B: 62, bounds: { hx, hz }, harvest: true,
     // Fit to the BUILDING block (House/Bank/Church cluster: center (6,-4.6),
-    // ~123×137, floor y=-18.6). Meme props (giant Shrek head etc.) are hidden.
-    mapFit: { scale: 0.6, center: { x: 6, z: -4.6 }, minY: -18.6 },
-    spawnStart: { x: 0, z: 28 },
+    // ~123×137, floor y=-18.6). scale/center/minY are MODEL-space; bumping the
+    // scale grows the whole city (wider streets to roam) — the ground raycast
+    // re-snaps Y afterwards. Meme props (Shrek head etc.) are stripped from the GLB.
+    mapFit: { scale: 1.5, center: { x: 6, z: -4.6 }, minY: -18.6 },
+    spawnStart: { x: 0, z: 48 },
     walls: [], platforms: [], covers: [],
-    cores: [{ x: -22, z: -12 }, { x: 24, z: -10 }],
-    portal: { x: 0, z: -30, to: 'boss' },
-    spawns: [[-34, -28], [34, -28], [-34, 24], [34, 24], [0, -34], [-36, 0], [36, 0]],
-    crates: [[-16, 10], [18, -8], [-6, -14], [14, 12], [4, 4], [-26, -4], [28, 6]],
-    fog: { color: 0x0a0e14, near: 70, far: 230 }, bg: 0x1a2230,
+    cores: [{ x: -34, z: -18 }, { x: 38, z: -16 }],
+    portal: { x: 0, z: -50, to: 'boss' },
+    spawns: [[-54, -46], [54, -46], [-54, 40], [54, 40], [0, -56], [-58, 0], [58, 0]],
+    crates: [[-26, 16], [30, -12], [-10, -22], [22, 20], [6, 6], [-42, -6], [46, 10]],
+    fog: { color: 0x0a0e14, near: 90, far: 300 }, bg: 0x1a2230,
     light: { hemi: 0.6, dir: 1.6 },
   };
 }

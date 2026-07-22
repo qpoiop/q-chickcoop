@@ -108,11 +108,11 @@
     <!-- mobile action buttons: compact horizontal row, bottom-right thumb zone -->
     <div id="hudTouchBtns" style="display:none;position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(58px + env(safe-area-inset-bottom));flex-direction:row;gap:14px;align-items:flex-end;pointer-events:auto">
       <div class="touch-wrap">
-        <button id="btnUse" class="touch-btn use">⊕</button>
+        <button id="btnUse" class="touch-btn use"><span class="btn-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V6.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 11V7a1.5 1.5 0 0 1 3 0v6a6 6 0 0 1-6 6h-1.5a5 5 0 0 1-3.9-1.9L4 14.2a1.5 1.5 0 0 1 2.3-1.9L8 14V8a1.5 1.5 0 0 1 3 0"/></svg></span></button>
         <span class="touch-cap" data-i18n="touch.use">Interact</span>
       </div>
       <div class="touch-wrap">
-        <button id="btnDash" class="touch-btn dash"><span class="dash-cool"></span><span class="dash-glyph">⇢</span></button>
+        <button id="btnDash" class="touch-btn dash"><span class="dash-cool"></span><span class="dash-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7l5 5-5 5"/><path d="M12 7l5 5-5 5"/></svg></span></button>
         <span class="touch-cap" data-i18n="touch.dash">Dodge</span>
       </div>
     </div>
@@ -257,8 +257,11 @@
     <button id="installToast" class="toast-card" style="display:none;pointer-events:auto"><span data-i18n="home.install">Add to Home Screen</span></button>
   </div>
 
-  <!-- loading -->
-  <div id="loading" style="position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:#06090e;color:#7ff2e8;font-family:'Chakra Petch';letter-spacing:4px">LOADING…</div>
+  <!-- loading (stays up until the city map + hero are ready) -->
+  <div id="loading" style="position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;background:#06090e">
+    <div class="spinner"></div>
+    <div style="color:#7ff2e8;font-family:'Chakra Petch';letter-spacing:5px;font-size:14px">LOADING…</div>
+  </div>
 </div>
 <script type="module" src="/src/main.js"></script>
 </body>
