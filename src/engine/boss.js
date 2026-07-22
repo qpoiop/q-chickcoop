@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { locName } from '../data/i18n.js';
+import { locName, t } from '../data/i18n.js';
 
 // ============================================================================
 // BOSS AI — telegraphed skill casting. Each frame a boss either chases, winds
@@ -16,11 +16,23 @@ export function initBoss(game, e, def) {
   e.userData.cast = null;
   e.userData.dashT = 0;
   e.userData.dashDir = new THREE.Vector3();
+  e.userData.phase = 1;
+  e.userData.cdMul = 1;
+  e.userData.hazT = 0;
+  game._bossMeteors = [];
 }
 
 // to: normalized dir to player, d: distance to player.
 export function updateBoss(game, e, to, d, dt, rdt) {
   const u = e.userData;
+
+  // --- phase 2: enrage at 50% HP (faster, arena-hazard meteors, red tint) ---
+  if (u.phase === 1 && u.hp <= u.maxHp * 0.5) _enterPhase2(game, e);
+  if (u.phase === 2) {
+    u.hazT -= dt;
+    if (u.hazT <= 0 && !u.dashT && !u.cast) { u.hazT = 2.3; _spawnMeteor(game, e); }
+  }
+  _updateMeteors(game, dt);
 
   // --- active dash execution ---
   if (u.dashT > 0) {
@@ -72,10 +84,54 @@ function _clearCast(game, e) {
 }
 
 // Public: tear down any in-progress telegraph (boss death / game reset).
-export function clearBossCast(game, e) { _clearCast(game, e); e.userData.dashT = 0; }
+export function clearBossCast(game, e) {
+  _clearCast(game, e); e.userData.dashT = 0;
+  (game._bossMeteors || []).forEach((m) => game.scene.remove(m.tg)); game._bossMeteors = [];
+}
+
+// ---- phase 2 (enrage) ----
+function _enterPhase2(game, e) {
+  const u = e.userData; u.phase = 2; u.cdMul = 0.55; u.spd *= 1.3; u.hazT = 1.4;
+  // rush the next skill + shorten remaining cooldowns
+  u.skills.forEach((s) => { s.cdT = Math.min(s.cdT, 1.2); });
+  // angry red rim on the boss model
+  e.traverse((o) => { if (o.isMesh && o.material && o.material.emissive) { o.material.emissive.setHex(0xff1a1a); o.material.emissiveIntensity = Math.max(o.material.emissiveIntensity || 0, 0.9); } });
+  game.fx.shake = 1; game.fx.freeze = 0.22;
+  game._impact(e.position, 0xff2020, 40, 11);
+  game.audio.boss();
+  game.hud.showCast('⚠ ENRAGED', 1, 0xff2020);
+  setTimeout(() => { if (e.userData.phase === 2 && !e.userData.cast) game.hud.hideCast(); }, 900);
+  game._event(t('evt.enrage'));
+}
+
+// Telegraphed falling AoE near the player: ring warns, then a shockwave + damage.
+function _spawnMeteor(game, e) {
+  const B = (game.L && game.L.bounds) ? game.L.bounds.hx - 4 : 40;
+  const p = game.player.position;
+  const px = Math.max(-B, Math.min(B, p.x + (Math.random() - 0.5) * 14));
+  const pz = Math.max(-B, Math.min(B, p.z + (Math.random() - 0.5) * 14));
+  const radius = 4.2, color = 0xff5a2a;
+  const tg = _ringTelegraph(game, { x: px, z: pz }, radius, color);
+  game._bossMeteors.push({ tg, t: 0, dur: 1.2, x: px, z: pz, radius, dmg: Math.round((e.userData.def.dmg || 24) * 0.7), color });
+}
+function _updateMeteors(game, dt) {
+  const arr = game._bossMeteors; if (!arr || !arr.length) return;
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const m = arr[i]; m.t += dt; const p = Math.min(1, m.t / m.dur);
+    if (m.tg.userData.fill) { m.tg.userData.fill.scale.setScalar(p); m.tg.userData.fill.material.opacity = 0.12 + p * 0.35; }
+    if (m.t >= m.dur) {
+      game.scene.remove(m.tg); arr.splice(i, 1);
+      _shockwave(game, { x: m.x, z: m.z }, m.radius, m.color);
+      game._impact({ x: m.x, y: 1, z: m.z }, m.color, 22, 7);
+      game.fx.shake = Math.min(1, game.fx.shake + 0.25);
+      const dx = game.player.position.x - m.x, dz = game.player.position.z - m.z;
+      if (Math.hypot(dx, dz) <= m.radius) game._bossHitPlayer(m.dmg, { x: m.x, z: m.z });
+    }
+  }
+}
 
 function _execute(game, e, c) {
-  const def = c.skill.def; c.skill.cdT = def.cd;
+  const def = c.skill.def; c.skill.cdT = def.cd * (e.userData.cdMul || 1);
   if (def.type === 'aoe') {
     game._impact(e.position, def.color, 34, 10); game.fx.shake = Math.min(1, game.fx.shake + 0.6); game.audio.boss();
     _shockwave(game, e.position, def.radius, def.color);
