@@ -664,7 +664,9 @@ export class Game {
     const md = this._mods();
     if (kind === 'weapon') {
       const key = WEAPON_DROP_ORDER.find((k) => !this.state.owned[k]);
-      if (key) { this.state.owned = { ...this.state.owned, [key]: true }; if (this.state.weapon === 'flare') { this.state.weapon = key; this._attachGun(key); } this._event(t('evt.acquired', { name: locName(this.WEAPONS[key]) })); }
+      // Acquire only — do NOT auto-swap the active weapon out from under the
+      // player mid-fight; they switch via number keys / cycle / shop.
+      if (key) { this.state.owned = { ...this.state.owned, [key]: true }; this._event(t('evt.acquired', { name: locName(this.WEAPONS[key]) })); }
       else { this.state.gold += 30; this._event(t('evt.scrap30')); }
     } else if (kind === 'health') {
       this.state.hp = Math.min(this.state.maxHp + Math.round(md.hp), this.state.hp + CONFIG.drops.healAmount); this._event(t('evt.hull', { n: CONFIG.drops.healAmount }));
