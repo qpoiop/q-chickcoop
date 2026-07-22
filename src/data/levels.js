@@ -23,8 +23,11 @@ export function townLevel() {
     id: 'main', B: 66, bounds: { hx, hz }, arena: true, lavaRing: true,
     floorColor: 0x3a4552, gridColor1: 0x5a8ea6, gridColor2: 0x2c3b48, accent: 0x35e0d0, edgeColor: 0x35e0d0,
     spawnStart: { x: 0, z: 44 }, safe: { x: 0, z: 44, r: 8 },
-    walls: [], platforms: [],
-    covers: [[-28, 10], [28, 10], [-14, -8], [14, -8], [0, 22], [-46, -22], [46, -22], [0, -30], [-30, 32], [30, 32]],
+    walls: [
+      { x: -24, z: 6, w: 2, d: 20, h: 2.2 }, { x: 24, z: 6, w: 2, d: 20, h: 2.2 },
+      { x: 0, z: -6, w: 30, d: 2, h: 2.2 }, { x: -40, z: 20, w: 14, d: 2, h: 2.2 }, { x: 40, z: 20, w: 14, d: 2, h: 2.2 },
+    ], platforms: [],
+    covers: [[-28, 10], [28, 10], [-14, -8], [14, -8], [0, 22], [-46, -22], [46, -22], [0, -30], [-30, 32], [30, 32], [-16, 18], [16, 18], [-52, -6], [52, -6]],
     cores: [{ x: -46, z: -22 }, { x: 46, z: -22 }],
     portal: { x: 0, z: -44, to: 'boss' },
     spawns: [[-60, -44], [60, -44], [-60, 38], [60, 38], [0, -48], [-60, 0], [60, 0]],
@@ -34,24 +37,24 @@ export function townLevel() {
   };
 }
 
-// --- BOSS: neon arena floor laid over the detailed city model (backdrop) ---
-// `arena` draws a readable emissive floor/grid + cover pillars for clean boss
-// gameplay; `openArena` skips collision-harvest so the city stays decorative.
+// --- BOSS: a menacing violet colosseum (pure procedural arena, no heavy GLB
+// so the portal transition is instant). Ring of pillars + red energy moat. ---
 export function bossArenaLevel() {
-  const B = 42;
+  const B = 46;
   const ring = [];
-  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; ring.push([Math.cos(a) * 18, Math.sin(a) * 18]); }
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; ring.push([Math.cos(a) * 26, Math.sin(a) * 26]); }
+  for (let i = 0; i < 6; i++) { const a = (i + 0.5) / 6 * Math.PI * 2; ring.push([Math.cos(a) * 13, Math.sin(a) * 13]); }
   return {
-    id: 'boss', B, bounds: { hx: B, hz: B }, arena: true, openArena: true,
-    floorColor: 0x0d1622, gridColor1: 0x2a4a6a, gridColor2: 0x16283a, accent: 0xc06bff,
-    spawnStart: { x: 0, z: 30 }, safe: { x: 0, z: 30, r: 6 },
+    id: 'boss', B, bounds: { hx: B, hz: B }, arena: true, lavaRing: true,
+    floorColor: 0x241a2e, gridColor1: 0x5a3a7a, gridColor2: 0x2a1e38, accent: 0xc06bff, edgeColor: 0xff2d55,
+    spawnStart: { x: 0, z: 34 }, safe: { x: 0, z: 34, r: 7 },
     walls: [], covers: ring, platforms: [], cores: [],
-    boss: true, bossSpawn: { x: 0, z: -6 },
-    extractionAfterBoss: { x: 0, z: 34 },
-    spawns: [[-36, -30], [36, -30], [-36, 20], [36, 20], [0, -38], [-38, 0], [38, 0]],
-    crates: [[-24, 6], [24, 6], [-14, -18], [14, -18]],
-    fog: { color: 0x1a2230, near: 100, far: 320 }, bg: 0x223040,
-    light: { hemi: 1.05, dir: 2.1 },
+    boss: true, bossSpawn: { x: 0, z: -8 },
+    extractionAfterBoss: { x: 0, z: 38 },
+    spawns: [[-40, -34], [40, -34], [-40, 24], [40, 24], [0, -42], [-42, 0], [42, 0]],
+    crates: [[-26, 8], [26, 8], [-16, -20], [16, -20], [0, 10]],
+    fog: { color: 0x140a1a, near: 110, far: 340 }, bg: 0x1a1022,
+    light: { hemi: 0.6, dir: 1.6 },
   };
 }
 
@@ -59,7 +62,7 @@ export function bossArenaLevel() {
 // pure procedural arena (no GLB). Referenced by Game map handling.
 export const MAPS = {
   main: { id: 'main', model: null, build: townLevel },
-  boss: { id: 'boss', model: ASSETS.bossMap, build: bossArenaLevel },
+  boss: { id: 'boss', model: null, build: bossArenaLevel }, // pure arena → instant portal
 };
 
 // Procedural fallback arena (used only if a map GLB fails to load).

@@ -9,7 +9,9 @@ export class Input {
     this.el = domElement;
     this.joy = joysticks; // { base1, knob1, base2, knob2 }
     this.cb = callbacks;  // { onDash, onUse }
-    this.isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    // Start from the coarse-pointer guess; the first real touch/mouse event
+    // locks the actual mode (so mouse users never get mobile auto-fire).
+    this.isTouch = window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches;
 
     this.keys = {};
     this.mouseDown = false;
@@ -37,7 +39,9 @@ export class Input {
     window.addEventListener('keydown', this._kd);
     window.addEventListener('keyup', this._ku);
 
+    this._setMode = (touch) => { if (this.isTouch !== touch) { this.isTouch = touch; this.cb.onMode && this.cb.onMode(); } };
     this._mm = (e) => {
+      if (e.movementX || e.movementY) this._setMode(false); // real mouse in use
       const r = el.getBoundingClientRect();
       this.mouseNDC.x = ((e.clientX - r.left) / r.width) * 2 - 1;
       this.mouseNDC.y = -((e.clientY - r.top) / r.height) * 2 + 1;
@@ -56,6 +60,7 @@ export class Input {
     el.addEventListener('wheel', this._wheel, { passive: false });
 
     this._ts = (e) => {
+      this._setMode(true); // real touch → mobile mode
       for (const t of e.changedTouches) {
         if (t.clientX < innerWidth * 0.5 && this.joyId === null) {
           this.joyId = t.identifier; this.joyOrigin = { x: t.clientX, y: t.clientY };

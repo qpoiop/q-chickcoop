@@ -101,7 +101,6 @@ function _bullet(game, origin, dir, def) {
   const b = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12),
     new THREE.MeshStandardMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 2.2, roughness: 0.4 }));
   b.position.copy(origin).add(dir.clone().multiplyScalar(u_r(game) + 1.2)); b.position.y = 1.2;
-  b.add(new THREE.PointLight(def.color, 1.2, 6));
   b.userData = { dir: dir.clone().normalize(), vel: def.speed, dmg: def.dmg, life: 4 };
   game.scene.add(b); game.enemyBullets.push(b);
 }

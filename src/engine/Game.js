@@ -34,7 +34,10 @@ export class Game {
     this.audio = new Audio();
     this.hud = new HUD(this);
     this.panels = new Panels(this);
-    this.isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    // Touch mode is decided by the ACTIVE input, not mere capability — many
+    // laptops report maxTouchPoints>0 yet are used with a mouse (which would
+    // wrongly enable mobile auto-fire). Default off; a real touch flips it on.
+    this._touchGuess = window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches;
 
     this.state = this._freshState();
     this._dead = false;
@@ -58,6 +61,7 @@ export class Game {
 
   refresh() { this.hud.sync(); this.panels.sync(); }
   _mods() { return computeModifiers(this.state.ranks); }
+  get isTouch() { return this.input ? this.input.isTouch : this._touchGuess; }
 
   // ---------- boot ----------
   _waitThree() { if (this._dead) return; if (this.dom.mount) this._init(); else this._waitT = setTimeout(() => this._waitThree(), 60); }
@@ -506,7 +510,7 @@ export class Game {
   _bindInput() {
     this.input = new Input(this.rend.domElement, {
       base1: this.dom.joyBase1, knob1: this.dom.joyKnob1, base2: this.dom.joyBase2, knob2: this.dom.joyKnob2,
-    }, { onDash: () => this._dash(), onUse: () => this._use(), onWeapon: (i) => this.selectWeaponSlot(i), onCycle: () => this.cycleWeapon(1) });
+    }, { onDash: () => this._dash(), onUse: () => this._use(), onWeapon: (i) => this.selectWeaponSlot(i), onCycle: () => this.cycleWeapon(1), onMode: () => this.refresh() });
   }
 
   _dash() {
@@ -611,7 +615,7 @@ export class Game {
     } else if (kind === 'health') {
       this.state.hp = Math.min(this.state.maxHp + Math.round(md.hp), this.state.hp + CONFIG.drops.healAmount); this._event(t('evt.hull', { n: CONFIG.drops.healAmount }));
     } else { this.state.gold += Math.ceil(20 * md.gold); this._event(t('evt.scrap')); }
-    this.audio.pickup(); this.fx.shake = Math.min(1, this.fx.shake + 0.2);
+    this.audio.pickup(); this.fx.shake = Math.min(0.5, this.fx.shake + 0.06); // gentle, no seizure on magnet pickups
     if (this._tut && this.tut.step === 3) this._tutAdvance();
     this.refresh();
   }
@@ -631,21 +635,21 @@ export class Game {
   // Build one projectile mesh from the weapon's data-driven `bullet` spec.
   _makeBullet(bt, a, dir, origin, col, crit) {
     let b;
+    // NOTE: no per-bullet PointLight — dozens of dynamic lights from a fast
+    // weapon tank the framerate. Emissive materials + bloom read as glow.
     if (bt.type === 'pellet') {
-      b = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 14), new THREE.MeshStandardMaterial({ color: crit ? 0xffffff : 0xffd98a, emissive: 0xffb03b, emissiveIntensity: 2.4, roughness: 0.4 }));
-      b.add(new THREE.PointLight(0xffb03b, 1.6, 7));
+      b = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12), new THREE.MeshStandardMaterial({ color: crit ? 0xffffff : 0xffd98a, emissive: 0xffb03b, emissiveIntensity: 2.6, roughness: 0.4 }));
     } else if (bt.type === 'orb') {
       const size = bt.size || 1.1;
-      b = new THREE.Mesh(new THREE.SphereGeometry(size, 20, 20), new THREE.MeshStandardMaterial({ color: bt.color || '#1a1030', emissive: 0x2a1050, emissiveIntensity: 0.6, roughness: 0.25, metalness: 0.4 }));
-      const halo = new THREE.Mesh(new THREE.SphereGeometry(size * 1.35, 16, 16), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }));
-      b.add(halo); b.add(new THREE.PointLight(col, 2.2, 12));
+      b = new THREE.Mesh(new THREE.SphereGeometry(size, 18, 18), new THREE.MeshStandardMaterial({ color: bt.color || '#1a1030', emissive: 0x2a1050, emissiveIntensity: 0.8, roughness: 0.25, metalness: 0.4 }));
+      const halo = new THREE.Mesh(new THREE.SphereGeometry(size * 1.35, 14, 14), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false }));
+      b.add(halo);
     } else if (bt.type === 'drop') {
       const size = bt.size || 0.24;
       b = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 8), new THREE.MeshBasicMaterial({ color: crit ? 0xffffff : col, transparent: true, opacity: 0.9 }));
     } else { // bolt
       b = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.7, 6, 10), new THREE.MeshBasicMaterial({ color: col }));
       b.rotation.x = Math.PI / 2; b.rotation.z = -a; b.lookAt(origin.clone().add(dir));
-      b.add(new THREE.PointLight(col, 1.1, 6));
     }
     b.position.copy(origin).add(dir.clone().multiplyScalar(1.4)); b.position.y = 1.05;
     return b;
@@ -1093,9 +1097,8 @@ export class Game {
   // Ranged-mob projectile (routed through the same enemyBullets pipeline).
   _spawnMobBullet(pos, dir, dmg, speed, color) {
     const d = dir.clone().setY(0).normalize();
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 10), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2, roughness: 0.4 }));
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 10), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 2.2, roughness: 0.4 }));
     b.position.copy(pos).add(d.clone().multiplyScalar(1.2)); b.position.y = 1.1;
-    b.add(new THREE.PointLight(color, 1, 5));
     b.userData = { dir: d, vel: speed, dmg, life: 3.5 };
     this.scene.add(b); this.enemyBullets.push(b);
   }
