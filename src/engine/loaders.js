@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
+
+// Deep-clone a model, correctly rebinding skinned meshes to a cloned skeleton.
+// Plain Object3D.clone(true) shares/breaks the skeleton → skinned clones render
+// collapsed or invisible; SkeletonUtils.clone is the correct path.
+export function cloneSkinned(root) { return skeletonClone(root); }
 
 // Shared GLTF loader + helpers. Async loads never block the game loop; the
 // world renders primitive fallbacks until real meshes arrive, then swaps in.
@@ -28,10 +34,27 @@ export function fitScale(object3d, targetLen) {
 
 /** Fit by height only (characters), returns scale to reach `targetH`. */
 export function fitHeight(object3d, targetH) {
-  const box = new THREE.Box3().setFromObject(object3d);
+  const box = characterBox(object3d);
   const size = new THREE.Vector3();
   box.getSize(size);
   return targetH / (size.y || 1);
+}
+
+/**
+ * Bounding box of a character. Skinned meshes MUST be measured via skeleton
+ * bones — their geometry bbox is the collapsed bind pose, which makes a naive
+ * setFromObject fit blow the scale up ~100×. Static meshes use the mesh bbox.
+ */
+export function characterBox(root) {
+  let sk = null;
+  root.traverse((o) => { if (o.isSkinnedMesh && o.skeleton) sk = o; });
+  if (sk && sk.skeleton.bones.length) {
+    root.updateWorldMatrix(true, true);
+    const b = new THREE.Box3(), v = new THREE.Vector3();
+    sk.skeleton.bones.forEach((bo) => { bo.getWorldPosition(v); b.expandByPoint(v.clone()); });
+    if (!b.isEmpty()) return b;
+  }
+  return new THREE.Box3().setFromObject(root);
 }
 
 /** Clamp metalness across a subtree so bloom/lighting reads consistently. */

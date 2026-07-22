@@ -30,6 +30,8 @@ export class Input {
       this.keys[k] = true;
       if (k === ' ') { e.preventDefault(); this.cb.onDash(); }
       if (k === 'e') this.cb.onUse();
+      if (k >= '1' && k <= '9') this.cb.onWeapon && this.cb.onWeapon(+k - 1);
+      if (k === 'q') this.cb.onCycle && this.cb.onCycle();
     };
     this._ku = (e) => { this.keys[e.key.toLowerCase()] = false; };
     window.addEventListener('keydown', this._kd);

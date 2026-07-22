@@ -44,6 +44,7 @@ export class HUD {
     $('btnSkills').onclick = () => g.openPanel('skills');
     $('btnDash').ontouchstart = (e) => { e.preventDefault(); g._dash(); };
     $('btnUse').ontouchstart = (e) => { e.preventDefault(); g._use(); };
+    $('hudWeaponBox').onclick = () => g.cycleWeapon(1);
     this.el.langEn.onclick = () => this._setLang('en');
     this.el.langKo.onclick = () => this._setLang('ko');
   }

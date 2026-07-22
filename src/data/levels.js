@@ -15,20 +15,22 @@ import { ASSETS } from './assets.js';
 // plane + a tiny inseparable town) that don't fit a gameplay field, so the main
 // map is a purpose-built warm "lava yard" arena: a lit ground + amber grid +
 // cover pillars, ringed by a glowing lava moat. Reliable, readable, performant.
+// First / tutorial map = a clean research-lab arena: tiled floor + teal grid +
+// an energy boundary. Purpose-built (no GLB) so scale/centering are correct.
 export function townLevel() {
-  const hx = 52, hz = 40;
+  const hx = 66, hz = 54;
   return {
-    id: 'main', B: 52, bounds: { hx, hz }, arena: true, lavaRing: true,
-    floorColor: 0x53422c, gridColor1: 0x8a6636, gridColor2: 0x46351f, accent: 0xffb03b,
-    spawnStart: { x: 0, z: 34 }, safe: { x: 0, z: 34, r: 7 },
+    id: 'main', B: 66, bounds: { hx, hz }, arena: true, lavaRing: true,
+    floorColor: 0x3a4552, gridColor1: 0x5a8ea6, gridColor2: 0x2c3b48, accent: 0x35e0d0, edgeColor: 0x35e0d0,
+    spawnStart: { x: 0, z: 44 }, safe: { x: 0, z: 44, r: 8 },
     walls: [], platforms: [],
-    covers: [[-22, 8], [22, 8], [-10, -8], [10, -8], [0, 16], [-34, -18], [34, -18], [0, -22]],
-    cores: [{ x: -36, z: -16 }, { x: 36, z: -16 }],
-    portal: { x: 0, z: -32, to: 'boss' },
-    spawns: [[-46, -32], [46, -32], [-46, 26], [46, 26], [0, -34], [-46, 0], [46, 0]],
-    crates: [[-20, 20], [20, 20], [-40, 4], [40, 4], [0, 4], [-14, -24], [14, -24]],
-    fog: { color: 0x1a0e08, near: 120, far: 300 }, bg: 0x2a1408,
-    light: { hemi: 0.7, dir: 1.7 },
+    covers: [[-28, 10], [28, 10], [-14, -8], [14, -8], [0, 22], [-46, -22], [46, -22], [0, -30], [-30, 32], [30, 32]],
+    cores: [{ x: -46, z: -22 }, { x: 46, z: -22 }],
+    portal: { x: 0, z: -44, to: 'boss' },
+    spawns: [[-60, -44], [60, -44], [-60, 38], [60, 38], [0, -48], [-60, 0], [60, 0]],
+    crates: [[-26, 26], [26, 26], [-54, 6], [54, 6], [0, 8], [-18, -34], [18, -34]],
+    fog: { color: 0x0c1218, near: 140, far: 380 }, bg: 0x141c26,
+    light: { hemi: 0.75, dir: 1.7 },
   };
 }
 

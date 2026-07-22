@@ -9,19 +9,19 @@ export const ASSET_BASE = import.meta.env.BASE_URL || './';
 const p = (rel) => ASSET_BASE.replace(/\/$/, '') + '/' + rel;
 
 export const ASSETS = {
-  // Playable hero. NOTE: chick.glb is unusable as a player — it renders ~0.5u
-  // tall and its only animation ("Take 01") flings the mesh ~4.6u off the
-  // ground. golden_chicken_hero is grounded, correctly sized, and animated.
-  player: p('caracter/golden_chicken_hero.glb'),
+  // Playable hero = chuck_movie: the best-rigged model (Run / Attack / Fly /
+  // Lean / Boost clips). Swapped in from the boss slot per request.
+  // (chick.glb is unusable — ~0.5u tall, its one animation flings the mesh off
+  //  the ground; not shipped.)
+  player: p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
 
-  // Character roster — 3 enemies + 2 bosses + 1 player (above).
+  // Character roster — 3 enemies + 2 bosses.
   enemyModels: {
-    cute:   p('caracter/lowpoly_bird_animation.glb'),
-    little: p('caracter/chick_stylized_character.glb'),
-    drone:  p('caracter/lady_bug_bird.glb'),
-    // 2 bosses (bossB temporarily shares bossA's model — swap later)
-    bossA:  p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
-    bossB:  p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
+    cute:   p('caracter/lowpoly_bird_animation.glb'),  // grunt (melee)
+    little: p('caracter/lowpoly_bird_animation.glb'),  // brute (melee, scaled up)
+    drone:  p('caracter/lady_bug_bird.glb'),           // ranged flyer
+    bossA:  p('caracter/chick_stylized_character.glb'),
+    bossB:  p('caracter/golden_chicken_hero.glb'),
   },
 
   // Weapon frames — one gun model per weapon key (data/weapons.js WEAPON_MODEL_MAP).
