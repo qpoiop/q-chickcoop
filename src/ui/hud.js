@@ -39,6 +39,7 @@ export class HUD {
       endTitle: $('endTitle'), endLevel: $('endLevel'), endKills: $('endKills'), endTime: $('endTime'),
       skipStart: $('btnSkipTutStart'), langEn: $('langEn'), langKo: $('langKo'),
       btnPause: $('btnPause'), pauseOverlay: $('pauseOverlay'), musicState: $('musicState'),
+      combo: $('hudCombo'), comboN: $('hudComboN'), comboLbl: $('hudComboLbl'),
     };
     this._dashCount = -1;
     this._buildStartParticles();
@@ -107,6 +108,7 @@ export class HUD {
     e.end.style.display = s.ended ? 'flex' : 'none';
     // install / update toasts belong on the home screen only — never over gameplay
     document.body.classList.toggle('playing', s.started && !s.ended);
+    if (!s.started || s.ended) this.hideCombo();
     e.skipStart.style.display = this.g._tutSeen ? 'none' : 'inline';
 
     const w = WEAPONS[s.weapon] || WEAPONS.flare;
@@ -187,6 +189,20 @@ export class HUD {
     }
   }
   hideCast() { if (this.el.cast) this.el.cast.style.display = 'none'; }
+
+  // Kill-streak badge. Escalates color/label by tier; re-pops on each kill.
+  showCombo(n) {
+    const e = this.el; if (!e.combo) return;
+    const tier = n >= 12 ? 4 : n >= 8 ? 3 : n >= 5 ? 2 : 1;
+    const col = ['#7ff2e8', '#7ff2e8', '#59ff9d', '#ffd23f', '#ff6b3b'][tier];
+    const lbl = ['', 'COMBO', 'COMBO', 'RAMPAGE', 'CARNAGE'][tier];
+    e.combo.style.setProperty('--cc', col);
+    e.comboN.textContent = '×' + n;
+    e.comboLbl.textContent = lbl;
+    e.combo.style.display = 'block';
+    e.combo.classList.remove('pop'); void e.combo.offsetWidth; e.combo.classList.add('pop');
+  }
+  hideCombo() { if (this.el.combo) this.el.combo.style.display = 'none'; }
 
   // ---- fast numeric updates ----
   tick() {

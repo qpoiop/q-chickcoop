@@ -105,6 +105,15 @@ body.playing #bottomToasts { display:none !important; }
   background:rgba(8,12,18,.92); box-shadow:0 0 10px rgba(53,224,208,.35) inset; }
 .prompt-key #hudPromptGlyph svg { width:16px; height:16px; display:block; }
 
+/* Kill-streak / combo badge — pops on each kill, escalates with tier color */
+@keyframes comboPop { 0% { transform: scale(.5); opacity: 0; } 40% { transform: scale(1.22); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+#hudCombo { --cc: #7ff2e8; }
+.combo-n { font-family:'Chakra Petch'; font-weight:800; font-size:44px; line-height:.9; color:var(--cc);
+  text-shadow:0 0 18px var(--cc), 0 3px 10px rgba(0,0,0,.7); letter-spacing:1px; }
+.combo-lbl { font-family:'Rajdhani'; font-weight:700; font-size:13px; letter-spacing:6px; color:var(--cc);
+  text-transform:uppercase; opacity:.85; margin-top:2px; text-shadow:0 0 10px var(--cc); }
+#hudCombo.pop .combo-n { animation: comboPop .32s cubic-bezier(.2,1.4,.4,1); }
+
 /* Map-transition spinner */
 @keyframes spin360 { to { transform: rotate(360deg); } }
 .spinner { width:56px; height:56px; border-radius:50%;

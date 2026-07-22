@@ -146,7 +146,11 @@ over many unverified ones. Log what was done + what's next at the bottom.
       capped 28 live, no per-hit alloc) pop above a struck enemy — white normal,
       gold crit, outlined, float-up + fade. Verified: 10 hits → 10 numbers with
       correct values, rendered on-screen, no console errors. Kill-streak still open.
-- [ ] Kill-streak counter (builds on the damage-number juice).
+- [x] **Kill-streak counter** (2026-07-23): consecutive kills inside a 2.8s rolling
+      window drive a center-top combo badge (×N) that pops on each kill and escalates
+      COMBO→RAMPAGE→CARNAGE with tier colours; resets when the window lapses; tracks
+      `streakBest`. Verified: ×2..×6 chain + reset + best=6; badge repositioned to
+      top:12% to clear the level-up/acquire toasts; no console errors.
 - [ ] Minimap or off-screen threat arrows (mobile-readable).
 - [ ] Two more enemy archetypes (bomber that rushes+explodes, shielder).
 
@@ -175,5 +179,7 @@ over many unverified ones. Log what was done + what's next at the bottom.
   green; gate 2 was blocked by the fixed viewport at the time.
 - 2026-07-23 (hourly loop #4) — UNBLOCKED gate 2 with an iframe render harness, then
   fixed P0 mobile-landscape home clipping (`#startOverlay` inline overflow/justify).
-  Verified at 844×390 & 915×412: Deploy button visible, content scrollable, no
-  errors. **Next:** kill-streak counter, then dedicated attack clip.
+  Verified at 844×390 & 915×412: Deploy button visible, content scrollable, no errors.
+- 2026-07-23 (hourly loop #5) — P1 kill-streak combo badge (×N, tiered COMBO/RAMPAGE/
+  CARNAGE, 2.8s window). All gates green (mobile via iframe). **Next:** dedicated
+  attack clip layered over locomotion, then boss 2-phase.
