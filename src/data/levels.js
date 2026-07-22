@@ -17,23 +17,25 @@ import { ASSETS } from './assets.js';
 // cover pillars, ringed by a glowing lava moat. Reliable, readable, performant.
 // First / tutorial map = a clean research-lab arena: tiled floor + teal grid +
 // an energy boundary. Purpose-built (no GLB) so scale/centering are correct.
+// First / main map = the chicken-gun lava TOWN model (4 MB, instant, on-theme).
+// Real streets + buildings (collision harvested from the mesh); the play area is
+// the town itself, no procedural grid / no giant safe ring.
+// The lava town GLB is a long STREET (~201×61 in model space, centered at
+// (-37.4,-9.7), floor y=-2.5). Hand-tuned transform places the street on the
+// play area; bounds match the street's shape (wide, shallow).
 export function townLevel() {
-  const hx = 50, hz = 40;
+  const hx = 46, hz = 16;
   return {
-    id: 'main', B: 50, bounds: { hx, hz }, arena: true, lavaRing: true,
-    floorColor: 0x3a4552, gridColor1: 0x5a8ea6, gridColor2: 0x2c3b48, accent: 0x35e0d0, edgeColor: 0x35e0d0,
-    spawnStart: { x: 0, z: 32 }, safe: { x: 0, z: 32, r: 7 },
-    walls: [
-      { x: -20, z: 4, w: 2, d: 16, h: 2.2 }, { x: 20, z: 4, w: 2, d: 16, h: 2.2 },
-      { x: 0, z: -6, w: 24, d: 2, h: 2.2 }, { x: -34, z: 16, w: 12, d: 2, h: 2.2 }, { x: 34, z: 16, w: 12, d: 2, h: 2.2 },
-    ], platforms: [],
-    covers: [[-24, 8], [24, 8], [-12, -8], [12, -8], [0, 18], [-38, -18], [38, -18], [0, -26], [-26, 26], [26, 26]],
-    cores: [{ x: -38, z: -18 }, { x: 38, z: -18 }],
-    portal: { x: 0, z: -34, to: 'boss' },
-    spawns: [[-44, -34], [44, -34], [-44, 26], [44, 26], [0, -38], [-44, 0], [44, 0]],
-    crates: [[-22, 22], [22, 22], [-42, 4], [42, 4], [0, 6], [-14, -28], [14, -28]],
-    fog: { color: 0x0c1218, near: 120, far: 320 }, bg: 0x141c26,
-    light: { hemi: 0.75, dir: 1.7 },
+    id: 'main', B: 46, bounds: { hx, hz }, harvest: true,
+    mapFit: { scale: 0.458, center: { x: -37.4, z: -9.7 }, minY: -2.5, offX: -18 },
+    spawnStart: { x: 4, z: 12 },
+    walls: [], platforms: [], covers: [],
+    cores: [{ x: -18, z: -8 }, { x: 30, z: 6 }],
+    portal: { x: 6, z: -12, to: 'boss' },
+    spawns: [[-28, -12], [36, -12], [-28, 12], [36, 12], [4, -13], [-30, 2], [40, 0]],
+    crates: [[-22, 6], [22, -6], [-8, -10], [16, 8], [4, 2], [-30, -4], [34, 2]],
+    fog: { color: 0x0a0e14, near: 80, far: 220 }, bg: 0x1a2230,
+    light: { hemi: 0.55, dir: 1.5 },
   };
 }
 
@@ -61,8 +63,8 @@ export function bossArenaLevel() {
 // Map registry: optional GLB backdrop model + level builder. `model: null` =
 // pure procedural arena (no GLB). Referenced by Game map handling.
 export const MAPS = {
-  main: { id: 'main', model: null, build: townLevel },
-  boss: { id: 'boss', model: null, build: bossArenaLevel }, // pure arena → instant portal
+  main: { id: 'main', model: ASSETS.map, build: townLevel }, // lava town GLB (4 MB)
+  boss: { id: 'boss', model: null, build: bossArenaLevel },  // pure arena → instant portal
 };
 
 // Procedural fallback arena (used only if a map GLB fails to load).
