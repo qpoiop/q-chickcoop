@@ -321,6 +321,20 @@ export class Game {
       const runClip = pick(/run|walk|move|boost|fly/i, clips[1] || clips[0]);
       if (idleClip) { this.idleAction = this.mixer.clipAction(idleClip); this.idleAction.play(); this.idleAction.setEffectiveWeight(1); }
       if (runClip && runClip !== idleClip) { this.runAction = this.mixer.clipAction(runClip); this.runAction.play(); this.runAction.setEffectiveWeight(0); }
+      // Attack clip as an ADDITIVE layer (delta over the bind pose) so it overlays
+      // idle/run on fire without replacing locomotion. Root position tracks are
+      // dropped so the jab doesn't slide the body. One-shot, retriggered per shot.
+      this.attackAction = null;
+      const atkClip = clips.find((c) => /attack(?!_slide)/i.test(c.name)) || clips.find((c) => /attack/i.test(c.name));
+      if (atkClip) {
+        const add = atkClip.clone();
+        add.tracks = add.tracks.filter((t) => !/\.position$/.test(t.name));
+        THREE.AnimationUtils.makeClipAdditive(add);
+        this.attackAction = this.mixer.clipAction(add);
+        this.attackAction.setLoop(THREE.LoopOnce, 1);
+        this.attackAction.clampWhenFinished = false;
+        this.attackAction.setEffectiveWeight(0);
+      }
       this.chicken.fit = null;
     } else {
       const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.6, 1, 6, 12), new THREE.MeshStandardMaterial({ color: 0x123038, emissive: 0x0e3030, emissiveIntensity: 0.5, roughness: 0.4, metalness: 0.5 }));
@@ -789,6 +803,12 @@ export class Game {
       this.scene.add(b); this.bullets.push(b);
     }
     this.game.fireT = w.cd / md.rate;
+    // additive attack jab (skip re-trigger if one is already early in its swing so
+    // fast weapons don't buzz)
+    const aa = this.attackAction;
+    if (aa && (!aa.isRunning() || aa.time > aa.getClip().duration * 0.45)) {
+      aa.reset(); aa.setEffectiveWeight(0.9); aa.setEffectiveTimeScale(1.35); aa.play();
+    }
     this.fx.muzzle = bt.type === 'pellet' ? 0.09 : 0.06;
     this.gunLight.color.set(parseInt(w.color.slice(1), 16)); this.gunLight.intensity = bt.type === 'pellet' ? 2.8 : 2.2;
     if (bt.type === 'pellet') this._impact(origin.clone().add(new THREE.Vector3(this.aim.x, 0, this.aim.z).multiplyScalar(1.8)).setY(1.05), 0xffcf6a, 4, 3);
