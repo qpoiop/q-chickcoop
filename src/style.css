@@ -37,24 +37,28 @@ a { color: #35e0d0; } a:hover { color: #7ff2e8; }
 /* Tech Tree button: no clip-path so its skill-point badge isn't clipped away. */
 #btnSkills { clip-path:none; overflow:visible; }
 
-/* Mobile action buttons — clear glyph, caption, press feedback, cooldown ring */
-.touch-wrap { display:flex; flex-direction:column; align-items:center; gap:5px; }
-.touch-cap { font-family:'Rajdhani'; font-size:10px; font-weight:600; letter-spacing:2px;
-  text-transform:uppercase; color:#8098a8; }
-.touch-btn { position:relative; border-radius:50%; background:rgba(11,18,26,.82);
-  font-family:'Chakra Petch'; font-weight:700; display:grid; place-items:center;
+/* Mobile action buttons — equal circles, centered glyphs, caption beneath.
+   The row top-aligns the wraps so both buttons sit on the same line. */
+#hudTouchBtns { align-items:flex-start !important; }
+.touch-wrap { display:flex; flex-direction:column; align-items:center; gap:7px; }
+.touch-cap { font-family:'Rajdhani'; font-size:11px; font-weight:600; letter-spacing:2px;
+  text-transform:uppercase; color:#9fb1c0; line-height:1; }
+.touch-btn { position:relative; width:66px; height:66px; border-radius:50%; background:rgba(11,18,26,.85);
+  font-family:'Chakra Petch'; font-weight:700; font-size:27px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
   transition:transform .08s, box-shadow .12s, opacity .15s; -webkit-tap-highlight-color:transparent; }
-.touch-btn.use { width:66px; height:66px; border:2px solid #59ff9d; color:#59ff9d; font-size:26px;
-  box-shadow:0 0 16px rgba(89,255,157,.3); }
-.touch-btn.dash { width:66px; height:66px; border:2px solid #35e0d0; color:#7ff2e8; font-size:26px;
-  box-shadow:0 0 20px rgba(53,224,208,.35); }
-.touch-btn:active { transform:scale(.9); box-shadow:0 0 26px rgba(53,224,208,.6); }
-.touch-btn.dash[data-empty="1"] { opacity:.4; }
-.dash-glyph { position:relative; z-index:1; }
-/* conic cooldown fill: --cool 0..1 = fraction recharged */
-.dash-cool { position:absolute; inset:3px; border-radius:50%;
-  background:conic-gradient(rgba(53,224,208,.35) calc(var(--cool,1)*360deg), transparent 0); }
-.touch-btn.dash[data-empty="1"] .dash-cool { background:conic-gradient(rgba(255,176,59,.4) calc(var(--cool,0)*360deg), transparent 0); }
+.touch-btn.use { border:2px solid #59ff9d; color:#59ff9d; box-shadow:0 0 16px rgba(89,255,157,.3); }
+.touch-btn.dash { border:2px solid #35e0d0; color:#7ff2e8; box-shadow:0 0 20px rgba(53,224,208,.35); }
+.touch-btn:active { transform:scale(.9); }
+.touch-btn.dash[data-empty="1"] { opacity:.45; }
+.dash-glyph, .btn-glyph { position:relative; z-index:1; display:grid; place-items:center; }
+.touch-btn svg { width:30px; height:30px; display:block; }
+/* conic cooldown ring behind the glyph: --cool 0..1 = fraction recharged */
+.dash-cool { position:absolute; inset:-2px; border-radius:50%; pointer-events:none;
+  background:conic-gradient(#35e0d0 calc(var(--cool,1)*360deg), rgba(53,224,208,.16) 0);
+  -webkit-mask:radial-gradient(closest-side, transparent 88%, #000 90%);
+          mask:radial-gradient(closest-side, transparent 88%, #000 90%); }
+.touch-btn.dash[data-empty="1"] .dash-cool { background:conic-gradient(#ffb03b calc(var(--cool,0)*360deg), rgba(255,176,59,.16) 0); }
 
 .link-btn { font-family:'Rajdhani'; cursor:pointer; background:none; color:#5f7486; border:none;
   letter-spacing:2px; text-transform:uppercase; text-decoration:underline; text-underline-offset:3px; font-size:10px; }
@@ -77,6 +81,8 @@ a { color: #35e0d0; } a:hover { color: #7ff2e8; }
 .toast-card:hover { border-color:#7ff2e8; color:#bff; }
 #installToast { border-color:#ffb03b; color:#ffd9a0; box-shadow:0 6px 26px rgba(0,0,0,.5),0 0 20px rgba(255,176,59,.25); }
 #installToast:hover { border-color:#ffd9a0; color:#ffe9c8; }
+/* install / update prompts are home-screen only — never overlay live gameplay */
+body.playing #bottomToasts { display:none !important; }
 
 /* Pause / settings menu buttons */
 .menu-btn { font-family:'Rajdhani'; cursor:pointer; min-width:230px; background:rgba(11,18,26,.9); color:#cfe;
@@ -87,15 +93,17 @@ a { color: #35e0d0; } a:hover { color: #7ff2e8; }
 .menu-btn.danger:hover { border-color:#ff3b6b; color:#ff3b6b; }
 #btnPause:hover { border-color:#35e0d0; color:#7ff2e8; }
 
-/* Interaction prompt key + radial channel gauge (hold-to-hack) */
-.prompt-key { position:relative; width:40px; height:40px; display:grid; place-items:center; }
-.prompt-ring { position:absolute; inset:0; border-radius:50%;
-  background:conic-gradient(#35e0d0 calc(var(--frac,0)*360deg), rgba(53,224,208,.14) 0);
-  -webkit-mask:radial-gradient(closest-side, transparent 66%, #000 68%);
-          mask:radial-gradient(closest-side, transparent 66%, #000 68%); }
-.prompt-key #hudPromptGlyph { position:relative; z-index:1; width:26px; height:26px; display:grid; place-items:center;
-  border:1.5px solid #35e0d0; border-radius:50%; color:#7ff2e8; font-family:'Chakra Petch'; font-weight:700; font-size:13px;
-  background:rgba(8,12,18,.9); }
+/* Interaction prompt key + radial channel gauge (hold-to-hack) — kept small so
+   it hugs the target without covering it. */
+.prompt-key { position:relative; width:30px; height:30px; display:grid; place-items:center; }
+.prompt-ring { position:absolute; inset:-3px; border-radius:50%;
+  background:conic-gradient(#35e0d0 calc(var(--frac,0)*360deg), rgba(53,224,208,.12) 0);
+  -webkit-mask:radial-gradient(closest-side, transparent 74%, #000 76%);
+          mask:radial-gradient(closest-side, transparent 74%, #000 76%); }
+.prompt-key #hudPromptGlyph { position:relative; z-index:1; width:30px; height:30px; display:grid; place-items:center;
+  border:1.5px solid #35e0d0; border-radius:50%; color:#7ff2e8;
+  background:rgba(8,12,18,.92); box-shadow:0 0 10px rgba(53,224,208,.35) inset; }
+.prompt-key #hudPromptGlyph svg { width:16px; height:16px; display:block; }
 
 /* Map-transition spinner */
 @keyframes spin360 { to { transform: rotate(360deg); } }

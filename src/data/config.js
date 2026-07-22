@@ -8,14 +8,16 @@ export const CONFIG = {
   model: { useModel: true, scale: 1, lift: 0, yaw: 180, gunYaw: 0 },
 
   // Render / camera
-  render: { fov: 42, camOffset: [0, 28, 22], pixelRatioCap: 2, bloom: 0.9 },
+  render: { fov: 44, camOffset: [0, 33, 26], pixelRatioCap: 2, bloom: 0.9 },
   camera: { lead: 4, lerpPlay: 0.12, lerpIdle: 0.08, zoomMin: 0.55, zoomMax: 1.8 },
 
   // Player movement + model presentation
   player: {
-    radius: 0.7, moveSpeed: 7.4, sprintMul: 1.35, accel: 14,
-    dashSpeed: 26, dashTime: 0.22, iframe: 0.32, dashRegen: 1.1,
-    baseMaxHp: 100, height: 2.9, faceAim: true,
+    radius: 0.7, moveSpeed: 8.6, sprintMul: 1.35, accel: 14,
+    dashSpeed: 30, dashTime: 0.22, iframe: 0.32, dashRegen: 1.1,
+    // faceAim false → the body turns toward the MOVEMENT (left-stick) direction;
+    // the gun/aim ring still tracks the aim independently.
+    baseMaxHp: 100, height: 2.9, faceAim: false,
   },
 
   // Progression
@@ -23,7 +25,7 @@ export const CONFIG = {
 
   // Spawning / difficulty curve
   spawn: {
-    firstDelay: 3.2, grace: 2.8, tutGrace: 9999, maxEnemies: 34,
+    firstDelay: 3.2, grace: 2.8, tutGrace: 9999, maxEnemies: 16,
     hpScale: 110, dmgScaleBoss: 120,
     bossFirst: 60, bossRepeat: 95,
   },

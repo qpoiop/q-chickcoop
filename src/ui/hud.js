@@ -11,6 +11,18 @@ import { t, locName, getLang, setLang } from '../data/i18n.js';
 const $ = (id) => document.getElementById(id);
 const fmtTime = (t2) => { const m = Math.floor(t2 / 60), s = Math.floor(t2 % 60); return m + ':' + String(s).padStart(2, '0'); };
 
+// Contextual interaction icons (stroke = currentColor). Each reads as its action:
+//  core → a circuit chip (hack a data core), crate → a box with a down arrow
+//  (collect salvage), portal → an arrow entering a ring (travel), extract → an
+//  eject/up-chevron over a pad (escape).
+const SVG = (b) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
+const PROMPT_ICON = {
+  'prompt.core': SVG('<rect x="7" y="7" width="10" height="10" rx="1.5"/><circle cx="12" cy="12" r="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>'),
+  'prompt.crate': SVG('<path d="M4 8l8-4 8 4v8l-8 4-8-4V8z"/><path d="M12 12v6"/><path d="M9 12l3 3 3-3"/>'),
+  'prompt.portal': SVG('<ellipse cx="15" cy="12" rx="4" ry="8"/><path d="M3 12h9"/><path d="M8 8l4 4-4 4"/>'),
+  'prompt.extract': SVG('<path d="M12 4l6 7h-4v5h-4v-5H6l6-7z"/><path d="M7 20h10"/>'),
+};
+
 export class HUD {
   constructor(game) {
     this.g = game;
@@ -65,7 +77,6 @@ export class HUD {
     document.documentElement.lang = getLang();
     this.el.langEn.classList.toggle('active', getLang() === 'en');
     this.el.langKo.classList.toggle('active', getLang() === 'ko');
-    if (this.el.loading) this.el.loading.textContent = t('loading');
   }
 
   hideLoading() { if (this.el.loading) this.el.loading.style.display = 'none'; }
@@ -94,6 +105,8 @@ export class HUD {
     const s = this.g.state, e = this.el;
     e.start.style.display = (!s.started && !s.ended) ? 'flex' : 'none';
     e.end.style.display = s.ended ? 'flex' : 'none';
+    // install / update toasts belong on the home screen only — never over gameplay
+    document.body.classList.toggle('playing', s.started && !s.ended);
     e.skipStart.style.display = this.g._tutSeen ? 'none' : 'inline';
 
     const w = WEAPONS[s.weapon] || WEAPONS.flare;
@@ -150,11 +163,14 @@ export class HUD {
   syncPrompt() { /* handled per-frame by setWorldPrompt */ }
 
   // Position the interaction icon + gauge at a screen point (above the target).
+  // The glyph is contextual: hack a data core, collect a salvage crate, enter a
+  // portal, extract at the pad.
   setWorldPrompt(visible, sx, sy, key, frac) {
     const e = this.el;
     if (!visible || !key) { if (e.prompt.style.display !== 'none') e.prompt.style.display = 'none'; return; }
     e.prompt.style.display = 'flex';
     e.prompt.style.left = sx + 'px'; e.prompt.style.top = sy + 'px';
+    if (e.promptGlyph && this._promptKey !== key) { e.promptGlyph.innerHTML = PROMPT_ICON[key] || PROMPT_ICON['prompt.core']; this._promptKey = key; }
     e.promptKey.style.setProperty('--frac', frac || 0);
   }
 

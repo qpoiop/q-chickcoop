@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
 
 // Deep-clone a model, correctly rebinding skinned meshes to a cloned skeleton.
@@ -10,7 +11,9 @@ export function cloneSkinned(root) { return skeletonClone(root); }
 // Shared GLTF loader + helpers. Async loads never block the game loop; the
 // world renders primitive fallbacks until real meshes arrive, then swaps in.
 
-const loader = new GLTFLoader();
+// City map ships meshopt-compressed (EXT_meshopt_compression) — the decoder is a
+// pure-JS module, no external wasm to host.
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
 /** Load a GLB. Resolves with { scene, animations } or null on failure. */
 export function loadGLB(url) {

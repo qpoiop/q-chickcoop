@@ -121,19 +121,22 @@ export class Game {
     this._buildPlayer();
     this._bindInput();
 
-    // async asset loads (game is playable immediately with primitives)
-    this._loadPlayerModel();
+    // async asset loads. The city map + player rig are ESSENTIAL, so the
+    // loading screen stays up until they're ready (map is loaded at boot, not
+    // during the tutorial — the tutorial can be skipped straight into the city).
+    const essentials = Promise.all([
+      this._loadPlayerModel(),
+      this._warmMap(MAPS.main.model),
+    ]);
     this._loadEnemyModels();
     this._loadWeaponModels();
     this._loadEffectModels();
-    this._warmMap(MAPS.main.model); // preload the city GLB in the background
 
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: CONFIG.spawn.grace };
     this.refresh();
-    // Dismiss the loading screen as soon as the scene is built — the start
-    // overlay covers the canvas, so we never wait on the first rAF frame
-    // (which can be throttled in a backgrounded tab).
-    this.hud.hideLoading();
+    // Hide the loading screen once essentials are ready (or a hard timeout).
+    let done = false; const finish = () => { if (done) return; done = true; this.hud.hideLoading(); };
+    essentials.then(finish); setTimeout(finish, 20000);
     this._loop();
   }
 
@@ -483,6 +486,13 @@ export class Game {
       target.getCenter(c); m.position.x -= c.x - (fit.offX || 0); m.position.z -= c.z - (fit.offZ || 0); m.position.y -= target.min.y + (fit.groundY || 0);
     }
     this.map = m; this.scene.add(m);
+    // Snap the actual ground SURFACE under the spawn to y=0 so the player (feet
+    // at 0) stands on it — robust against per-model pivot/scale (fixes sinking).
+    const sp = level.spawnStart || { x: 0, z: 0 };
+    m.updateMatrixWorld(true);
+    const rc = new THREE.Raycaster(new THREE.Vector3(sp.x, 400, sp.z), new THREE.Vector3(0, -1, 0), 0, 2000);
+    const hit = rc.intersectObject(m, true).find((h) => h.object.visible);
+    if (hit) { m.position.y -= hit.point.y; this._mapGroundY = 0; }
     this._applyLevelEnv(level);
     return m;
   }
@@ -510,9 +520,11 @@ export class Game {
     this._gunCache = this._gunCache || {};
     if (this._gunCache[mk]) return this._gunCache[mk];
     const rec = this.weaponModels && this.weaponModels[mk]; if (!rec) return null;
-    const wrap = new THREE.Group(); const inst = rec.scene.clone(true); inst.scale.setScalar(rec.fit);
+    const wrap = new THREE.Group(); const inst = rec.scene.clone(true); inst.scale.setScalar(rec.fit * 1.35);
     const b = new THREE.Box3().setFromObject(inst); const c = new THREE.Vector3(); b.getCenter(c); inst.position.sub(c);
-    wrap.add(inst); wrap.position.set(0.34, 0.82, 0.62);
+    // held forward at shoulder height so it clears the body silhouette and reads
+    // from the top-down camera.
+    wrap.add(inst); wrap.position.set(0.5, 1.5, 1.1);
     this._gunCache[mk] = wrap; return wrap;
   }
   _attachGun(wk) {
@@ -652,7 +664,9 @@ export class Game {
     const md = this._mods();
     if (kind === 'weapon') {
       const key = WEAPON_DROP_ORDER.find((k) => !this.state.owned[k]);
-      if (key) { this.state.owned = { ...this.state.owned, [key]: true }; if (this.state.weapon === 'flare') { this.state.weapon = key; this._attachGun(key); } this._event(t('evt.acquired', { name: locName(this.WEAPONS[key]) })); }
+      // Acquire only — do NOT auto-swap the active weapon out from under the
+      // player mid-fight; they switch via number keys / cycle / shop.
+      if (key) { this.state.owned = { ...this.state.owned, [key]: true }; this._event(t('evt.acquired', { name: locName(this.WEAPONS[key]) })); }
       else { this.state.gold += 30; this._event(t('evt.scrap30')); }
     } else if (kind === 'health') {
       this.state.hp = Math.min(this.state.maxHp + Math.round(md.hp), this.state.hp + CONFIG.drops.healAmount); this._event(t('evt.hull', { n: CONFIG.drops.healAmount }));
@@ -765,7 +779,7 @@ export class Game {
     g.userData = Object.assign(g.userData || {}, {
       hp, maxHp: hp, spd: conf.spd, dmg: conf.dmg, r: conf.s + 0.35, tier,
       spin: (Math.random() - 0.5) * 3, mesh: glbMesh ? null : (g.userData.mesh || g.children[0]), mixer, glb: glbMesh, tint: conf.c,
-      home: { x: sp[0], z: sp[1] }, aggro: true, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
+      home: { x: sp[0], z: sp[1] }, aggro: false, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
       atkRange: conf.atkRange, windup: conf.windup, atkCd: conf.atkCd, ranged: !!conf.ranged, keep: conf.keep || 0, projSpeed: conf.projSpeed || 20, fireT: 0, windT: 0,
     });
     const hb = this._makeHpBar(conf.c); g.userData.hpBar = hb.group; g.userData.hpFill = hb.fill; g.userData.barY = tier === 2 ? 2.0 : 2.7;
@@ -958,11 +972,12 @@ export class Game {
 
     this._animateDetached(rdt);
     this._updateCamera(rdt, fx, playing);
+    if (playing) this._updateOcclusion();
 
     if (this.bloom) { const bs = CONFIG.render.bloom; if (this.bloom.strength !== bs) this.bloom.strength = bs; }
     if (this.composer && CONFIG.render.bloom > 0.01) this.composer.render(); else this.rend.render(this.scene, this.cam);
 
-    if (!this._shown) { this._shown = true; this.hud.hideLoading(); }
+    // (loading screen is dismissed in _init once essentials finish loading)
   }
 
   _simulate(dt, rdt, md, fx) {
@@ -1003,7 +1018,11 @@ export class Game {
     let wantFire;
     if (!this.isTouch) wantFire = this.input.mouseDown;
     else if (this.input.rightStick) wantFire = true;
-    else wantFire = this.enemies.some((e) => (e.userData.aggro || e.userData.boss) && e.position.distanceToSquared(this.player.position) < 900);
+    // Touch auto-fire: only when an aggro'd target is in range AND has clear
+    // line of sight — no wasting shots into walls at unreachable mobs.
+    else wantFire = this.enemies.some((e) => (e.userData.aggro || e.userData.boss)
+      && e.position.distanceToSquared(this.player.position) < 625
+      && !this._losBlocked(this.player.position, e.position));
     if (wantFire && this.game.fireT <= 0) this._fire();
     // overheat cooldown (water jet): lock while cooling, bleed heat when idle
     if (this.game.heatLock) { this.game.heatT -= dt; if (this.game.heatT <= 0) { this.game.heatLock = false; this.game.heat = 0; } }
@@ -1117,8 +1136,12 @@ export class Game {
         // timers
         u.windT = Math.max(0, (u.windT || 0) - rdt); u.atkT = Math.max(0, (u.atkT || 0) - rdt); u.fireT = Math.max(0, (u.fireT || 0) - rdt);
         u.lungeT = Math.max(0, (u.lungeT || 0) - rdt);
+        // Sight/aggro gate: idle (gentle bob near home) until the player comes
+        // within sight or the mob is hit — so the whole map doesn't swarm at once.
+        if (!u.aggro) { if (d < (u.sightR || 16)) u.aggro = true; }
         const move = (dir) => { const ep = e.position.clone().addScaledVector(to, dir * u.spd * dt); this._collide(ep, u.r * 0.7); this._keepOutSafe(ep, u.r); e.position.copy(ep); };
-        if (u.ranged) {
+        if (!u.aggro) { /* dormant: hold position */ }
+        else if (u.ranged) {
           // kite: hold ~keep distance, fire from range with a telegraph
           if (u.windT <= 0) { if (d > u.keep + 2) move(1); else if (d < u.keep - 3) move(-1); }
           if (d <= u.atkRange && u.fireT <= 0 && u.windT <= 0 && !u.telegraph) { u.windT = u.windup; u.telegraph = true; }
@@ -1221,6 +1244,47 @@ export class Game {
     for (let i = this.parts.length - 1; i >= 0; i--) { const p = this.parts[i]; p.userData.life -= rdt; p.userData.v.y -= 10 * rdt; p.position.addScaledVector(p.userData.v, rdt); p.scale.setScalar(Math.max(0.01, p.userData.life * 2.2)); if (p.userData.life <= 0) { this.scene.remove(p); this.parts.splice(i, 1); } }
     for (let i = this.ghosts.length - 1; i >= 0; i--) { const gh = this.ghosts[i]; gh.userData.life -= rdt; gh.material.opacity = Math.max(0, gh.userData.life * 1.6); if (gh.userData.life <= 0) { this.scene.remove(gh); this.ghosts.splice(i, 1); } }
     for (let i = this.fxSprites.length - 1; i >= 0; i--) { const s = this.fxSprites[i]; s.userData.life -= rdt; if (s.userData.mixer) s.userData.mixer.update(rdt); const o = Math.max(0, s.userData.life / s.userData.max); s.traverse((m) => { if (m.isMesh && m.material) m.material.opacity = o * (s.userData.grow ? 0.9 : 1); }); if (s.userData.grow) s.scale.setScalar(0.1 + (1 - o) * s.userData.grow); else s.rotation.y += rdt * 3; if (s.userData.life <= 0) { this.scene.remove(s); this.fxSprites.splice(i, 1); } }
+  }
+
+  // Segment-vs-obstacle test on the XZ plane (sampled): true if a wall sits
+  // between a and b. Used to gate touch auto-fire so we don't shoot into cover.
+  _losBlocked(a, b) {
+    const dx = b.x - a.x, dz = b.z - a.z; const len = Math.hypot(dx, dz) || 1;
+    const steps = Math.min(24, Math.ceil(len / 1.5));
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps, px = a.x + dx * t, pz = a.z + dz * t;
+      for (const o of this.obstacles) { if (o.dead || o.env === undefined && !o.hw) continue; if (o === this._gateObs && this.gateOpen) continue; if (Math.abs(px - o.x) < o.hw && Math.abs(pz - o.z) < o.hd) return true; }
+    }
+    return false;
+  }
+
+  // Fade any building meshes standing between the camera and the player so the
+  // hero (and nearby structures) stay visible even under tall city cover.
+  _updateOcclusion() {
+    if (!this.map || !this.player || !this.cam) return;
+    this._occFaded = this._occFaded || new Set();
+    const origin = this.cam.position.clone();
+    const dir = this.player.position.clone().setY(1.2).sub(origin);
+    const dist = dir.length(); dir.normalize();
+    this._occRay = this._occRay || new THREE.Raycaster();
+    this._occRay.set(origin, dir); this._occRay.far = Math.max(1, dist - 1.5);
+    const hits = this._occRay.intersectObject(this.map, true);
+    const now = new Set();
+    for (const h of hits) {
+      const o = h.object; if (!o.isMesh || !o.visible || !o.material) continue;
+      const mat = o.material;
+      if (mat.userData._occ === undefined) { mat.userData._occ = { transparent: mat.transparent, opacity: mat.opacity }; }
+      mat.transparent = true; mat.depthWrite = false;
+      mat.opacity = Math.max(0.18, mat.opacity - 0.35); // ease toward faded
+      now.add(o); this._occFaded.add(o);
+    }
+    // restore meshes no longer occluding
+    for (const o of this._occFaded) {
+      if (now.has(o)) continue;
+      const s = o.material && o.material.userData._occ;
+      if (s) { o.material.opacity = Math.min(s.opacity, o.material.opacity + 0.15); if (o.material.opacity >= s.opacity - 0.02) { o.material.opacity = s.opacity; o.material.transparent = s.transparent; o.material.depthWrite = true; this._occFaded.delete(o); } }
+      else this._occFaded.delete(o);
+    }
   }
 
   _updateCamera(rdt, fx, playing) {
