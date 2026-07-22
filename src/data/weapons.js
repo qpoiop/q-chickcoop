@@ -37,8 +37,8 @@ export const WEAPONS = {
     cost: 90, dropChance: 0.05,
     desc: 'Piercing beam bolt (+1 pierce) with extended range and solid damage.',
     nameKo: '레이저 랜스', descKo: '관통 광선(+1 관통)에 사거리와 피해가 강화됐다.',
-    cd: 0.3, dmg: 20, proj: 1, spread: 0, speed: 66, pierce: 1, rangeMul: 1.5,
-    bullet: { type: 'bolt' }, fx: 'lightning',
+    cd: 0.3, dmg: 20, proj: 1, spread: 0, speed: 78, pierce: 1, rangeMul: 1.6,
+    bullet: { type: 'beam' },
     bars: { rate: 0.5, dmg: 0.85, area: 0.45 },
   },
   space: {

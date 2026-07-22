@@ -218,12 +218,19 @@ export class Game {
       const grp = new THREE.Group(); grp.position.set(c.x, 0, c.z);
       const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
       base.position.y = 0.25; base.castShadow = true; grp.add(base);
-      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.4, 6), new THREE.MeshStandardMaterial({ color: 0x35e0d0, emissive: 0x35e0d0, emissiveIntensity: 1.3 }));
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.4, 6), new THREE.MeshStandardMaterial({ color: 0x35e0d0, emissive: 0x35e0d0, emissiveIntensity: 0.85 }));
       cyl.position.y = 1.7; grp.add(cyl);
       const ring = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.08, 8, 24), new THREE.MeshBasicMaterial({ color: 0x35e0d0 }));
       ring.rotation.x = Math.PI / 2; ring.position.y = 1.2; grp.add(ring);
+      // floating "interact here" beacon: ground ring + light column + hovering marker
+      const gring = new THREE.Mesh(new THREE.RingGeometry(2.4, 2.75, 36), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }));
+      gring.rotation.x = -Math.PI / 2; gring.position.y = 0.06; grp.add(gring);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.6, 6), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
+      col.position.y = 2.3; grp.add(col);
+      const mark = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), new THREE.MeshBasicMaterial({ color: 0x7ff2e8 }));
+      mark.position.y = 4.4; grp.add(mark);
       g.add(grp); this.obstacles.push({ x: c.x, z: c.z, hw: 1.6, hd: 1.6 });
-      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: cyl, ring, active: true });
+      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: cyl, ring, gring, mark, active: true });
     });
 
     // glowing map-transition portal (hidden until unlocked)
@@ -430,12 +437,12 @@ export class Game {
     if (level.light) this.scene.traverse((o) => { if (o.isHemisphereLight) o.intensity = level.light.hemi; if (o.isDirectionalLight) o.intensity = level.light.dir; });
   }
 
-  // Generic map GLB loader. These town/city GLBs are a single combined mesh
-  // dominated by a huge ground plane, so fitting to the FULL bbox shrinks the
-  // buildings to nothing and off-centers them. Instead we fit to the STRUCTURE
-  // CLUSTER (tall geometry), center on it, ground it, and scale so the town
-  // slightly over-fills the play bounds (buildings frame the arena, and the
-  // ground always covers the walkable area so you can't reach the void).
+  // Load a map GLB and fit it to the play area. These town GLBs are one combined
+  // mesh + a huge flat ground/lava plane; fitting to the full bbox shrinks the
+  // buildings to nothing. We compute the BUILDING bbox by excluding the big flat
+  // ground pieces (large footprint + low height), then scale/center on that so
+  // the town fills the bounds. `level.mapFit.scale` (+off/groundY/yaw) overrides
+  // the auto-fit for hand-tuned maps.
   async _loadMapModel(url, level) {
     const g = await loadGLB(url); if (!g || this._dead) return null;
     const m = g.scene;
@@ -446,25 +453,32 @@ export class Game {
       if (o.material) o.material.metalness = Math.min(o.material.metalness ?? 0, 0.2);
     });
     const fit = level.mapFit || {};
-    const structMinH = fit.structMinH ?? 2;      // meshes taller than this = structures
-    const fill = fit.fill ?? 1.3;                 // town spans fill × play width
-    // structure-cluster bbox at scale 1
-    m.scale.setScalar(1); m.position.set(0, 0, 0); m.updateWorldMatrix(true, true);
-    const cluster = (minH) => { const box = new THREE.Box3(), tmp = new THREE.Vector3(); m.traverse((o) => { if (!o.isMesh) return; const b = new THREE.Box3().setFromObject(o); b.getSize(tmp); if (tmp.y >= minH) box.union(b); }); return box; };
-    let sb = cluster(structMinH);
-    if (sb.isEmpty()) sb = new THREE.Box3().setFromObject(m);
-    const sz = new THREE.Vector3(); sb.getSize(sz);
-    const scale = (level.B * 2 * fill) / Math.max(sz.x, sz.z || 1);
+    m.scale.setScalar(1); m.position.set(0, 0, 0); if (fit.yaw) m.rotation.y = fit.yaw * Math.PI / 180; m.updateWorldMatrix(true, true);
+
+    // full bbox + per-mesh boxes at scale 1
+    const full = new THREE.Box3(), parts = []; const s = new THREE.Vector3();
+    m.traverse((o) => { if (!o.isMesh) return; const b = new THREE.Box3().setFromObject(o); parts.push(b); full.union(b); });
+    full.getSize(s); const fullFoot = Math.max(1, s.x * s.z);
+    // building bbox = union of parts that are NOT big flat ground planes
+    const bld = new THREE.Box3(), ps = new THREE.Vector3();
+    parts.forEach((b) => { b.getSize(ps); const foot = ps.x * ps.z; if (ps.y < 3.5 && foot > 0.18 * fullFoot) return; bld.union(b); });
+    const box = bld.isEmpty() ? full : bld;
+    box.getSize(ps);
+
+    const scale = fit.scale != null ? fit.scale : (level.B * 2 * (fit.fill ?? 1.15)) / Math.max(ps.x, ps.z || 1);
     m.scale.setScalar(scale); m.updateWorldMatrix(true, true);
-    // recenter + ground on the scaled structure cluster
-    let sb2 = cluster(structMinH * scale);
-    if (sb2.isEmpty()) sb2 = new THREE.Box3().setFromObject(m);
-    const c = new THREE.Vector3(); sb2.getCenter(c);
-    m.position.x -= c.x; m.position.z -= c.z; m.position.y -= sb2.min.y + (fit.groundY || 0);
+    if (fit.center) {
+      // hand-tuned: place a known model-space center/floor exactly at the origin
+      m.position.set(-fit.center.x * scale + (fit.offX || 0), -(fit.minY ?? 0) * scale + (fit.groundY || 0), -fit.center.z * scale + (fit.offZ || 0));
+    } else {
+      // auto: recenter/ground on the (scaled) building box
+      const box2 = new THREE.Box3(); const c = new THREE.Vector3();
+      m.traverse((o) => { if (!o.isMesh) return; const b = new THREE.Box3().setFromObject(o); const sz2 = new THREE.Vector3(); b.getSize(sz2); const foot = sz2.x * sz2.z; if (sz2.y < 3.5 * scale && foot > 0.18 * fullFoot * scale * scale) return; box2.union(b); });
+      const target = box2.isEmpty() ? new THREE.Box3().setFromObject(m) : box2;
+      target.getCenter(c); m.position.x -= c.x - (fit.offX || 0); m.position.z -= c.z - (fit.offZ || 0); m.position.y -= target.min.y + (fit.groundY || 0);
+    }
     this.map = m; this.scene.add(m);
-    if (level.fog) this.scene.fog = new THREE.Fog(level.fog.color, level.fog.near, level.fog.far);
-    if (level.bg != null) this.scene.background = new THREE.Color(level.bg);
-    if (level.light) this.scene.traverse((o) => { if (o.isHemisphereLight) o.intensity = level.light.hemi; if (o.isDirectionalLight) o.intensity = level.light.dir; });
+    this._applyLevelEnv(level);
     return m;
   }
 
@@ -550,6 +564,7 @@ export class Game {
   _completeInteract(it) {
     if (it.type === 'core' && !it.done) {
       it.done = true; it.glow.material.color.set(0x59ff9d); it.glow.material.emissive.set(0x59ff9d); it.ring.material.color.set(0x59ff9d);
+      if (it.mark) it.mark.visible = false; if (it.gring) it.gring.visible = false;
       this.state.cores++; this._impact(it.mesh.position, 0x59ff9d, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
       const need = (this.L.cores || []).length;
       if (this.state.cores >= need) { this._activatePortal(); }
@@ -662,6 +677,9 @@ export class Game {
       b = new THREE.Mesh(new THREE.SphereGeometry(size, 18, 18), new THREE.MeshStandardMaterial({ color: bt.color || '#1a1030', emissive: 0x2a1050, emissiveIntensity: 0.8, roughness: 0.25, metalness: 0.4 }));
       const halo = new THREE.Mesh(new THREE.SphereGeometry(size * 1.35, 14, 14), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false }));
       b.add(halo);
+    } else if (bt.type === 'beam') {
+      b = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 2.2, 6), new THREE.MeshBasicMaterial({ color: crit ? 0xffffff : col }));
+      b.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
     } else if (bt.type === 'drop') {
       const size = bt.size || 0.24;
       b = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 8), new THREE.MeshBasicMaterial({ color: crit ? 0xffffff : col, transparent: true, opacity: 0.9 }));
@@ -1005,7 +1023,13 @@ export class Game {
 
     // channeled interaction (hold E / USE to fill the gauge) + core pulse
     this._updateChannel(dt);
-    this.interact.forEach((x) => { if (x.type === 'core' && !x.done && x.glow) x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5; });
+    this.interact.forEach((x) => {
+      if (x.type === 'core' && !x.done) {
+        if (x.glow) x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5;
+        if (x.mark) { x.mark.rotation.y += dt * 2; x.mark.position.y = 4.4 + Math.sin(this.state.time * 3) * 0.25; }
+        if (x.gring) { const s = 1 + Math.sin(this.state.time * 3) * 0.06; x.gring.scale.set(s, s, s); }
+      }
+    });
     // portal swirl animation
     if (this.portalObj && this.portalObj.visible) { const u = this.portalObj.userData; u.ring.rotation.z += dt * 1.4; u.swirl.rotation.z -= dt * 2.2; u.swirl2.rotation.z += dt * 2.2; u.light.intensity = 2 + Math.sin(this.state.time * 4) * 0.9; }
 
