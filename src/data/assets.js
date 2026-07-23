@@ -49,6 +49,7 @@ export const ASSETS = {
 
   // Level geometry.
   cityMap:    p('scene/chicken_gun_fruzer_-_city.glb'),   // legacy urban stage
+  cityNature: p('scene/a_city_in_nature.glb'),            // stage 3 — city-in-nature (biggest model)
   forestMain: p('scene/mystical_forest_cartoon.glb'),      // main farming forest
   forestOpen: p('scene/low_poly_scene_forest_waterfall.glb'), // open high-risk area
 

@@ -8,7 +8,9 @@ export const CONFIG = {
   model: { useModel: true, scale: 1, lift: 0, yaw: 180, gunYaw: 0 },
 
   // Render / camera
-  render: { fov: 44, camOffset: [0, 37, 30], pixelRatioCap: 2, bloom: 0.9 },
+  // camOffset z<0 → camera sits on the opposite side (looks from the far side);
+  // Game negates movement/aim input to keep on-screen controls correct.
+  render: { fov: 40, camOffset: [0, 45, -22], pixelRatioCap: 2, bloom: 0.9 },
   camera: { lead: 4, lerpPlay: 0.12, lerpIdle: 0.08, zoomMin: 0.55, zoomMax: 1.8 },
 
   // Player movement + model presentation

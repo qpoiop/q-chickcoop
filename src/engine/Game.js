@@ -65,6 +65,9 @@ export class Game {
   // reference check lets the per-frame hot path skip the recompute + allocation.
   _mods() { if (this._modRanks !== this.state.ranks) { this._modRanks = this.state.ranks; this._modCache = computeModifiers(this.state.ranks); } return this._modCache; }
   get isTouch() { return this.input ? this.input.isTouch : this._touchGuess; }
+  // When the camera is flipped to the far side (camOffset.z<0), world +z reads as
+  // "up-screen", so world-space movement/aim input must be negated to stay correct.
+  get _camFlip() { return this.camOff && this.camOff.z < 0; }
 
   // ---------- boot ----------
   _waitThree() { if (this._dead) return; if (this.dom.mount) this._init(); else this._waitT = setTimeout(() => this._waitThree(), 60); }
@@ -953,6 +956,7 @@ export class Game {
     if (!this.state.started || this.state.ended || this.state.panel !== 'none') return;
     if (this.state.dashCharges <= 0 || this.fx.dashT > 0) return;
     const mv = this.input.moveVector(); let dx = mv.x, dz = mv.z;
+    if (this._camFlip) { dx = -dx; dz = -dz; }
     if (Math.abs(dx) < 0.01 && Math.abs(dz) < 0.01) { dx = this.aim.x; dz = this.aim.z; }
     const l = Math.hypot(dx, dz) || 1; this.fx.dashDir.set(dx / l, 0, dz / l);
     this.fx.dashT = CONFIG.player.dashTime; this.fx.iframe = CONFIG.player.iframe;
@@ -1065,7 +1069,7 @@ export class Game {
       this._buildWorld(); this._buildPlayer();
       if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
       else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
-      else if (to === 'main') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
+      else if (to === 'main' || to === 'city') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
       this.game.spawnT = 2.5; this.game.fireT = 0;
       await new Promise((r) => setTimeout(r, 260));
     } catch (err) {
@@ -1517,7 +1521,7 @@ export class Game {
       this.ray.setFromCamera(this.input.mouseNDC, this.cam); const hit = new THREE.Vector3();
       if (this.ray.ray.intersectPlane(this.groundPlane, hit)) this.aim.copy(hit.sub(this.player.position).setY(0).normalize());
     } else {
-      if (this.input.rightStick && (this.input.aimVec.x || this.input.aimVec.y)) this.aim.set(this.input.aimVec.x, 0, this.input.aimVec.y).normalize();
+      if (this.input.rightStick && (this.input.aimVec.x || this.input.aimVec.y)) { this.aim.set(this.input.aimVec.x, 0, this.input.aimVec.y); if (this._camFlip) this.aim.negate(); this.aim.normalize(); }
       else {
         let nearest = null, nd = 1e9;
         for (const e of this.enemies) { if (!e.userData.aggro && !e.userData.boss) continue; const d = e.position.distanceToSquared(this.player.position); if (d < nd) { nd = d; nearest = e; } }
@@ -1530,6 +1534,7 @@ export class Game {
     // movement
     fx.dashT = Math.max(0, fx.dashT - rdt); fx.iframe = Math.max(0, fx.iframe - rdt);
     const mv = this.input.moveVector(); let ix = mv.x, iz = mv.z;
+    if (this._camFlip) { ix = -ix; iz = -iz; }
     const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
     const sprint = this.input.keys['shift'] ? CONFIG.player.sprintMul : 1;
     const base = CONFIG.player.moveSpeed * md.spd * sprint;
@@ -2004,7 +2009,7 @@ export class Game {
     const sh = fx.shake * fx.shake; this.cam.position.x += (Math.random() - 0.5) * sh * 3; this.cam.position.y += (Math.random() - 0.5) * sh * 2; this.cam.position.z += (Math.random() - 0.5) * sh * 3;
     // recoil camera kick (springs back to zero)
     if (fx.camKick) { this.cam.position.add(fx.camKick); fx.camKick.multiplyScalar(Math.max(0, 1 - rdt * 12)); }
-    this.cam.lookAt(this.player.position.x, 1, this.player.position.z - 2);
+    this.cam.lookAt(this.player.position.x, 1, this.player.position.z + (this._camFlip ? 2 : -2));
     const fov = this.baseFov + fx.fov + (this.vel ? this.vel.length() * 0.05 : 0);
     if (Math.abs(this.cam.fov - fov) > 0.01) { this.cam.fov = fov; this.cam.updateProjectionMatrix(); }
     this.rim.position.set(this.player.position.x, 5, this.player.position.z);

@@ -122,11 +122,34 @@ export function mysticForestLevel() {
     walls: [], platforms: [], covers: [],
     cores: [{ x: -23.1, z: 17.6 }, { x: -16.3, z: -27.7 }],  // Temple, Mine (hack targets)
     shop: { x: 1.5, z: -7 },                                 // stall by the camp
-    portal: { x: -5.6, z: 0.5, to: 'boss' },                 // Pentagramme magic circle
+    portal: { x: -5.6, z: 0.5, to: 'city' },                 // Pentagramme magic circle → stage 3 (city)
     crates: [[-10.0, 0.2], [-2.4, -1.5], [3.9, -27.4], [19.7, -24.6], [22.7, 14.0]],
     spawns: [[-18, -8], [8, -16], [-24, 4], [4, 12], [-14, -22], [16, 6], [-6, 22]],
     fog: { color: 0x14241a, near: 140, far: 420 }, bg: 0x1b2c22,
     light: { hemi: 1.5, dir: 2.8 },
+  };
+}
+
+// STAGE 3 = CITY-IN-NATURE (a_city_in_nature.glb — the biggest model, ~124×131
+// model units). Loaded via the normalize pipeline (long axis → 120, centred),
+// same as the forests, so movement/camera/ranges all carry over untouched. Node
+// names are meaningless in this GLB, so anchors are hand-placed in normalized
+// space and _snapAnchors pulls each onto reachable street ground at load. Flow:
+// forest (breach cores → portal) → CITY (breach cores → portal) → boss room.
+export function cityStageLevel() {
+  const hx = 58, hz = 58;
+  return {
+    id: 'city', B: 58, bounds: { hx, hz }, harvest: true,
+    mapFit: { normalize: 120, walkTop: 6 },
+    spawnStart: { x: 0, z: 40 },
+    walls: [], platforms: [], covers: [],
+    cores: [{ x: -30, z: -12 }, { x: 30, z: -14 }],   // hack targets, opposite ends
+    shop: { x: 16, z: 22 },
+    portal: { x: 0, z: -44, to: 'boss' },             // far end → boss room
+    crates: [[-18, 10], [22, 6], [-8, -20], [12, -28], [-28, 18], [30, 20]],
+    spawns: [[-46, -38], [46, -38], [-46, 34], [46, 34], [0, -48], [-50, 0], [50, 0]],
+    fog: { color: 0x0e141c, near: 120, far: 380 }, bg: 0x161d28,
+    light: { hemi: 1.1, dir: 2.2 },
   };
 }
 
@@ -135,6 +158,7 @@ export function mysticForestLevel() {
 export const MAPS = {
   tutorial: { id: 'tutorial', model: null, build: tutorialLevel },       // small tiled bay
   main: { id: 'main', model: ASSETS.forestMain, build: mysticForestLevel }, // mystical forest GLB
+  city: { id: 'city', model: ASSETS.cityNature, build: cityStageLevel },     // stage 3 — city-in-nature
   boss: { id: 'boss', model: ASSETS.forestOpen, build: waterfallLevel },     // waterfall forest GLB
 };
 
