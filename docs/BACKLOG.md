@@ -33,6 +33,10 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] 숲 상자가 나쁜 곳에 배치됨 — probe로 확인: #3 WallTower 위(y=11.5, 탑 속에
+  박힘), #5 바위 위(y=3.4), #1 56유닛(너무 멀어 blue-edge). MAP_GUIDE probe
+  절차로 clear Ground(y≈0)·도달·거리14~42·각도분산 5곳 산출해 교체. 전부 검증.
+  (몹 스폰은 봉쇄 후에도 정상 — _spawnWalkable 재배치, forest 8/8·city 9/9 도달.)
 - [x] 보스가 대시/추격으로 walkable 경계 뚫고 나감 — boss.js 대시·추격이
   `_collide`(장애물 박스)만 보고 `_walk`는 안 봤음. 보스 확대 + 아레나 봉쇄가
   겹치며 노출(대시가 아레나 밖으로). 둘 다 `_walkable` 체크 추가(대시=정지,
