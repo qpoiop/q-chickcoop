@@ -229,8 +229,8 @@ body.touch #hudHint { display:none !important; }
 
 /* Start overlay: always scrollable so nothing is unreachable in short/landscape
    viewports; `safe center` keeps content from clipping past the top. */
-#startOverlay { justify-content: safe center; overflow-y: auto; overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; padding-top: max(24px, env(safe-area-inset-top)); padding-bottom: 96px; }
+#startOverlay { overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; padding-top: max(24px, env(safe-area-inset-top)); padding-bottom: max(24px, env(safe-area-inset-bottom)); }
 /* Language switch sits clear of the title, sized so it never overflows. */
 .lang-seg { top: calc(12px + env(safe-area-inset-top)) !important; right: calc(12px + env(safe-area-inset-right)) !important; }
 .lang-seg-btn { padding: 6px 11px; font-size: 11px; }
