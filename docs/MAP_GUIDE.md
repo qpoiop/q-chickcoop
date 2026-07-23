@@ -73,6 +73,11 @@
   - `mapFit.boundToContent`(bbox+여백, 폭포 15): 바닥이 주 플레이 면인 맵. 앵커
     박스로 클램프. 밀도 트림이 소프트락 낼 때 이걸 쓴다.
   검증: 4방향 walk 테스트 + 앵커 도달성(특히 extraction) probe로 확인.
+- **맵 밝기 객관 측정** — 데스크톱 스샷은 못 믿으니 캔버스 평균 휘도로 잰다:
+  다운스케일 캔버스에 `drawImage` → `getImageData`로 `0.2126R+0.7152G+0.0722B`
+  평균. 참고: 숲 avgLum≈57(읽을 만함), 어두운 맵은 <40(시티는 34였음).
+  목표 ~50 근처. `level.exposure`(1.4)+`light.hemi/dir`로 올리되 blownFrac(>245)
+  0 유지(블룸 blowout 방지).
 
 ## 5. 현재 맵 상태
 
