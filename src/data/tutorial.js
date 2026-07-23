@@ -10,5 +10,5 @@ export const TUTORIAL = [
   { text: 'DASH · tap SPACE to dodge',                             textKo: '대시 · SPACE로 회피',                      toast: '', toastKo: '' },
   { text: 'PICK UP · grab the glowing item drop',                 textKo: '획득 · 빛나는 아이템을 주워라',              toast: '', toastKo: '' },
   { text: 'FIGHT · defeat the training targets',                  textKo: '전투 · 훈련용 표적을 처치하라',              toast: '', toastKo: '', dummies: true },
-  { text: 'ARSENAL · buy weapons with scrap in the menu. Ready!', textKo: '무기고 · 고철로 무기를 구매하라. 준비 완료!',  toast: '', toastKo: '' },
+  { text: 'SHOP · open the Shop and buy a weapon with scrap', textKo: '상점 · 상점을 열고 고철로 무기를 구매하라',  toast: '', toastKo: '' },
 ];

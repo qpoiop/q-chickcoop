@@ -684,28 +684,36 @@ export class Game {
   // objective, and spawns the boss when entering the boss arena.
   async _goToMap(to) {
     if (this._transitioning) return; this._transitioning = true;
-    this.audio.ui(); this._fade(1, 240);
-    if (this.dom.trans) this.dom.trans.style.display = 'grid';
-    await new Promise((r) => setTimeout(r, 260));
-    this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
-    for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.dmgNums || [], this.itemDrops || []]) {
-      arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
+    // try/finally guarantees the transition overlay + flag ALWAYS clear, even if a
+    // map load throws or re-entrancy hits — otherwise the fade covers the screen
+    // forever and the player appears frozen ("loading, can't move").
+    try {
+      this.audio.ui(); this._fade(1, 240);
+      if (this.dom.trans) this.dom.trans.style.display = 'grid';
+      await new Promise((r) => setTimeout(r, 260));
+      this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });
+      for (const arr of [this.enemies, this.bullets, this.enemyBullets, this.orbs, this.coins, this.parts, this.ghosts, this.fxSprites, this.dmgNums || [], this.itemDrops || []]) {
+        arr.forEach((o) => { if (o.parent) o.parent.remove(o); else this.scene.remove(o); }); arr.length = 0;
+      }
+      this.boss = null; this.state.bossActive = false; this.hud.hideCast(); this.portalObj = null;
+      if (this.map) { this.scene.remove(this.map); this.map = null; }
+      this.mapId = to;
+      const entry = MAPS[to], level = entry.build();
+      if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
+      if (this._dead) return;
+      this._buildWorld(); this._buildPlayer();
+      if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
+      else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
+      else if (to === 'main') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
+      this.game.spawnT = 2.5; this.game.fireT = 0;
+      await new Promise((r) => setTimeout(r, 260));
+    } catch (err) {
+      console.warn('[map] transition failed:', err);
+    } finally {
+      if (this.dom.trans) this.dom.trans.style.display = 'none';
+      this._fade(0, 450);
+      this._transitioning = false; this.refresh();
     }
-    this.boss = null; this.state.bossActive = false; this.hud.hideCast(); this.portalObj = null;
-    if (this.map) { this.scene.remove(this.map); this.map = null; }
-    this.mapId = to;
-    const entry = MAPS[to], level = entry.build();
-    if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
-    if (this._dead) { this._transitioning = false; return; }
-    this._buildWorld(); this._buildPlayer();
-    if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
-    else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
-    else if (to === 'main') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
-    this.game.spawnT = 2.5; this.game.fireT = 0;
-    await new Promise((r) => setTimeout(r, 260));
-    if (this.dom.trans) this.dom.trans.style.display = 'none';
-    this._fade(0, 450);
-    this._transitioning = false; this.refresh();
   }
 
   _fade(to, ms) { const el = this.dom.fade; if (!el) return; el.style.transition = `opacity ${ms}ms`; el.style.opacity = to; }
@@ -1008,6 +1016,9 @@ export class Game {
     }
     const step = TUTORIAL[s]; this.state.objectiveKey = 'tut:' + s; this._event(getLang() === 'ko' ? (step.toastKo || '') : (step.toast || '')); this.tut.killBase = this.state.kills; this.tut.timer = 0;
     if (s === 3) this._spawnItemDrop({ x: this.player.position.x + Math.cos(this.face) * 6, z: this.player.position.z + Math.sin(this.face) * 6 }, 'weapon');
+    // Buy step: make sure the player can afford the cheapest weapon so the shop
+    // lesson can't soft-lock; the step completes on the actual purchase.
+    if (s === 5) this.state.gold = Math.max(this.state.gold, 60);
     if (step.dummies && !this.tut.dummied) {
       this.tut.dummied = true;
       for (let k = 0; k < 3; k++) { this._spawnEnemy(); const e = this.enemies[this.enemies.length - 1]; const a = k * 2.1; e.position.set(this.player.position.x + Math.cos(a) * 11, 0, this.player.position.z + Math.sin(a) * 11); e.userData.home = { x: e.position.x, z: e.position.z }; }
@@ -1328,7 +1339,8 @@ export class Game {
     const st = this.tut;
     if (st.step === 0) { st.move += this.vel.length() * dt; if (st.move > 7) this._tutAdvance(); }
     else if (st.step === 4) { if (this.state.kills - st.killBase >= 3) this._tutAdvance(); }
-    else if (st.step === 5) { st.timer += dt; if (st.timer > 4) this._tutAdvance(); }
+    // step 5 (buy a weapon) is completed by an actual purchase — see pickWeapon().
+    // No auto-advance: the player must open the Shop and spend scrap.
   }
 
   // Floating damage number on a hit. Pooled canvas-texture billboards (reused,
@@ -1457,9 +1469,12 @@ export class Game {
   }
   pickWeapon(key) {
     const ww = this.WEAPONS[key]; const own = !!this.state.owned[key];
+    let bought = false;
     if (own) { this.state.weapon = key; this._attachGun(key); }
-    else { if (this.state.gold < (ww.cost || 0)) return; this.state.gold -= (ww.cost || 0); this.state.owned = { ...this.state.owned, [key]: true }; this.state.weapon = key; this._attachGun(key); }
+    else { if (this.state.gold < (ww.cost || 0)) return; this.state.gold -= (ww.cost || 0); this.state.owned = { ...this.state.owned, [key]: true }; this.state.weapon = key; this._attachGun(key); bought = true; }
     this.audio.ui(); this.refresh();
+    // Tutorial buy step completes on a real purchase.
+    if (bought && this._tut && this.tut.step === 5) { this.openPanel('none'); this._tutAdvance(); }
   }
 
   // Quick-switch between OWNED weapons (HUD readout click / number keys / cycle).
