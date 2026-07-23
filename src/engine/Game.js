@@ -864,6 +864,32 @@ export class Game {
     return w.bits[j * w.nx + i] === 1;
   }
 
+  // Reliability guard: after a map builds, warn (console) about any interactable
+  // placed on VOID, on an elevated surface (rooftop/tree top y>2.5 = clips/hidden),
+  // or off the walkable area. Catches the exact class of bad placements found by
+  // hand (city core/portal on rooftops, forest crates on a tower). Runs once at
+  // load; harmless in prod. Fix flagged anchors via the MAP_GUIDE probe procedure.
+  _validatePlacements() {
+    if (!this.map || !this._walk || !this.interact) return;
+    const down = new THREE.Vector3(0, -1, 0), from = new THREE.Vector3();
+    const rc = new THREE.Raycaster();
+    let bad = 0;
+    for (const it of this.interact) {
+      from.set(it.x, 900, it.z); rc.set(from, down); rc.far = 5000;
+      // ALL surfaces below the anchor. A prop renders at y=0, so it's fine as long
+      // as there's real ground near play level (|y|<2) — even if a structure (Temple
+      // etc.) rises above it. Use multi-hit to avoid false-positiving those: only
+      // flag genuine VOID / floating (no ground at all). "Occluded under a closed
+      // building" isn't distinguishable from raycasts — review those by eye.
+      const hits = rc.intersectObject(this.map, true).filter((o) => o.object.visible);
+      const label = `${it.type}${it.id ? '/' + it.id : ''} @(${it.x.toFixed(0)},${it.z.toFixed(0)})`;
+      if (!hits.length) { console.warn(`[place] ${label} is over VOID`); bad++; }
+      else if (!hits.some((h) => Math.abs(h.point.y) < 2)) { console.warn(`[place] ${label} has no ground near play level (floating; topmost y=${hits[0].point.y.toFixed(1)})`); bad++; }
+      if (this._walk && !this._walkable(it.x, it.z)) { console.warn(`[place] ${label} not on walkable ground`); bad++; }
+    }
+    if (bad) console.warn(`[place] ${this.mapId}: ${bad} placement issue(s) — see MAP_GUIDE probe procedure`);
+  }
+
   // Snap level anchors (spawn/cores/crates/shop/portal) onto cells that are both
   // walkable AND reachable from the spawn, so nothing is placed inside a tree or in
   // an island the player can never walk to. BFS a reach mask once, then nearest-snap.
@@ -1150,7 +1176,7 @@ export class Game {
       const entry = MAPS[to], level = entry.build();
       if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
       if (this._dead) return;
-      this._buildWorld(); this._buildPlayer();
+      this._buildWorld(); this._buildPlayer(); this._validatePlacements();
       if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
       else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
       else if (to === 'main' || to === 'city') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
