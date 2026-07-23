@@ -143,7 +143,7 @@ export class HUD {
     document.body.classList.toggle('touch', !!this.g.isTouch);
 
     // pause button + overlay
-    e.btnPause.style.display = (s.started && !s.ended) ? 'block' : 'none';
+    e.btnPause.style.display = (s.started && !s.ended) ? 'flex' : 'none';
     e.pauseOverlay.style.display = (s.panel === 'pause') ? 'flex' : 'none';
     e.musicState.textContent = this.g.audio.enabled ? 'ON' : 'OFF';
 
