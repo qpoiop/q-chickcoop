@@ -48,6 +48,14 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] **픽업(xp orb/coin) 누수** — 라이브 perf 감사에서 발견. (1) 드롭마다 geometry+
+  material을 새로 할당하고 scene.remove 시 dispose 안 함(GPU 버퍼 누수), (2) 수집
+  (d<1.3)될 때만 제거 → 멀리서 죽인 몹의 픽업은 영원히 잔류. 측정: geometries
+  63→152, orbs 107→339, scene children 223→887(선형 증가). 근본 수정: 픽업 타입별
+  geometry+material **1개 공유**(재사용, 미-dispose) + `CONFIG.drops.pickupLife`(18s)
+  후 despawn(마지막 1초 shrink). 재검증 7500프레임/375s: geo 12→12, orbs 40→43,
+  kids 86→97 = 전부 바운드. (perf 자체는 건강: render 2ms/sim 0.05ms, 몹 16=+3
+  draw call로 인스턴싱됨 — 조기 최적화 안 함.)
 - [x] 튜토리얼이 void 플랫폼처럼 텅 빔 — 휘도 측정 near-black 72%(작은 아레나+어두운
   배경). floor/bg/fog/light 밝힘. 재측정 near-black 72%→0%, avgLum 54→78.6,
   blowout 0. 첫인상 개선. (폭포=avgLum 81 이미 밝음 → 전 맵 밝기 검증 완료.)

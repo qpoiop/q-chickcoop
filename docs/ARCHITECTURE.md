@@ -98,7 +98,30 @@ public/              GLB/오디오/아이콘 (dist로 그대로 복사)
   탭 불필요).
 - 배포 전 `npm run build`로 컴파일 확인. 데이터 변경도 빌드로 문법 확인.
 
-## 8. 열린 이슈 / 백로그
+## 8. 성능 / 누수 감사 (라이브 probe)
+
+RAF는 백그라운드 탭에서 스로틀되니 프레임타임을 RAF로 재지 말고 **동기 루프로 직접
+측정**한다. `window.__CHICKCOOP` 통해:
+
+- **비용**: `R=g.rend`. `R.render(g.scene,g.cam)` 200회 시간 / `g._simulate(dt,rdt,md,fx)`
+  200회 시간. 참고치(숲, 몹16): render ~2ms, sim ~0.05ms, draw calls ~219, tris ~126k.
+  몹 16마리가 draw call +3 뿐 = 엔티티는 지오/머티리얼 공유(인스턴싱). 조기 최적화 금지.
+- **누수 탐지**: 전투를 오래 구동하고 증가를 본다.
+  ```js
+  // dt=0.05로 구동하면 state.time이 빨리 흘러 시간기반 despawn도 검증됨.
+  // _simulate만 부르면 _animateDetached(루프의 FX 정리)가 안 돌아 가짜 누수가 보임 → 둘 다 호출.
+  for(i..){ if(g.enemies.length<16&&i%20==0)g._spawnEnemy(); g.game.fireT=-1;
+            g._simulate(.05,.05,md,fx); g._animateDetached(.05); if(i%50==0)죽이기; }
+  ```
+  체크: `R.info.memory.geometries/textures`(공유면 평평해야), `g.scene.children.length`,
+  그리고 추적 배열들(`orbs,coins,bullets,enemyBullets,enemies,parts,ghosts,fxSprites,
+  dmgNums,itemDrops`). **선형 증가 = 누수.** orphan(scene엔 있는데 어느 배열에도 없음)이
+  0인데 kids가 늘면 → 어떤 추적 배열이 안 빠지는 것(수집/만료 조건 확인).
+- **함정**: 드롭/FX 메시는 **geometry+material을 공유 캐시**로. 인스턴스마다 new 하면
+  scene.remove가 dispose 안 해 GPU 버퍼 누수. 수집으로만 제거되는 것은 시간기반
+  despawn도 둔다(`CONFIG.drops.pickupLife`).
+
+## 9. 열린 이슈 / 백로그
 
 `docs/BACKLOG.md` 참고 (알려진 구조적 이슈: void 이동 제한, 맵 회전 시 앵커
 동시 회전, 보스 모델 교체·확대, 트윈스틱 손맛, 덕코프/Ascent 레퍼런스 정렬).
