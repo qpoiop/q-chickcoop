@@ -54,6 +54,7 @@ export function cityLevel() {
     spawnStart: { x: 0, z: 48 },
     walls: [], platforms: [], covers: [],
     cores: [{ x: -34, z: -18 }, { x: 38, z: -16 }],
+    shop: { x: 18, z: 30 },   // walk up to the shop stall to buy weapons
     portal: { x: 0, z: -50, to: 'boss' },
     spawns: [[-54, -46], [54, -46], [-54, 40], [54, 40], [0, -56], [-58, 0], [58, 0]],
     crates: [[-26, 16], [30, -12], [-10, -22], [22, 20], [6, 6], [-42, -6], [46, 10]],

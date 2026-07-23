@@ -25,6 +25,8 @@ const PROMPT_ICON = {
   'prompt.portal': SVG('<circle cx="15" cy="12" r="6.5"/><path d="M2.5 12h9.5"/><path d="M8.5 8l4 4-4 4"/>'),
   // EXTRACT / escape — a bold up arrow lifting off a pad
   'prompt.extract': SVG('<path d="M12 3.5l7 8.5h-4.3v6.5H9.3V12H5z" fill="currentColor" fill-opacity=".18"/><path d="M12 3.5l7 8.5h-4.3v6.5H9.3V12H5z"/>'),
+  // SHOP — a shopping cart
+  'prompt.shop': SVG('<circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.2 11h10l1.8-8H6"/>'),
 };
 
 export class HUD {

@@ -87,4 +87,5 @@ export class Audio {
   levelUp(){ this._blip({ freq: 520, type: 'triangle', dur: 0.22, gain: 0.4, slide: 320 }); }
   boss()   { this._blip({ freq: 90,  type: 'sawtooth', dur: 0.5, gain: 0.5, slide: 40 }); }
   ui()     { this._blip({ freq: 440, type: 'sine', dur: 0.05, gain: 0.2 }); }
+  buy()    { this._blip({ freq: 880, type: 'triangle', dur: 0.09, gain: 0.3, slide: 120 }); setTimeout(() => this._blip({ freq: 1320, type: 'triangle', dur: 0.14, gain: 0.32, slide: 200 }), 80); }
 }
