@@ -753,6 +753,19 @@ export class Game {
         if (h && h.point.y > -3 && h.point.y < hi) bits[j * nx + i] = 1;
       }
       this._walk = { cell, bx: bx2, bz: bz2, nx, nz, bits };
+
+      // Spawn the player in the most OPEN part of the walkable area (the cell with the
+      // greatest clearance to any wall/void), so they start with room on all sides
+      // instead of jammed against an edge. A cheap two-pass chamfer distance transform
+      // over the grid, then pick the max. Keeps the map + all guide anchors untouched.
+      if (level.mapFit && level.mapFit.normalize && level.spawnStart) {
+        const INF = 1e6, dist = new Float32Array(nx * nz);
+        for (let k = 0; k < nx * nz; k++) dist[k] = bits[k] ? INF : 0;
+        for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i > 0) d = Math.min(d, dist[k - 1] + 1); if (j > 0) d = Math.min(d, dist[k - nx] + 1); dist[k] = d; }
+        let best = -1, bd = -1;
+        for (let j = nz - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i < nx - 1) d = Math.min(d, dist[k + 1] + 1); if (j < nz - 1) d = Math.min(d, dist[k + nx] + 1); dist[k] = d; if (d > bd) { bd = d; best = k; } }
+        if (best >= 0) { const s = { x: -bx2 + (best % nx) * cell, z: -bz2 + ((best / nx) | 0) * cell }; level.spawnStart.x = s.x; level.spawnStart.z = s.z; if (this._streetSpawn) { this._streetSpawn.x = s.x; this._streetSpawn.z = s.z; } }
+      }
     }
     this._applyLevelEnv(level);
     return m;
