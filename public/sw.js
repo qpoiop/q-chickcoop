@@ -6,6 +6,9 @@ const VER = new URL(self.location).searchParams.get('v') || '0';
 const CACHE = 'chickcoop-' + VER;
 
 self.addEventListener('install', (e) => {
+  // Take over ASAP so a new deploy applies on the next visit WITHOUT waiting for a
+  // manual "update" tap — stale caches were pinning users to old builds.
+  self.skipWaiting();
   // Warm the shell; hashed assets are cached lazily on first fetch.
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html'])).catch(() => {}));
 });

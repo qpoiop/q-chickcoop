@@ -78,7 +78,7 @@ export function bossArenaLevel() {
     id: 'boss', B, bounds: { hx: B, hz: B }, arena: true, lavaRing: true,
     floorColor: 0x241a2e, gridColor1: 0x5a3a7a, gridColor2: 0x2a1e38, accent: 0xc06bff, edgeColor: 0xff2d55,
     spawnStart: { x: 0, z: 34 }, safe: { x: 0, z: 34, r: 7 },
-    walls: [], covers: ring, platforms: [], cores: [],
+    walls: [], covers: [], platforms: [], cores: [],   // no crystal pillars (removed per feedback)
     boss: true, bossSpawn: { x: 0, z: -8 },
     extractionAfterBoss: { x: 0, z: 38 },
     spawns: [[-40, -34], [40, -34], [-40, 24], [40, 24], [0, -42], [-42, 0], [42, 0]],
@@ -93,20 +93,20 @@ export function bossArenaLevel() {
 // Dumpster salvage. This map is texture-less flat-colour, so it wants brighter,
 // cooler light. Exit has no anchor → extraction placed manually near spawn.
 export function waterfallLevel() {
-  // scaled up ×1.3 (normalize 120→156, bounds 58→74): the arena was too small —
-  // you toured it in a few steps. Anchors below are the guide coords ×1.3.
-  const hx = 74, hz = 74;
+  // scaled up ×2 (normalize 120→240, bounds ×2): the arena was way too small —
+  // you toured it in a few steps. Anchors below are the guide coords ×2.
+  const hx = 118, hz = 118;
   return {
-    id: 'boss', B: 74, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 156, walkTop: 10 },
-    spawnStart: { x: -6.4, z: 7.0 }, safe: { x: -6.4, z: 7.0, r: 7.5 },
+    id: 'boss', B: 118, bounds: { hx, hz }, harvest: true,
+    mapFit: { normalize: 240, walkTop: 12 },
+    spawnStart: { x: -9.8, z: 10.8 }, safe: { x: -9.8, z: 10.8, r: 10 },
     walls: [], platforms: [], covers: [], cores: [],
-    boss: true, bossSpawn: { x: -8.3, z: -2.9 },   // Fountain
-    extractionAfterBoss: { x: -6.4, z: 7.0 },        // back at the table (spawn)
-    shop: { x: -7.5, z: 14.6 },                      // Store
-    crates: [[-9.1, 15.1], [-16.6, -20.9], [-30.6, 3.5], [-4.3, 11.2]],
-    spawns: [[-26, -10], [13, -21], [-31, 4], [5, 13], [-17, -21]],
-    fog: { color: 0x0c1418, near: 130, far: 420 }, bg: 0x14202a,
+    boss: true, bossSpawn: { x: -12.8, z: -4.4 },   // Fountain
+    extractionAfterBoss: { x: -9.8, z: 10.8 },        // back at the table (spawn)
+    shop: { x: -11.6, z: 22.4 },                      // Store
+    crates: [[-14, 23.2], [-25.6, -32.2], [-47, 5.4], [-6.6, 17.2]],
+    spawns: [[-40, -16], [20, -32], [-48, 6], [8, 20], [-26, -32]],
+    fog: { color: 0x0c1418, near: 160, far: 520 }, bg: 0x14202a,
     light: { hemi: 1.15, dir: 2.3 },
   };
 }
@@ -128,7 +128,7 @@ export function mysticForestLevel() {
     // crossing the whole map — no more hack-both-from-one-spot.
     cores: [{ x: -23.1, z: 17.6 }, { x: 22.7, z: 14.0 }],    // Temple, Mine (east)
     shop: { x: 1.5, z: -7 },                                 // stall by the camp
-    portal: { x: 7.6, z: -26.1, to: 'city' },                // CityDoor (a real gate) — off the magic circle
+    portal: { x: 32, z: -32, to: 'city' },                   // clear ground SE (scanned Ground_Sol; off the magic circle, not under a tree)
     // crates spread across the north/east ruins (was clustered at the centre camp)
     crates: [[-16.3, -27.7], [-9.5, -32.1], [3.9, -27.4], [19.7, -24.6], [30.0, -3.0]],
     spawns: [[-18, -8], [8, -16], [-24, 4], [4, 12], [-14, -22], [16, 6], [-6, 22]],
