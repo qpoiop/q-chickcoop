@@ -43,6 +43,7 @@ export const ASSETS = {
   toolModels: {
     workbench: p('tools/workbench.glb'),
     chest:     p('tools/stylized_chest.glb'),
+    shop:      p('tools/low_poly_generic_shop.glb'),
   },
 
   // Level geometry — urban city map for the main 시가전 stage.

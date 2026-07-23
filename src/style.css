@@ -159,6 +159,10 @@ body.touch #hudHint { display:none !important; }
 .threat-arrow svg { width:26px; height:26px; display:block; }
 @keyframes threatPulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
 
+/* The Shop is now entered by walking up to the shop stall + interacting, so its
+   always-on HUD button is hidden. (Inventory / Tech Tree stay.) */
+#btnArsenal { display:none !important; }
+
 /* Loot pickup chips (recent drops, bottom-left) */
 .loot-chip { display:flex; align-items:center; gap:9px;
   background:linear-gradient(180deg,rgba(22,32,42,.96),rgba(9,14,20,.96));

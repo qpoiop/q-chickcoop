@@ -283,6 +283,24 @@ export class Game {
       this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, lid, lidRest, lidT: 0, active: true });
     });
 
+    // SHOP stall — walk up and interact to open the weapon shop (reusable)
+    if (L.shop) {
+      const grp = new THREE.Group(); grp.position.set(L.shop.x, 0, L.shop.z);
+      const sm = this.toolModels && this.toolModels.shop;
+      if (sm) {
+        const s = cloneSkinned(sm.scene); s.scale.setScalar(sm.fit);
+        const bb = new THREE.Box3().setFromObject(s); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
+        s.position.x -= ctr.x; s.position.z -= ctr.z; s.position.y -= bb.min.y; grp.add(s);
+      } else {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 2), new THREE.MeshStandardMaterial({ color: 0x2a2036, emissive: 0x35e0d0, emissiveIntensity: 0.2 }));
+        m.position.y = 1.5; grp.add(m);
+      }
+      const sgr = new THREE.Mesh(new THREE.RingGeometry(2.2, 2.6, 40), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.45, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      sgr.rotation.x = -Math.PI / 2; sgr.position.y = 0.05; grp.add(sgr);
+      g.add(grp); this.obstacles.push({ x: L.shop.x, z: L.shop.z, hw: 1.6, hd: 1.4 });
+      this.interact.push({ type: 'shop', id: 'Shop', x: L.shop.x, z: L.shop.z, r: 3.4, done: false, mesh: grp, sgr, active: true });
+    }
+
     // safe-zone ring
     if (L.safe) {
       const ring = new THREE.Mesh(new THREE.RingGeometry(L.safe.r - 0.5, L.safe.r, 48), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
@@ -469,7 +487,7 @@ export class Game {
   // read at the interaction footprint; clips (if any) drive the hack/open anim.
   async _loadToolModels() {
     if (this.toolModels) return; this.toolModels = {};
-    const H = { workbench: 2.6, chest: 1.9 };
+    const H = { workbench: 2.6, chest: 1.9, shop: 6 };
     for (const [key, url] of Object.entries(ASSETS.toolModels)) {
       const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
       tuneMaterials(g.scene, { metalness: 0.4, shadow: false });
@@ -698,7 +716,7 @@ export class Game {
   }
 
   // Seconds to channel each interaction (hold E / USE to fill the gauge).
-  _channelTime(it) { return { core: 1.6, crate: 0.9, portal: 0.7, extract: 0.7 }[it.type] || 1; }
+  _channelTime(it) { return { core: 1.6, crate: 0.9, portal: 0.7, extract: 0.7, shop: 0.4 }[it.type] || 1; }
 
   // Drive the channel each frame from held input; fires _completeInteract at 100%.
   _updateChannel(dt) {
@@ -713,9 +731,9 @@ export class Game {
     } else { this.game.channel = 0; this.game.channelIt = null; }
     // world-anchored prompt: project the interactable's position to the screen so
     // the "해킹/회수 + gauge" floats ON the model, not as a big center layer.
-    const key = it ? { core: 'prompt.core', crate: 'prompt.crate', extract: 'prompt.extract', portal: 'prompt.portal' }[it.type] : null;
+    const key = it ? { core: 'prompt.core', crate: 'prompt.crate', extract: 'prompt.extract', portal: 'prompt.portal', shop: 'prompt.shop' }[it.type] : null;
     if (it) {
-      const yOff = it.type === 'core' ? 3.2 : it.type === 'crate' ? 1.9 : 3.4;
+      const yOff = it.type === 'core' ? 3.2 : it.type === 'crate' ? 1.9 : it.type === 'shop' ? 4 : 3.4;
       const v = new THREE.Vector3(it.x, yOff, it.z).project(this.cam);
       const w = this.rend.domElement.clientWidth, h = this.rend.domElement.clientHeight;
       const onScreen = v.z < 1 && Math.abs(v.x) < 1.3 && Math.abs(v.y) < 1.3;
@@ -751,6 +769,11 @@ export class Game {
       for (let k = 0; k < 4; k++) this._drop(new THREE.Vector3(it.x + (Math.random() - 0.5) * 1.4, 0, it.z + (Math.random() - 0.5) * 1.4), 1);
       this.state.gold += payout; this._gainXp(8 * md.xp); this.hud.pushLoot('◈', '+' + payout, '#ffd23f');
       if (this._tut && this.tut.step === 6) this._tutAdvance(); // tutorial OPEN step
+    } else if (it.type === 'shop') {
+      // reusable — open the weapon shop; the tutorial SHOP step also accepts this.
+      this.openPanel('weapons');
+      if (this._tut && this.tut.step === 5) this._tutAdvance();
+      return; // don't mark done / re-channel each visit
     } else if (it.type === 'portal' && it.active) {
       // Portal is the tutorial's final step — finish the tutorial, then cross.
       if (this._tut) { this._tut = false; this._tutSeen = true; this.state.tutorial = false; this._event(t('evt.tutDone')); }
@@ -1666,7 +1689,8 @@ export class Game {
     let bought = false;
     if (own) { this.state.weapon = key; this._attachGun(key); }
     else { if (this.state.gold < (ww.cost || 0)) return; this.state.gold -= (ww.cost || 0); this.state.owned = { ...this.state.owned, [key]: true }; this.state.weapon = key; this._attachGun(key); bought = true; }
-    this.audio.ui(); this.refresh();
+    if (bought) { this.audio.buy(); this.fx.shake = Math.min(0.4, this.fx.shake + 0.12); this.hud.pushLoot(ww.icon, locName(ww), ww.color); } else this.audio.ui();
+    this.refresh();
     // Tutorial SHOP step completes when the player picks any weapon (buy or equip).
     if (this._tut && this.tut.step === 5) { this.openPanel('none'); this._tutAdvance(); }
   }
