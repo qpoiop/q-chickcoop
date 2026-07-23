@@ -120,6 +120,7 @@ export function mysticForestLevel() {
     shop: { x: 1.5, z: -7 },                                 // stall by the camp
     portal: { x: -5.6, z: 0.5, to: 'boss' },                 // Pentagramme magic circle
     crates: [[-10.0, 0.2], [-2.4, -1.5], [3.9, -27.4], [19.7, -24.6], [22.7, 14.0]],
+    spawns: [[-18, -8], [8, -16], [-24, 4], [4, 12], [-14, -22], [16, 6], [-6, 22]],
     fog: { color: 0x0a140e, near: 100, far: 340 }, bg: 0x131f18,
     light: { hemi: 0.95, dir: 1.95 },
   };

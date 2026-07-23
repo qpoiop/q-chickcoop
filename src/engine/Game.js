@@ -667,6 +667,61 @@ export class Game {
     return w.bits[j * w.nx + i] === 1;
   }
 
+  // Pick a walkable (and, if we have a flow field, player-reachable) spawn point:
+  // nudge from the requested spot toward the player until one qualifies, so mobs
+  // never spawn stuck inside a tree or in a pocket they can't path out of.
+  _spawnWalkable(x, z) {
+    if (!this._walk) return { x, z };
+    const reach = (px, pz) => { if (!this._walkable(px, pz)) return false; if (!this._flow) return true; return this._flowDir(px, pz) || (Math.hypot(px - this.player.position.x, pz - this.player.position.z) < 4); };
+    if (reach(x, z)) return { x, z };
+    const p = this.player.position, dx = p.x - x, dz = p.z - z, len = Math.hypot(dx, dz) || 1;
+    for (let step = 4; step <= len; step += 4) { const nx = x + dx / len * step, nz = z + dz / len * step; if (reach(nx, nz)) return { x: nx, z: nz }; }
+    // last resort: a ring around the player
+    for (let a = 0; a < 6.28; a += 0.5) { const nx = p.x + Math.cos(a) * 12, nz = p.z + Math.sin(a) * 12; if (reach(nx, nz)) return { x: nx, z: nz }; }
+    return { x, z };
+  }
+
+  // Flow field: BFS distance-to-player over walkable cells. Mobs follow the
+  // gradient (see _flowDir) so they path AROUND walls/trees instead of stalling
+  // against them. One BFS feeds every mob; rebuilt a few times a second.
+  _buildFlowField() {
+    const w = this._walk; if (!w || !this.player) { this._flow = null; return; }
+    const { nx, nz, cell, bx, bz, bits } = w;
+    const px = Math.round((this.player.position.x + bx) / cell), pz = Math.round((this.player.position.z + bz) / cell);
+    if (px < 0 || pz < 0 || px >= nx || pz >= nz || !bits[pz * nx + px]) { this._flow = null; return; }
+    const dist = (this._flowBuf && this._flowBuf.length === nx * nz) ? this._flowBuf : (this._flowBuf = new Int16Array(nx * nz));
+    dist.fill(-1);
+    const q = this._flowQ || (this._flowQ = new Int32Array(nx * nz));
+    let head = 0, tail = 0; const start = pz * nx + px; dist[start] = 0; q[tail++] = start;
+    while (head < tail) {
+      const idx = q[head++]; const cx = idx % nx, cz = (idx / nx) | 0, d = dist[idx];
+      if (cx + 1 < nx && bits[idx + 1] && dist[idx + 1] < 0) { dist[idx + 1] = d + 1; q[tail++] = idx + 1; }
+      if (cx - 1 >= 0 && bits[idx - 1] && dist[idx - 1] < 0) { dist[idx - 1] = d + 1; q[tail++] = idx - 1; }
+      if (cz + 1 < nz && bits[idx + nx] && dist[idx + nx] < 0) { dist[idx + nx] = d + 1; q[tail++] = idx + nx; }
+      if (cz - 1 >= 0 && bits[idx - nx] && dist[idx - nx] < 0) { dist[idx - nx] = d + 1; q[tail++] = idx - nx; }
+    }
+    this._flow = { dist, nx, nz, cell, bx, bz };
+  }
+
+  // Set this._flowVec to the downhill (toward-player) direction at (x,z). Returns
+  // false when off-grid or in an unreachable pocket (caller falls back to direct).
+  _flowDir(x, z) {
+    const f = this._flow; if (!f) return false;
+    const cx = Math.round((x + f.bx) / f.cell), cz = Math.round((z + f.bz) / f.cell);
+    if (cx < 0 || cz < 0 || cx >= f.nx || cz >= f.nz) return false;
+    const here = f.dist[cz * f.nx + cx]; if (here < 0) return false;
+    let best = here, bdx = 0, bdz = 0;
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dz) continue; const ix = cx + dx, iz = cz + dz;
+      if (ix < 0 || iz < 0 || ix >= f.nx || iz >= f.nz) continue;
+      const dd = f.dist[iz * f.nx + ix];
+      if (dd >= 0 && dd < best) { best = dd; bdx = dx; bdz = dz; }
+    }
+    if (!bdx && !bdz) return false;
+    this._flowVec = this._flowVec || new THREE.Vector3();
+    this._flowVec.set(bdx, 0, bdz).normalize(); return true;
+  }
+
   _harvestMapCollision() {
     if (!this.map) return; this.map.updateWorldMatrix(true, true);
     const hz = this.L.bounds ? this.L.bounds.hz : this.L.B;
@@ -989,7 +1044,8 @@ export class Game {
       const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: conf.c, emissive: conf.c, emissiveIntensity: 0.4, roughness: 0.5, metalness: 0.3 }));
       m.castShadow = true; m.position.y = conf.s + 0.35; g.add(m); g.userData.mesh = m;
     }
-    g.position.set(sp[0], 0, sp[1]);
+    const spot = this._spawnWalkable(sp[0], sp[1]);
+    g.position.set(spot.x, 0, spot.z);
     const hp = conf.hp * (1 + t / CONFIG.spawn.hpScale);
     g.userData = Object.assign(g.userData || {}, {
       hp, maxHp: hp, spd: conf.spd, dmg: conf.dmg, r: conf.s + 0.35, tier,
@@ -1170,8 +1226,16 @@ export class Game {
   _inSafe(pos) { const s = this.L && this.L.safe; if (!s) return false; return Math.hypot(pos.x - s.x, pos.z - s.z) < s.r; }
   _keepOutSafe(pos, radius) { const s = this.L && this.L.safe; if (!s) return; const dx = pos.x - s.x, dz = pos.z - s.z, d = Math.hypot(dx, dz), min = s.r + (radius || 0); if (d < min && d > 0) { pos.x = s.x + dx / d * min; pos.z = s.z + dz / d * min; } }
   _collide(pos, radius) {
+    // On natural (normalized) maps the walkable grid IS the terrain collision:
+    // player/mobs slide off non-walkable cells. Harvested mesh boxes (env) would
+    // double-collide and fight that slide — a mob straddling a tree box gets
+    // ejected outward while the chase flow pushes it back in, deadlocking it in
+    // place. So when a grid exists, skip env boxes here (bullets/LoS keep their
+    // own obstacle checks). Gameplay solids (crates/shop/cores) have no env flag.
+    const grid = !!this._walk;
     for (const o of this.obstacles) {
       if (o.dead) continue;
+      if (grid && o.env) continue;
       if (o === this._gateObs && this.gateOpen) continue;
       const dx = pos.x - o.x, dz = pos.z - o.z;
       const px = (o.hw + radius) - Math.abs(dx), pz = (o.hd + radius) - Math.abs(dz);
@@ -1279,6 +1343,10 @@ export class Game {
     // Boss is fought on the boss map (spawned on portal entry) — no timed spawn on main.
 
     if (this._tut) this._updateTutorial(dt);
+
+    // Refresh the chase flow field a few times a second (cheap BFS, feeds all mobs).
+    this.game.flowT = (this.game.flowT || 0) - dt;
+    if (this.game.flowT <= 0 && this.enemies.length) { this.game.flowT = 0.32; this._buildFlowField(); }
 
     this._updateBullets(dt);
     this._updateEnemies(dt, rdt, md, fx);
@@ -1394,7 +1462,20 @@ export class Game {
         // Sight/aggro gate: idle (gentle bob near home) until the player comes
         // within sight or the mob is hit — so the whole map doesn't swarm at once.
         if (!u.aggro) { if (d < (u.sightR || 16)) u.aggro = true; }
-        const move = (dir) => { const ep = e.position.clone().addScaledVector(to, dir * u.spd * dt); this._collide(ep, u.r * 0.7); this._keepOutSafe(ep, u.r); e.position.copy(ep); };
+        const move = (dir) => {
+          // chase along the flow field (paths around walls/trees); kite/fallback = direct.
+          let mv = to;
+          if (dir > 0 && this._flowDir(e.position.x, e.position.z)) mv = this._flowVec;
+          const ep = e.position.clone().addScaledVector(mv, dir * u.spd * dt);
+          this._collide(ep, u.r * 0.7); this._keepOutSafe(ep, u.r);
+          // don't clip through non-walkable terrain; slide along it instead
+          if (this._walk && !this._walkable(ep.x, ep.z)) {
+            if (this._walkable(ep.x, e.position.z)) ep.z = e.position.z;
+            else if (this._walkable(e.position.x, ep.z)) ep.x = e.position.x;
+            else { ep.x = e.position.x; ep.z = e.position.z; }
+          }
+          e.position.copy(ep);
+        };
         if (!u.aggro) { /* dormant: hold position */ }
         else if (u.ranged) {
           // kite: hold ~keep distance, fire from range with a telegraph
