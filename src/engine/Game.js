@@ -294,6 +294,11 @@ export class Game {
       const sm = this.toolModels && this.toolModels.shop;
       if (sm) {
         const s = cloneSkinned(sm.scene); s.scale.setScalar(sm.fit);
+        // This shop GLB imports with a bad Sketchfab axis conversion that tips the
+        // whole stall onto its side (reads as a floating, tilted "SHOP" sign).
+        // Zeroing the wrapper node stands it upright as the pink kiosk it is.
+        s.traverse((o) => { if (o.name === 'Sketchfab_model') o.rotation.set(0, 0, 0); });
+        s.updateMatrixWorld(true);
         const bb = new THREE.Box3().setFromObject(s); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
         s.position.x -= ctr.x; s.position.z -= ctr.z; s.position.y -= bb.min.y; grp.add(s);
       } else {
