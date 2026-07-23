@@ -236,6 +236,7 @@ export class Game {
     // it reads as interactable.
     (L.cores || []).forEach((c, i) => {
       const grp = new THREE.Group(); grp.position.set(c.x, 0, c.z);
+      grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera, not its back
       let wbMixer = null;
       const tm = this.toolModels && this.toolModels.workbench;
       if (tm) {
@@ -266,6 +267,7 @@ export class Game {
     // loot crates — a salvage CHEST you crack open for scrap
     L.crates.forEach(([x, z]) => {
       const grp = new THREE.Group(); grp.position.set(x, 0, z);
+      grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera
       let lid = null, lidRest = null;
       const cm = this.toolModels && this.toolModels.chest;
       if (cm) {
@@ -289,6 +291,7 @@ export class Game {
     // SHOP stall — walk up and interact to open the weapon shop (reusable)
     if (L.shop) {
       const grp = new THREE.Group(); grp.position.set(L.shop.x, 0, L.shop.z);
+      grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera, not its back
       const sm = this.toolModels && this.toolModels.shop;
       if (sm) {
         const s = cloneSkinned(sm.scene); s.scale.setScalar(sm.fit);
@@ -762,11 +765,17 @@ export class Game {
       // instead of jammed against an edge. A cheap two-pass chamfer distance transform
       // over the grid, then pick the max. Keeps the map + all guide anchors untouched.
       if (level.mapFit && level.mapFit.normalize && level.spawnStart) {
+        // clearance (chamfer distance to nearest wall/void), two passes
         const INF = 1e6, dist = new Float32Array(nx * nz);
         for (let k = 0; k < nx * nz; k++) dist[k] = bits[k] ? INF : 0;
         for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i > 0) d = Math.min(d, dist[k - 1] + 1); if (j > 0) d = Math.min(d, dist[k - nx] + 1); dist[k] = d; }
-        let best = -1, bd = -1;
-        for (let j = nz - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i < nx - 1) d = Math.min(d, dist[k + 1] + 1); if (j < nz - 1) d = Math.min(d, dist[k + nx] + 1); dist[k] = d; if (d > bd) { bd = d; best = k; } }
+        for (let j = nz - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i < nx - 1) d = Math.min(d, dist[k + 1] + 1); if (j < nz - 1) d = Math.min(d, dist[k + nx] + 1); dist[k] = d; }
+        // Pick the most-open cell NEAR the designer's spawnStart (within a radius),
+        // so the intended location is honoured — just nudged onto nearby open ground,
+        // not teleported to a far/edge pocket that merely has the highest clearance.
+        const sc = Math.round((level.spawnStart.x + bx2) / cell), sj = Math.round((level.spawnStart.z + bz2) / cell);
+        const R = 6; let best = -1, bd = -1;
+        for (let dj = -R; dj <= R; dj++) for (let di = -R; di <= R; di++) { const ii = sc + di, jj = sj + dj; if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue; const k = jj * nx + ii; if (!bits[k]) continue; if (dist[k] > bd) { bd = dist[k]; best = k; } }
         if (best >= 0) { const s = { x: -bx2 + (best % nx) * cell, z: -bz2 + ((best / nx) | 0) * cell }; level.spawnStart.x = s.x; level.spawnStart.z = s.z; if (this._streetSpawn) { this._streetSpawn.x = s.x; this._streetSpawn.z = s.z; } }
       }
     }

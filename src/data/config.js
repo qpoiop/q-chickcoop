@@ -15,8 +15,8 @@ export const CONFIG = {
 
   // Player movement + model presentation
   player: {
-    radius: 0.7, moveSpeed: 8.6, sprintMul: 1.35, accel: 14,
-    dashSpeed: 30, dashTime: 0.22, iframe: 0.32, dashRegen: 1.1,
+    radius: 0.7, moveSpeed: 10.2, sprintMul: 1.35, accel: 16,
+    dashSpeed: 34, dashTime: 0.22, iframe: 0.32, dashRegen: 1.0,
     // faceAim false → the body turns toward the MOVEMENT (left-stick) direction;
     // the gun/aim ring still tracks the aim independently.
     baseMaxHp: 100, height: 2.5, faceAim: false,
