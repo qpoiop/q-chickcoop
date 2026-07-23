@@ -651,6 +651,9 @@ export class Game {
     if (level.fog) this.scene.fog = new THREE.Fog(level.fog.color, level.fog.near, level.fog.far);
     if (level.bg != null) this.scene.background = new THREE.Color(level.bg);
     if (level.light) this.scene.traverse((o) => { if (o.isHemisphereLight) o.intensity = level.light.hemi; if (o.isDirectionalLight) o.intensity = level.light.dir; });
+    // Per-map tone-mapping exposure — dark night maps (the forest) need to be
+    // brightened at the RENDERER, not faked by making props emissive.
+    if (this.rend) this.rend.toneMappingExposure = level.exposure != null ? level.exposure : 1.25;
   }
 
   // Load a map GLB and fit it to the play area. These town GLBs are one combined

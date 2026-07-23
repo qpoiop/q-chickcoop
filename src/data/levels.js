@@ -116,24 +116,24 @@ export function waterfallLevel() {
 // in that normalized space, taken from the map guide (FireCamp/Temple/Pentagramme…).
 // Collision comes from the walkable grid (trees/rocks read as tall → non-walkable).
 export function mysticForestLevel() {
-  // bounds tightened to the actual content (all anchors sit within ~±28); at 58
-  // the player could walk far past the art into the void ("맵 밖으로 나가짐").
-  const hx = 46, hz = 46;
+  // scaled up ×1.5 (normalize 120→180, bounds 58→66): the playable content was a
+  // tiny central strip. All anchors below are the guide coords ×1.5.
+  const hx = 66, hz = 66;
   return {
-    id: 'main', B: 46, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 120, walkTop: 8 },
-    spawnStart: { x: -9.2, z: -5.0 },                        // FireCamp
+    id: 'main', B: 66, bounds: { hx, hz }, harvest: true,
+    mapFit: { normalize: 180, walkTop: 12 },
+    exposure: 1.85,   // brighten the whole map at the renderer (it read too dark)
+    spawnStart: { x: -13.8, z: -7.5 },                       // FireCamp
     walls: [], platforms: [], covers: [],
     // cores on OPPOSITE sides (Temple west, Mine east) so breaching both means
-    // crossing the whole map — no more hack-both-from-one-spot.
-    cores: [{ x: -23.1, z: 17.6 }, { x: 22.7, z: 14.0 }],    // Temple, Mine (east)
-    shop: { x: 1.5, z: -7 },                                 // stall by the camp
-    portal: { x: 32, z: -32, to: 'city' },                   // clear ground SE (scanned Ground_Sol; off the magic circle, not under a tree)
-    // crates spread across the north/east ruins (was clustered at the centre camp)
-    crates: [[-16.3, -27.7], [-9.5, -32.1], [3.9, -27.4], [19.7, -24.6], [30.0, -3.0]],
-    spawns: [[-18, -8], [8, -16], [-24, 4], [4, 12], [-14, -22], [16, 6], [-6, 22]],
-    fog: { color: 0x1c3226, near: 150, far: 460 }, bg: 0x27402f,
-    light: { hemi: 2.3, dir: 3.8 },   // brighter — the forest read too dark
+    // crossing the whole map.
+    cores: [{ x: -34.7, z: 26.4 }, { x: 34.1, z: 21.0 }],    // Temple (W lab), Mine (E lab)
+    shop: { x: 2.3, z: -10.5 },                              // stall by the camp
+    portal: { x: 34.1, z: 21.0, to: 'city' },                // AT the eastern lab (core B) — the hacked lab becomes the gateway
+    crates: [[-24.5, -41.6], [-14.3, -48.2], [5.9, -41.1], [29.6, -36.9], [45.0, -4.5]],
+    spawns: [[-27, -12], [12, -24], [-36, 6], [6, 18], [-21, -33], [24, 9], [-9, 33]],
+    fog: { color: 0x2a4636, near: 170, far: 520 }, bg: 0x36543f,
+    light: { hemi: 3.0, dir: 4.6 },   // brighter — the forest read too dark
   };
 }
 
