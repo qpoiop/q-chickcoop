@@ -57,8 +57,8 @@ export function cityLevel() {
     portal: { x: 0, z: -50, to: 'boss' },
     spawns: [[-54, -46], [54, -46], [-54, 40], [54, 40], [0, -56], [-58, 0], [58, 0]],
     crates: [[-26, 16], [30, -12], [-10, -22], [22, 20], [6, 6], [-42, -6], [46, 10]],
-    fog: { color: 0x0a0e14, near: 90, far: 300 }, bg: 0x1a2230,
-    light: { hemi: 0.6, dir: 1.6 },
+    fog: { color: 0x0a0e14, near: 110, far: 340 }, bg: 0x1a2230,
+    light: { hemi: 0.95, dir: 2.05 },
   };
 }
 

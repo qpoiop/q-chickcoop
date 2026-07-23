@@ -17,7 +17,7 @@ export const CONFIG = {
     dashSpeed: 30, dashTime: 0.22, iframe: 0.32, dashRegen: 1.1,
     // faceAim false → the body turns toward the MOVEMENT (left-stick) direction;
     // the gun/aim ring still tracks the aim independently.
-    baseMaxHp: 100, height: 3.3, faceAim: false,
+    baseMaxHp: 100, height: 2.7, faceAim: false,
   },
 
   // Progression
