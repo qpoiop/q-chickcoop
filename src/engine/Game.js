@@ -261,19 +261,23 @@ export class Game {
     // loot crates — a salvage CHEST you crack open for scrap
     L.crates.forEach(([x, z]) => {
       const grp = new THREE.Group(); grp.position.set(x, 0, z);
-      let chestMixer = null, chestClip = null;
+      let lid = null, lidRest = null;
       const cm = this.toolModels && this.toolModels.chest;
       if (cm) {
         const ch = cloneSkinned(cm.scene); ch.scale.setScalar(cm.fit);
         const bb = new THREE.Box3().setFromObject(ch); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
         ch.position.x -= ctr.x; ch.position.z -= ctr.z; ch.position.y -= bb.min.y; grp.add(ch);
-        if (cm.clips && cm.clips.length) { chestMixer = new THREE.AnimationMixer(ch); chestClip = cm.clips[0]; } // played once on open
+        // the GLB's open clip is ~20s and doesn't rebind on the clone — we open the
+        // lid procedurally instead, rotating this hinge node.
+        ch.traverse((o) => { if (o.name === 'Chest_Top' || /Chest_Top(?!_Final)/i.test(o.name)) lid = o; });
+        if (!lid) ch.traverse((o) => { if (/lid|top|cover/i.test(o.name) && o.children.length) lid = o; });
+        if (lid) lidRest = lid.quaternion.clone();
       } else {
         const m = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.MeshStandardMaterial({ color: 0x2a3a2a, emissive: 0x1a3a1a, emissiveIntensity: 0.4, roughness: 0.6, metalness: 0.3 }));
         m.position.y = 0.8; grp.add(m);
       }
       g.add(grp);
-      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, chestMixer, chestClip, active: true });
+      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, lid, lidRest, lidT: 0, active: true });
     });
 
     // safe-zone ring
@@ -727,13 +731,19 @@ export class Game {
       it.done = true; const o = this.obstacles.find((x) => x.x === it.x && x.z === it.z); if (o) o.dead = true;
       // crack it open: play the chest's open clip once (fall back to a pop) and
       // spray scrap coins out of the lid for a tactile payout.
-      if (it.chestMixer && it.chestClip) { const a = it.chestMixer.clipAction(it.chestClip); a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.play(); it.chestOpening = true; }
+      if (it.lid) { it.chestOpening = true; it.lidT = 0; } // procedural lid pop (see _simulate)
       else it.mesh.visible = false;
       const cp = new THREE.Vector3(it.x, 1, it.z);
       this._impact(cp, 0xffd23f, 16, 6); this.fx.shake = 0.28; this.audio.pickup();
-      const md = this._mods(); const payout = Math.ceil((8 + Math.random() * 10) * md.gold);
+      const md = this._mods();
+      // Chest loot table: always some scrap + xp, and a LOW chance of the next
+      // weapon (chests are now the only weapon source).
+      const nextW = WEAPON_DROP_ORDER.find((k) => !this.state.owned[k]);
+      if (nextW && Math.random() < 0.25) { this._spawnItemDrop(cp, 'weapon'); this._event(t('evt.acquired', { name: locName(this.WEAPONS[nextW]) })); }
+      else this._event(t('evt.salvage'));
+      const payout = Math.ceil((10 + Math.random() * 14) * md.gold);
       for (let k = 0; k < 4; k++) this._drop(new THREE.Vector3(it.x + (Math.random() - 0.5) * 1.4, 0, it.z + (Math.random() - 0.5) * 1.4), 1);
-      this.state.gold += payout; this._gainXp(6 * md.xp); this._event(t('evt.salvage'));
+      this.state.gold += payout; this._gainXp(8 * md.xp);
       if (this._tut && this.tut.step === 6) this._tutAdvance(); // tutorial OPEN step
     } else if (it.type === 'portal' && it.active) {
       // Portal is the tutorial's final step — finish the tutorial, then cross.
@@ -1096,7 +1106,7 @@ export class Game {
       return;
     }
     const step = TUTORIAL[s]; this.state.objectiveKey = 'tut:' + s; this._event(getLang() === 'ko' ? (step.toastKo || '') : (step.toast || '')); this.tut.killBase = this.state.kills; this.tut.timer = 0;
-    if (s === 3) this._spawnItemDrop({ x: this.player.position.x + Math.cos(this.face) * 6, z: this.player.position.z + Math.sin(this.face) * 6 }, 'weapon');
+    if (s === 3) this._spawnItemDrop({ x: this.player.position.x + Math.cos(this.face) * 6, z: this.player.position.z + Math.sin(this.face) * 6 }, 'scrap');
     // Buy step: grant enough scrap for the cheapest STILL-UNOWNED weapon (the
     // pickup step already gifted the first one), so the shop lesson can't soft-lock.
     // The step completes on the actual purchase (see pickWeapon).
@@ -1240,7 +1250,13 @@ export class Game {
     this._updateChannel(dt);
     this.interact.forEach((x) => {
       if (x.wbMixer) x.wbMixer.update(rdt); // workbench idle loop
-      if (x.chestOpening && x.chestMixer) x.chestMixer.update(rdt); // chest lid opening
+      if (x.chestOpening && x.lid) { // procedural chest-lid pop (~0.5s, eases past then settles)
+        x.lidT = Math.min(1, (x.lidT || 0) + dt * 2.4);
+        const e = 1 - Math.pow(1 - x.lidT, 3); // ease-out
+        this._tmpQ = this._tmpQ || new THREE.Quaternion();
+        this._tmpQ.setFromAxisAngle(this._axX || (this._axX = new THREE.Vector3(1, 0, 0)), -1.9 * e);
+        x.lid.quaternion.copy(x.lidRest).multiply(this._tmpQ);
+      }
       if (x.type === 'core' && !x.done) {
         if (x.glow) { x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5; x.glow.rotation.y += dt * 1.5; }
         if (x.ring) x.ring.rotation.z += dt * 1.2;
@@ -1380,12 +1396,10 @@ export class Game {
         if (this.state.killStreak >= 2) this.hud.showCombo(this.state.killStreak);
         this._impact(e.position, (u.mesh && u.mesh.material) ? u.mesh.material.color.getHex() : (u.tint || 0xff3b6b), u.boss ? 40 : 11, u.boss ? 11 : 6);
         this._drop(e.position, u.tier);
-        if (u.boss) { this._spawnItemDrop(e.position, 'weapon'); this._spawnItemDrop(e.position, 'health'); }
-        else {
-          const nextW = WEAPON_DROP_ORDER.find((k) => !this.state.owned[k]);
-          if (nextW && Math.random() < this.WEAPONS[nextW].dropChance) this._spawnItemDrop(e.position, 'weapon');
-          else { const r = Math.random(); if (r < CONFIG.drops.healthChance) this._spawnItemDrop(e.position, 'health'); else if (r < CONFIG.drops.healthChance + CONFIG.drops.scrapChance) this._spawnItemDrop(e.position, 'scrap'); }
-        }
+        // No weapon drops from kills (the drop had no visible gun model) — weapons
+        // now come from cracking chests. Kills give xp + a chance of health/scrap.
+        if (u.boss) { this._spawnItemDrop(e.position, 'health'); this._spawnItemDrop(e.position, 'scrap'); }
+        else { const r = Math.random(); if (r < CONFIG.drops.healthChance) this._spawnItemDrop(e.position, 'health'); else if (r < CONFIG.drops.healthChance + CONFIG.drops.scrapChance) this._spawnItemDrop(e.position, 'scrap'); }
         if (u.boss) { clearBossCast(this, e); this.boss = null; this.state.bossActive = false; this.state.gold += Math.ceil(60 * md.gold); this._gainXp(40 * md.xp); this._event(t('evt.bossDown')); this.fx.shake = 1; this.fx.freeze = 0.28; for (let k = 0; k < 3; k++) this._drop(e.position.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4)), 1); if (this.mapId === 'boss') this._revealExtraction(); this.refresh(); }
         if (u.hpBar) this.scene.remove(u.hpBar);
         this.scene.remove(e); this.enemies.splice(i, 1); this.fx.shake = Math.min(1, this.fx.shake + (u.tier === 1 ? 0.28 : 0.12)); this.fx.freeze = Math.max(this.fx.freeze, u.tier === 1 ? 0.07 : 0.035); continue;
