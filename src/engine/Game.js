@@ -1374,9 +1374,24 @@ export class Game {
       home: { x: sp[0], z: sp[1] }, aggro: false, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
       atkRange: conf.atkRange, windup: conf.windup, atkCd: conf.atkCd, ranged: !!conf.ranged, keep: conf.keep || 0, projSpeed: conf.projSpeed || 20, fireT: 0, windT: 0,
     });
+    // Melee mobs get a ground danger-ring that only shows during the wind-up so
+    // the player can read the incoming strike and dodge (the GLB models otherwise
+    // telegraph with just a 20% scale bump — too subtle top-down). Shared geo/mat.
+    if (!conf.ranged) { const tr = this._makeTeleRing(); g.add(tr); g.userData.teleRing = tr; }
     const hb = this._makeHpBar(conf.c); g.userData.hpBar = hb.group; g.userData.hpFill = hb.fill; g.userData.barY = tier === 2 ? 2.0 : 2.7;
     this.scene.add(hb.group);
     this.scene.add(g); this.enemies.push(g);
+  }
+
+  // Wind-up danger ring — one shared geometry + material for every mob.
+  _makeTeleRing() {
+    if (!this._teleGeo) {
+      this._teleGeo = new THREE.RingGeometry(0.82, 1.0, 32);
+      this._teleMat = new THREE.MeshBasicMaterial({ color: 0xff2d55, transparent: true, opacity: 0.6, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+    }
+    const tr = new THREE.Mesh(this._teleGeo, this._teleMat);
+    tr.rotation.x = -Math.PI / 2; tr.position.y = 0.06; tr.visible = false;
+    return tr;
   }
 
   // A straw training dummy for the FIRE lesson: a cross-post scarecrow placed far
@@ -1890,6 +1905,12 @@ export class Game {
           }
           if (u.lungeT > 0) e.position.addScaledVector(to, u.spd * 1.8 * dt);
         }
+      }
+
+      // wind-up danger ring: grows toward the strike radius as the hit nears
+      if (u.teleRing) {
+        if (u.telegraph) { u.teleRing.visible = true; const p = u.windup > 0 ? 1 - u.windT / u.windup : 1; u.teleRing.scale.setScalar((u.atkRange || 2) * (0.45 + 0.55 * p)); }
+        else if (u.teleRing.visible) u.teleRing.visible = false;
       }
 
       if (u.mesh) { u.mesh.rotation.x += dt * u.spin; u.mesh.rotation.y += dt * u.spin; if (u.tier === 2) u.mesh.position.y = u.r + 0.5 + Math.sin(this.state.time * 6 + i) * 0.3; u.hitT = Math.max(0, (u.hitT || 0) - rdt); u.mesh.material.emissiveIntensity = 0.4 + (u.hitT > 0 ? 1.4 : 0) + (u.telegraph ? 1.4 : 0) + (u.lungeT > 0 ? 1 : 0) + (1 - u.hp / u.maxHp) * 0.5; }
