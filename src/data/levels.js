@@ -155,9 +155,9 @@ export function cityStageLevel() {
     // across the (nearly map-wide) walkable area; _snapAnchors keeps reachable ones.
     spawnStart: { x: 5, z: -1 },
     walls: [], platforms: [], covers: [],
-    cores: [{ x: -30, z: -12 }, { x: 30, z: -14 }],   // hack targets, opposite ends
+    cores: [{ x: -30, z: -12 }, { x: 41, z: 2 }],   // hack targets, opposite ends (B was on a rooftop y=4.8 → probe-picked clear ground)
     shop: { x: 16, z: 22 },
-    portal: { x: 0, z: -44, to: 'boss' },             // far end → boss room
+    portal: { x: 11, z: 41, to: 'boss' },             // was on a rooftop y=3.3 → probe-picked clear ground, far from spawn
     crates: [[-18, 10], [22, 6], [-8, -20], [12, -28], [-28, 18], [30, 20]],
     spawns: [[-46, -38], [46, -38], [-46, 34], [46, 34], [0, -48], [-50, 0], [50, 0]],
     fog: { color: 0x0e141c, near: 120, far: 380 }, bg: 0x161d28,
