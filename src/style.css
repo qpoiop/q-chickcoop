@@ -103,7 +103,7 @@ body.playing #bottomToasts { display:none !important; }
 .prompt-key #hudPromptGlyph { position:relative; z-index:1; width:30px; height:30px; display:grid; place-items:center;
   border:1.5px solid #35e0d0; border-radius:50%; color:#7ff2e8;
   background:rgba(8,12,18,.92); box-shadow:0 0 10px rgba(53,224,208,.35) inset; }
-.prompt-key #hudPromptGlyph svg { width:16px; height:16px; display:block; }
+.prompt-key #hudPromptGlyph svg { width:18px; height:18px; display:block; }
 
 /* Kill-streak / combo badge — pops on each kill, escalates with tier color */
 @keyframes comboPop { 0% { transform: scale(.5); opacity: 0; } 40% { transform: scale(1.22); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }

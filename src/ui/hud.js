@@ -15,12 +15,16 @@ const fmtTime = (t2) => { const m = Math.floor(t2 / 60), s = Math.floor(t2 % 60)
 //  core → a circuit chip (hack a data core), crate → a box with a down arrow
 //  (collect salvage), portal → an arrow entering a ring (travel), extract → an
 //  eject/up-chevron over a pad (escape).
-const SVG = (b) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
+const SVG = (b) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
 const PROMPT_ICON = {
-  'prompt.core': SVG('<rect x="7" y="7" width="10" height="10" rx="1.5"/><circle cx="12" cy="12" r="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>'),
-  'prompt.crate': SVG('<path d="M4 8l8-4 8 4v8l-8 4-8-4V8z"/><path d="M12 12v6"/><path d="M9 12l3 3 3-3"/>'),
-  'prompt.portal': SVG('<ellipse cx="15" cy="12" rx="4" ry="8"/><path d="M3 12h9"/><path d="M8 8l4 4-4 4"/>'),
-  'prompt.extract': SVG('<path d="M12 4l6 7h-4v5h-4v-5H6l6-7z"/><path d="M7 20h10"/>'),
+  // HACK a data core — a microchip with a lit centre node + pins
+  'prompt.core': SVG('<rect x="6.5" y="6.5" width="11" height="11" rx="2"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/>'),
+  // COLLECT salvage — an isometric loot crate
+  'prompt.crate': SVG('<path d="M12 3l8.5 4.2v9.6L12 21l-8.5-4.2V7.2z"/><path d="M3.6 7.3L12 11.4l8.4-4.1M12 11.4V21"/>'),
+  // TRAVEL — an arrow diving into a portal ring
+  'prompt.portal': SVG('<circle cx="15" cy="12" r="6.5"/><path d="M2.5 12h9.5"/><path d="M8.5 8l4 4-4 4"/>'),
+  // EXTRACT / escape — a bold up arrow lifting off a pad
+  'prompt.extract': SVG('<path d="M12 3.5l7 8.5h-4.3v6.5H9.3V12H5z" fill="currentColor" fill-opacity=".18"/><path d="M12 3.5l7 8.5h-4.3v6.5H9.3V12H5z"/>'),
 };
 
 export class HUD {
