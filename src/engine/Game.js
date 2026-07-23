@@ -136,8 +136,11 @@ export class Game {
 
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: CONFIG.spawn.grace };
     this.refresh();
-    // Hide the loading screen once essentials are ready (or a hard timeout).
-    let done = false; const finish = () => { if (done) return; done = true; this.hud.hideLoading(); };
+    // Loading screen shows real download progress (driven in _loop) until the
+    // essentials are ready (or a hard timeout).
+    this._booting = true; this.hud.setLoading(0, 'INITIALIZING');
+    let done = false;
+    const finish = () => { if (done) return; done = true; this._booting = false; this.hud.setLoading(1, 'READY'); setTimeout(() => this.hud.hideLoading(), 280); };
     essentials.then(finish); setTimeout(finish, 20000);
     this._loop();
   }
@@ -421,7 +424,7 @@ export class Game {
   // ---------- async model loads ----------
   async _loadPlayerModel() {
     if (this.chicken) return;
-    const g = await loadGLB(ASSETS.player); if (!g || this._dead) return;
+    const g = await loadGLB(ASSETS.player, (l, t) => this._bootProg('player', l, t)); if (!g || this._dead) return;
     tuneMaterials(g.scene, { metalness: 0.3 });
     const wrap = new THREE.Group(); wrap.add(g.scene);
     this.chickenModel = wrap; this.chicken = { clips: g.animations, fit: null };
@@ -479,7 +482,23 @@ export class Game {
   async _warmMap(url) {
     if (!url) return; this._mapSrc = this._mapSrc || {};
     if (this._mapSrc[url]) return;
-    const g = await loadGLB(url); if (g && !this._dead) this._mapSrc[url] = g.scene;
+    const g = await loadGLB(url, (l, t) => this._bootProg('map', l, t)); if (g && !this._dead) this._mapSrc[url] = g.scene;
+  }
+
+  // Boot-progress aggregator: track download bytes for the essential assets and
+  // expose a 0..1 fraction (map weighted heavier as it's the bulk of the load).
+  _bootProg(kind, l, t) {
+    this._boot = this._boot || { player: { l: 0, t: 0 }, map: { l: 0, t: 0 } };
+    this._boot[kind] = { l, t };
+    if (kind === 'player') this._boot._label = 'HERO';
+    else this._boot._label = 'CITY';
+  }
+  _bootFraction() {
+    const b = this._boot; if (!b) return 0;
+    // weight: map 0.72 / player 0.28 (map is ~3x the bytes)
+    const pf = b.player.t > 0 ? b.player.l / b.player.t : 0;
+    const mf = b.map.t > 0 ? b.map.l / b.map.t : 0;
+    return Math.min(1, pf * 0.28 + mf * 0.72);
   }
 
   // Fog / background / light for a modelless arena.
@@ -1108,6 +1127,7 @@ export class Game {
     fx.freeze = Math.max(0, fx.freeze - rdt);
     const dt = rdt * (fx.freeze > 0 ? 0.02 : fx.tScale);
 
+    if (this._booting) this._driveBootBar(rdt);
     if (playing) this._simulate(dt, rdt, md, fx);
 
     this._animateDetached(rdt);
@@ -1549,6 +1569,15 @@ export class Game {
   // Quality tiers driven by smoothed frame time (_perfMs), with a hold so it can't
   // oscillate: 2 = full bloom, 1 = reduced bloom, 0 = bloom off (direct render,
   // skipping the fullscreen post passes). Only ever sheds cost; never adds it.
+  // Ease the loading bar toward real byte progress, with a gentle time-creep so
+  // it always advances (never stalls) but never hits 100% until actually ready.
+  _driveBootBar(rdt) {
+    this._bootCreep = Math.min(0.9, (this._bootCreep || 0) + rdt * 0.05);
+    const goal = Math.max(this._bootFraction(), this._bootCreep);
+    this._bootShown = (this._bootShown || 0) + (goal - (this._bootShown || 0)) * Math.min(1, rdt * 4);
+    this.hud.setLoading(this._bootShown, (this._boot && this._boot._label) || 'LOADING');
+  }
+
   _applyAdaptiveQuality() {
     if (this._q == null) this._q = 2;
     this._qHold = (this._qHold || 0) - 1;

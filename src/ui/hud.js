@@ -86,6 +86,13 @@ export class HUD {
 
   hideLoading() { if (this.el.loading) this.el.loading.style.display = 'none'; }
 
+  // Boot progress: pct 0..1, optional status label.
+  setLoading(pct, label) {
+    const f = document.getElementById('loadBarFill'); if (f) f.style.transform = `scaleX(${Math.max(0, Math.min(1, pct))})`;
+    const p = document.getElementById('loadPct'); if (p) p.textContent = Math.round(Math.max(0, Math.min(1, pct)) * 100) + '%';
+    if (label != null) { const l = document.getElementById('loadLabel'); if (l) l.textContent = label; }
+  }
+
   _buildStartParticles() {
     const host = $('startParticles'); if (!host) return;
     const frag = document.createDocumentFragment();
