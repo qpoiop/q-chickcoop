@@ -323,7 +323,7 @@ export class Game {
     // hidden + non-interactable + its collider disabled until its step (see
     // _tutReveal, called from _tutAdvance).
     if (this._tut) {
-      const stepFor = { shop: 5, crate: 6, core: 7 };
+      const stepFor = { shop: 5, crate: 6, core: 7, portal: 9 };
       const cur = (this.tut && this.tut.step) || 0;
       for (const it of this.interact) {
         const s = stepFor[it.type]; if (s == null) continue;
@@ -1054,6 +1054,9 @@ export class Game {
   // Reveal the boss-map portal once the town cores are breached.
   _activatePortal() {
     const p = this.interact.find((x) => x.type === 'portal'); if (!p) return;
+    // Tutorial: the portal is gated to the PORTAL step (9), NOT the core hack (7),
+    // so hacking the core doesn't let you skip the UPGRADE step. _tutReveal(9) shows it.
+    if (this._tut) { this.state.objectiveKey = 'tut:8'; return; }
     p.active = true; p.mesh.visible = true; this.state.objectiveKey = 'obj.portal';
     this._event(t('evt.portal')); this.fx.shake = 0.6; this.audio.levelUp();
   }
@@ -1436,6 +1439,10 @@ export class Game {
     this.tut = { step: 0, move: 0, shots: 0, dashed: false, killBase: 0, timer: 0, dummied: false };
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: this._tut ? CONFIG.spawn.tutGrace : CONFIG.spawn.grace };
     this.fx = { shake: 0, freeze: 0, tScale: 1, tTarget: 1, fov: 0, muzzle: 0, dashT: 0, iframe: 0, dashDir: new THREE.Vector3(), recoil: 0, hitPunch: 0, camKick: new THREE.Vector3() };
+    // Cover the screen BEFORE hiding the start overlay, so the not-yet-built map
+    // doesn't flash for a frame between refresh() and _goToMap's fade ("깜빡임").
+    if (this.dom.fade) { this.dom.fade.style.transition = 'none'; this.dom.fade.style.opacity = 1; }
+    if (this.dom.trans) this.dom.trans.style.display = 'grid';
     this.refresh();
     this._goToMap(this._tut ? 'tutorial' : 'main');
   }
