@@ -61,7 +61,7 @@ const STR = {
   ko: {
     'home.eyebrow': '바냐드 오버라이드 · 액션 프로토타입',
     'home.desc': '용암으로 둘러싸인 판자촌에 투입된 전투 치킨이다. 거리를 누비며 적 새떼를 막아내고, 빛나는 무기 드롭을 주워라. 모은 고철로 무기고에서 더 강한 총을 사고, 갈래형 기술 트리로 성장하라. 두 코어를 해킹해 포탈을 열고, 보스 아레나로 건너가 살아남아 탈출하라.',
-    'home.deploy': '출격', 'home.move': '이동', 'home.aimfire': '조준 + 사격', 'home.dash': '대시', 'home.interact': '상호작용',
+    'home.deploy': '출격하기', 'home.move': '이동', 'home.aimfire': '조준 + 사격', 'home.dash': '대시', 'home.interact': '상호작용',
     'home.mobile': '모바일', 'home.mLeft': '왼쪽 스틱 — 이동', 'home.mRight': '오른쪽 스틱 — 조준 & 사격', 'home.mAuto': '정지 시 자동 사격 · DASH / USE',
     'home.skip': '튜토리얼 건너뛰기 →', 'home.lang': '언어', 'home.landscape': '↻ 가로 모드 플레이 권장 — iOS에서는 기기를 가로로 돌려 주세요',
     'home.install': '＋ 홈 화면에 추가', 'home.update': '⟳ 업데이트 있음 — 눌러서 새로고침',

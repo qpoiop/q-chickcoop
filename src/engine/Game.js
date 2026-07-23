@@ -463,7 +463,14 @@ export class Game {
     for (const [key, url] of Object.entries(ASSETS.toolModels)) {
       const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
       tuneMaterials(g.scene, { metalness: 0.4, shadow: false });
-      g.scene.traverse((o) => { if (o.isMesh || o.isSkinnedMesh) o.frustumCulled = true; });
+      // these props read too dark in the night city — give the materials a gentle
+      // self-lit tint so they pop without needing an extra light.
+      g.scene.traverse((o) => {
+        if (!o.isMesh && !o.isSkinnedMesh) return;
+        o.frustumCulled = true;
+        const m = Array.isArray(o.material) ? o.material : [o.material];
+        m.forEach((mat) => { if (mat && mat.emissive) { mat.emissive.copy(mat.color || mat.emissive).multiplyScalar(0.32); mat.emissiveIntensity = 1; if (mat.roughness !== undefined) mat.roughness = Math.min(mat.roughness, 0.7); } });
+      });
       this.toolModels[key] = { scene: g.scene, clips: g.animations, fit: fitScale(g.scene, H[key] || 2) };
     }
   }
