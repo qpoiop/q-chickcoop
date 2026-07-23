@@ -84,11 +84,31 @@ export function bossArenaLevel() {
   };
 }
 
+// MAIN = the MYSTICAL FOREST (main farming stage). Loaded with the normalize
+// pipeline (scale the long axis to 120, centre on origin); anchor coords below are
+// in that normalized space, taken from the map guide (FireCamp/Temple/Pentagramme…).
+// Collision comes from the walkable grid (trees/rocks read as tall → non-walkable).
+export function mysticForestLevel() {
+  const hx = 58, hz = 58;
+  return {
+    id: 'main', B: 58, bounds: { hx, hz }, harvest: true,
+    mapFit: { normalize: 120, walkTop: 8 },
+    spawnStart: { x: -9.2, z: -5.0 },                        // FireCamp
+    walls: [], platforms: [], covers: [],
+    cores: [{ x: -23.1, z: 17.6 }, { x: -16.3, z: -27.7 }],  // Temple, Mine (hack targets)
+    shop: { x: 1.5, z: -7 },                                 // stall by the camp
+    portal: { x: -5.6, z: 0.5, to: 'boss' },                 // Pentagramme magic circle
+    crates: [[-10.0, 0.2], [-2.4, -1.5], [3.9, -27.4], [19.7, -24.6], [22.7, 14.0]],
+    fog: { color: 0x0a140e, near: 100, far: 340 }, bg: 0x131f18,
+    light: { hemi: 0.95, dir: 1.95 },
+  };
+}
+
 // Map registry: optional GLB backdrop model + level builder. `model: null` =
 // pure procedural arena (no GLB). Referenced by Game map handling.
 export const MAPS = {
   tutorial: { id: 'tutorial', model: null, build: tutorialLevel },       // small tiled bay
-  main: { id: 'main', model: ASSETS.cityMap, build: cityLevel },         // urban city GLB
+  main: { id: 'main', model: ASSETS.forestMain, build: mysticForestLevel }, // mystical forest GLB
   boss: { id: 'boss', model: null, build: bossArenaLevel },              // pure arena
 };
 

@@ -580,6 +580,18 @@ export class Game {
     const box = bld.isEmpty() ? full : bld;
     box.getSize(ps);
 
+    // normalize mode (guide pipeline): scale the WHOLE map so its longest ground
+    // axis = fit.normalize, then centre the full footprint on the origin. Anchor
+    // coords in the level are given in this normalized space.
+    if (fit.normalize) {
+      full.getSize(s);
+      const nscale = fit.normalize / Math.max(s.x, s.z || 1);
+      m.scale.setScalar(nscale); if (fit.yaw) m.rotation.y = fit.yaw * Math.PI / 180; m.updateWorldMatrix(true, true);
+      const fb = new THREE.Box3().setFromObject(m); const fc = new THREE.Vector3(); fb.getCenter(fc);
+      m.position.set(-fc.x + (fit.offX || 0), -fb.min.y + (fit.groundY || 0), -fc.z + (fit.offZ || 0));
+      this.map = m; this.scene.add(m); m.updateMatrixWorld(true);
+      return this._finishMapLoad(m, level);
+    }
     const scale = fit.scale != null ? fit.scale : (level.B * 2 * (fit.fill ?? 1.15)) / Math.max(ps.x, ps.z || 1);
     m.scale.setScalar(scale); m.updateWorldMatrix(true, true);
     if (fit.center) {
@@ -592,20 +604,22 @@ export class Game {
       const target = box2.isEmpty() ? new THREE.Box3().setFromObject(m) : box2;
       target.getCenter(c); m.position.x -= c.x - (fit.offX || 0); m.position.z -= c.z - (fit.offZ || 0); m.position.y -= target.min.y + (fit.groundY || 0);
     }
-    this.map = m; this.scene.add(m);
-    m.updateMatrixWorld(true);
+    this.map = m; this.scene.add(m); m.updateMatrixWorld(true);
+    return this._finishMapLoad(m, level);
+  }
+
+  // Shared map post-processing: pick a ground-level spawn, snap it to y=0, and
+  // build the walkable grid. Works for both the hand-fit city and normalized maps.
+  _finishMapLoad(m, level) {
     const down = new THREE.Vector3(0, -1, 0);
     const probe = (x, z) => { const rc = new THREE.Raycaster(new THREE.Vector3(x, 800, z), down, 0, 4000); return rc.intersectObject(m, true).find((h) => h.object.visible) || null; };
 
-    // Pick a STREET-level spawn: scan candidate points, prefer one standing on a
-    // road/sidewalk mesh at the lowest common surface (so the player starts on the
-    // avenue, not on a rooftop). Falls back to the level's spawnStart.
-    // NOTE: _buildWorld() rebuilds this.L from a fresh entry.build(), so mutating
-    // `level` here is lost — we stash the override on the instance instead and
-    // _buildPlayer reads it (keyed by map id).
+    // Prefer a road/ground mesh at the lowest common surface for the spawn (city);
+    // forests have no such names, so this falls back to the level's spawnStart.
+    // Stashed on the instance (map-keyed) because _buildWorld rebuilds this.L.
     this._streetSpawn = null;
     let sp = level.spawnStart || { x: 0, z: 0 };
-    if (level.harvest) {
+    if (level.harvest && !level.mapFit?.normalize) {
       const streetRe = /road|street|asphalt|sidewalk|crosswalk|pavement|ground|floor|bg_/i;
       const B = (level.bounds ? Math.min(level.bounds.hx, level.bounds.hz) : level.B) - 6;
       let best = null;
@@ -613,31 +627,30 @@ export class Game {
         const h = probe(x, z); if (!h) continue;
         if (!streetRe.test(h.object.name || '')) continue;
         const y = h.point.y, dOrigin = x * x + z * z;
-        // lowest surface = street level; among those, nearest the map centre
         if (!best || y < best.y - 0.6 || (Math.abs(y - best.y) <= 0.6 && dOrigin < best.d)) best = { x, z, y, d: dOrigin };
       }
       if (best) { sp = { x: best.x, z: best.z }; this._streetSpawn = { map: level.id, x: sp.x, z: sp.z }; }
+    } else if (level.spawnStart) {
+      this._streetSpawn = { map: level.id, x: level.spawnStart.x, z: level.spawnStart.z };
     }
 
-    // Snap the ground SURFACE under the chosen spawn to y=0 so the player (feet at
-    // 0) stands on it — robust against per-model pivot/scale (fixes sinking).
+    // Snap ground under the spawn to y=0 (player feet at 0; fixes sinking).
     const gh = probe(sp.x, sp.z);
     if (gh) { m.position.y -= gh.point.y; this._mapGroundY = 0; }
 
-    // Walkable grid: sample the (now snapped) map on a coarse cell grid and mark a
-    // cell walkable only where there is ground near STREET level. This blocks
-    // walking off the edge into the void AND onto tall rooftops — bounds alone are
-    // a square that overshoots the actual city footprint. Built once at load;
-    // per-frame movement does a cheap O(1) lookup (see _walkable / _simulate).
+    // Walkable grid: a cell is walkable only where ground sits near y=0. Blocks the
+    // void AND anything tall (rooftops / trees / rocks), so it doubles as collision.
+    // Built once at load; per-frame movement does an O(1) lookup.
     this._walk = null;
     if (level.harvest && level.bounds) {
       m.updateMatrixWorld(true);
       const cell = 3, bx2 = level.bounds.hx, bz2 = level.bounds.hz;
+      const hi = (level.mapFit && level.mapFit.walkTop != null) ? level.mapFit.walkTop : 5;
       const nx = Math.ceil((bx2 * 2) / cell) + 1, nz = Math.ceil((bz2 * 2) / cell) + 1;
       const bits = new Uint8Array(nx * nz);
       for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
         const x = -bx2 + i * cell, z = -bz2 + j * cell; const h = probe(x, z);
-        if (h && h.point.y > -3 && h.point.y < 5) bits[j * nx + i] = 1;
+        if (h && h.point.y > -3 && h.point.y < hi) bits[j * nx + i] = 1;
       }
       this._walk = { cell, bx: bx2, bz: bz2, nx, nz, bits };
     }
