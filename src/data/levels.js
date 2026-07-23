@@ -132,7 +132,7 @@ export function mysticForestLevel() {
     cores: [{ x: -34.7, z: 26.4 }, { x: 12.0, z: -6.0 }],    // Temple (W lab, visible), central-east lab
     shop: { x: 2.3, z: -10.5 },                              // stall by the camp
     portal: { x: -34.7, z: 26.4, to: 'city' },               // AT workbench A (Temple) — a visible structure, per feedback
-    crates: [[-48.0, 40.0], [-14.3, -48.2], [5.9, -41.1], [29.6, -36.9], [45.0, -4.5]],  // one pushed far NW for exploration
+    crates: [[-42, 3], [-6, -36], [6, -30], [9, 12], [-39, 15]],  // probe-picked clear ground (was on a tower/rock/too far)
     spawns: [[-27, -12], [12, -24], [-36, 6], [6, 18], [-21, -33], [24, 9], [-9, 33]],
     fog: { color: 0x2a4636, near: 170, far: 520 }, bg: 0x36543f,
     light: { hemi: 3.0, dir: 4.6 },   // brighter — the forest read too dark
