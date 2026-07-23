@@ -120,6 +120,17 @@ over many unverified ones. Log what was done + what's next at the bottom.
 ## 6. Prioritized Backlog (loop pulls top open item)
 
 ### P0 — correctness / blocking
+- [x] **Tutorial flow fixes** (2026-07-23, user-reported): (1) the buy/shop step
+      auto-completed on a 4s timer without buying — now it requires an actual
+      purchase (`pickWeapon`), with 60 scrap granted at step start so it can't
+      soft-lock; (2) the tutorial→city transition could leave the fade overlay stuck
+      (looked like "loading, can't move") — `_goToMap` is now wrapped in try/finally
+      so the overlay + `_transitioning` flag ALWAYS clear; (3) removed the tutorial's
+      "meaningless pillar" covers for a clean training bay; (4) buy-step text now
+      says "SHOP/상점" to match the button. Verified end-to-end: no auto-advance
+      without buying, buy → equips + crosses to city, player spawns walkable & moves,
+      no console errors.
+
 - [x] **Street-level spawn** (2026-07-23): `_loadMapModel` scans candidate XZ,
       raycasts down, picks the lowest road/sidewalk surface nearest centre; result
       stashed on `this._streetSpawn` (map-keyed) because `_buildWorld` rebuilds

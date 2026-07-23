@@ -28,7 +28,7 @@ export function tutorialLevel() {
     id: 'tutorial', B: 24, bounds: { hx, hz }, arena: true, lavaRing: true,
     floorColor: 0x2c3644, gridColor1: 0x4f7c92, gridColor2: 0x26313c, accent: 0x35e0d0, edgeColor: 0x35e0d0,
     spawnStart: { x: 0, z: 8 },
-    walls: [], platforms: [], covers: [[-12, -6], [12, -6], [0, -12]],
+    walls: [], platforms: [], covers: [],
     cores: [],
     spawns: [[-18, -10], [18, -10], [0, -14], [-18, 4], [18, 4]],
     crates: [[-9, 3]],
