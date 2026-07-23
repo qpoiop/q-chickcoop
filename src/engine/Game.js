@@ -192,7 +192,7 @@ export class Game {
       });
       L.covers.forEach(([x, z]) => {
         if (L.arena) { // glowing accent pillar
-          const h = 3.4, m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, h, 6), new THREE.MeshStandardMaterial({ color: 0x141c28, emissive: accent, emissiveIntensity: 0.5, roughness: 0.5, metalness: 0.5 }));
+          const h = 3.4, m = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, h, 16), new THREE.MeshStandardMaterial({ color: 0x141c28, emissive: accent, emissiveIntensity: 0.5, roughness: 0.5, metalness: 0.5 }));
           m.position.set(x, h / 2, z); m.castShadow = true; g.add(m);
           const cap = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.09, 8, 18), new THREE.MeshBasicMaterial({ color: accent })); cap.rotation.x = Math.PI / 2; cap.position.set(x, h, z); g.add(cap);
           this.obstacles.push({ x, z, hw: 1.1, hd: 1.1, env: true });
@@ -1819,11 +1819,11 @@ export class Game {
     // Generous magnet: kills happen at bullet range, so a small radius left most
     // scrap/XP on the ground (player earned ~nothing → couldn't afford the shop).
     // A wide radius + strong pull means kills reliably fund progression.
-    const pickR = 6 * md.pickup, pull = 19;
+    const pickR = 4 * md.pickup, pull = 16;
     const P = this._pickVec || (this._pickVec = new THREE.Vector3()); // reused scratch — no per-pickup alloc
     for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = P.copy(this.player.position).sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
     for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; c.rotation.z += dt * 5; const to = P.copy(this.player.position).sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
-    const pr2 = 6 * md.pickup;
+    const pr2 = 4 * md.pickup;
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
       const it = this.itemDrops[i]; const u = it.userData; u.life -= dt; u.ring.rotation.z += dt * 1.6; it.position.y = Math.sin(this.state.time * 2 + u.ph) * 0.12;
       const to = P.copy(this.player.position).sub(it.position); to.y = 0; const d = to.length(); if (d < pr2) { to.normalize(); it.position.x += to.x * 15 * dt; it.position.z += to.z * 15 * dt; }
