@@ -133,6 +133,7 @@ export class HUD {
     this._syncDashPips(Math.max(s.dashMax || 2, md.dashchg), s.dashCharges);
 
     e.touchBtns.style.display = this.g.isTouch ? 'flex' : 'none';
+    document.body.classList.toggle('touch', !!this.g.isTouch);
 
     // pause button + overlay
     e.btnPause.style.display = (s.started && !s.ended) ? 'block' : 'none';

@@ -114,6 +114,18 @@ body.playing #bottomToasts { display:none !important; }
   text-transform:uppercase; opacity:.85; margin-top:2px; text-shadow:0 0 10px var(--cc); }
 #hudCombo.pop .combo-n { animation: comboPop .32s cubic-bezier(.2,1.4,.4,1); }
 
+/* ---- Touch / mobile HUD layout: keep menu nav out of the thumb zones ---- */
+/* Menu nav (inventory/shop/tech) → compact vertical stack, top-left under the HP
+   bar, so the bottom-right stays free for the dash/interact thumb buttons. */
+body.touch #hudNav { bottom:auto !important; right:auto !important;
+  top:calc(96px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left));
+  flex-direction:column; align-items:flex-start; gap:7px; }
+body.touch #hudNav .hud-btn { padding:7px 12px; font-size:11px; letter-spacing:1px; }
+/* action buttons sit a touch higher so they clear the on-screen control hint */
+body.touch #hudTouchBtns { bottom:calc(20px + env(safe-area-inset-bottom)) !important; }
+/* the desktop keyboard-hint line is meaningless on touch */
+body.touch #hudHint { display:none !important; }
+
 /* Off-screen threat arrows (edge-clamped, point to unseen aggro'd enemies/boss) */
 .threat-arrow { position:absolute; width:26px; height:26px; opacity:.9;
   filter:drop-shadow(0 0 6px currentColor); animation:threatPulse 1.1s ease-in-out infinite; }
