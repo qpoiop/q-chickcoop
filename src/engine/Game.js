@@ -837,6 +837,14 @@ export class Game {
     inst.scale.setScalar(rec.fit * (scaleMul || 1));
     const b = characterBox(inst); const c = new THREE.Vector3(); b.getCenter(c);
     inst.position.x -= c.x; inst.position.z -= c.z; inst.position.y -= b.min.y;
+    // Perf for crowds: enemies don't cast shadows (huge shadow-pass saving with many
+    // mobs) and ARE frustum-culled so off-screen mobs skip draw + skinning. The
+    // bounding sphere is inflated so animated poses don't pop at the screen edge.
+    inst.traverse((o) => {
+      if (!o.isMesh && !o.isSkinnedMesh) return;
+      o.castShadow = false; o.frustumCulled = true;
+      if (o.geometry) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); if (o.geometry.boundingSphere) o.geometry.boundingSphere.radius *= 2.4; }
+    });
     wrap.add(inst);
     let mixer = null;
     if (rec.clips.length) { mixer = new THREE.AnimationMixer(inst); mixer.clipAction(rec.clips[0]).play(); mixer.update(Math.random() * 2); }
@@ -1065,8 +1073,15 @@ export class Game {
     if (playing) this._updateOcclusion();
     this._updateThreatArrows();
 
-    if (this.bloom) { const bs = CONFIG.render.bloom; if (this.bloom.strength !== bs) this.bloom.strength = bs; }
-    if (this.composer && CONFIG.render.bloom > 0.01) this.composer.render(); else this.rend.render(this.scene, this.cam);
+    // Adaptive quality: watch a smoothed frame time and shed cost under load so the
+    // game never stutters with lots of mobs/bullets — first drop bloom, then the
+    // pixel ratio; restore both when it's comfortably fast again. Never adds cost.
+    this._perfMs = this._perfMs == null ? 16 : this._perfMs + ((rdt * 1000) - this._perfMs) * 0.06;
+    if (playing) this._applyAdaptiveQuality();
+
+    const useBloom = this.composer && CONFIG.render.bloom > 0.01 && this._q !== 0;
+    if (this.bloom && useBloom) { const bs = CONFIG.render.bloom * (this._q === 1 ? 0.6 : 1); if (Math.abs(this.bloom.strength - bs) > 0.01) this.bloom.strength = bs; }
+    if (useBloom) this.composer.render(); else this.rend.render(this.scene, this.cam);
 
     // (loading screen is dismissed in _init once essentials finish loading)
   }
@@ -1263,7 +1278,12 @@ export class Game {
       }
 
       if (u.mesh) { u.mesh.rotation.x += dt * u.spin; u.mesh.rotation.y += dt * u.spin; if (u.tier === 2) u.mesh.position.y = u.r + 0.5 + Math.sin(this.state.time * 6 + i) * 0.3; u.hitT = Math.max(0, (u.hitT || 0) - rdt); u.mesh.material.emissiveIntensity = 0.4 + (u.hitT > 0 ? 1.4 : 0) + (u.telegraph ? 1.4 : 0) + (u.lungeT > 0 ? 1 : 0) + (1 - u.hp / u.maxHp) * 0.5; }
-      else if (u.glb) { if (!u.boss) e.rotation.y = Math.atan2(to.x, to.z); if (u.mixer) u.mixer.update(rdt * (1 + u.spd * 0.05)); if (u.tier === 2 && !u.boss) e.position.y = 0.6 + Math.abs(Math.sin(this.state.time * 7 + i)) * 0.5; u.hitT = Math.max(0, (u.hitT || 0) - rdt); e.scale.setScalar(1 + (u.hitT > 0 ? 0.18 : 0) + (u.telegraph ? 0.2 : 0)); }
+      else if (u.glb) { if (!u.boss) e.rotation.y = Math.atan2(to.x, to.z);
+        // Only skin-animate mobs the player can plausibly see. Far mobs accumulate
+        // their skipped time and update in one coarse step, so skinning cost stays
+        // bounded no matter how many are on the field. Boss always animates.
+        if (u.mixer) { if (u.boss || d < 46) { u.mixer.update((rdt + (u._animDebt || 0)) * (1 + u.spd * 0.05)); u._animDebt = 0; } else { u._animDebt = (u._animDebt || 0) + rdt; if (u._animDebt > 0.25) { u.mixer.update(u._animDebt); u._animDebt = 0; } } }
+        if (u.tier === 2 && !u.boss) e.position.y = 0.6 + Math.abs(Math.sin(this.state.time * 7 + i)) * 0.5; u.hitT = Math.max(0, (u.hitT || 0) - rdt); e.scale.setScalar(1 + (u.hitT > 0 ? 0.18 : 0) + (u.telegraph ? 0.2 : 0)); }
       if (u.boss) this.state.bossHp = Math.max(0, u.hp);
       // floating HP bar (mobs only; boss uses the top bar)
       if (u.hpBar && !u.boss) {
@@ -1479,6 +1499,18 @@ export class Game {
       a.style.transform = `translate(-50%,-50%) rotate(${it.ang}rad)`;
       a.style.color = it.boss ? '#ff8a3b' : '#ff3b6b';
     }
+  }
+
+  // Quality tiers driven by smoothed frame time (_perfMs), with a hold so it can't
+  // oscillate: 2 = full bloom, 1 = reduced bloom, 0 = bloom off (direct render,
+  // skipping the fullscreen post passes). Only ever sheds cost; never adds it.
+  _applyAdaptiveQuality() {
+    if (this._q == null) this._q = 2;
+    this._qHold = (this._qHold || 0) - 1;
+    if (this._qHold > 0) return;
+    const ms = this._perfMs;
+    if (ms > 24 && this._q > 0) { this._q--; this._qHold = 120; }
+    else if (ms < 14 && this._q < 2) { this._q++; this._qHold = 120; }
   }
 
   _updateCamera(rdt, fx, playing) {
