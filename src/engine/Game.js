@@ -1665,7 +1665,13 @@ export class Game {
     // spawns
     this.game.grace = Math.max(0, (this.game.grace || 0) - dt);
     this.game.spawnT -= dt; const rate = Math.max(0.3, 1.3 - this.state.time / 80);
-    if (this.game.grace <= 0 && this.game.spawnT <= 0 && this.enemies.length < CONFIG.spawn.maxEnemies) { this._spawnEnemy(); this.game.spawnT = rate; }
+    if (this.game.grace <= 0 && this.game.spawnT <= 0 && this.enemies.length < CONFIG.spawn.maxEnemies) {
+      this._spawnEnemy(); this.game.spawnT = rate;
+      // Wave rhythm: after a burst of `waveSize` spawns, a short lull so the player
+      // gets breathing room to reposition / engage the tech tree (was relentless).
+      this.game.spawnCount = (this.game.spawnCount || 0) + 1;
+      if (CONFIG.spawn.waveSize && this.game.spawnCount % CONFIG.spawn.waveSize === 0) this.game.spawnT = CONFIG.spawn.lull;
+    }
     // Boss is fought on the boss map (spawned on portal entry) — no timed spawn on main.
 
     if (this._tut) this._updateTutorial(dt);
