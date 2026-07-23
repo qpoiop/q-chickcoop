@@ -114,6 +114,21 @@ body.playing #bottomToasts { display:none !important; }
   text-transform:uppercase; opacity:.85; margin-top:2px; text-shadow:0 0 10px var(--cc); }
 #hudCombo.pop .combo-n { animation: comboPop .32s cubic-bezier(.2,1.4,.4,1); }
 
+/* ---- Narrow / portrait phones: compact the top HUD so it never collides ---- */
+@media (max-width: 560px) {
+  /* pause → top-right corner (was dead-center, colliding with both side blocks) */
+  #btnPause { left:auto !important; right:12px !important; top:12px !important; transform:none !important; }
+  /* stats + objective drop just below the pause corner button */
+  #hudTopRight { top:54px !important; }
+  .stat-chip { padding:4px 9px !important; }
+  .stat-chip > div:last-child { font-size:15px !important; }
+  #hudObjBox { max-width:210px !important; padding:6px 10px !important; }
+  #hudObjText { font-size:12.5px !important; }
+  /* combo badge sits lower so it clears the objective + dash row */
+  #hudCombo { top:22% !important; }
+  .combo-n { font-size:38px !important; }
+}
+
 /* ---- Touch / mobile HUD layout: keep menu nav out of the thumb zones ---- */
 /* Menu nav (inventory/shop/tech) → compact vertical stack, top-left under the HP
    bar, so the bottom-right stays free for the dash/interact thumb buttons. */
