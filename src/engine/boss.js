@@ -37,8 +37,13 @@ export function updateBoss(game, e, to, d, dt, rdt) {
   // --- active dash execution ---
   if (u.dashT > 0) {
     u.dashT -= rdt;
+    const px = e.position.x, pz = e.position.z;
     e.position.addScaledVector(u.dashDir, u.dashSpeed * dt);
     game._collide(e.position, u.r * 0.6);
+    // Don't dash OUT of the walkable play area. _collide only handles obstacle boxes;
+    // on grid-bounded arenas the dash would otherwise blow through the boundary
+    // (bigger bosses + tighter arenas exposed this). Stop at the edge.
+    if (game._walk && !game._walkable(e.position.x, e.position.z)) { e.position.x = px; e.position.z = pz; u.dashT = 0; }
     // lane contact damage
     if (d < u.r + 1.4) game._bossHitPlayer(u.def.dmg, e.position);
     if (u.dashT <= 0) { e.rotation.y = Math.atan2(to.x, to.z); }
@@ -59,7 +64,14 @@ export function updateBoss(game, e, to, d, dt, rdt) {
   // --- chase + pick a skill ---
   e.rotation.y = Math.atan2(to.x, to.z);
   const step = e.position.clone().addScaledVector(to, u.spd * dt);
-  game._collide(step, u.r * 0.7); game._keepOutSafe(step, u.r); e.position.copy(step);
+  game._collide(step, u.r * 0.7); game._keepOutSafe(step, u.r);
+  // stay in the walkable play area (slide per-axis at the boundary, like mobs)
+  if (game._walk && !game._walkable(step.x, step.z)) {
+    if (game._walkable(step.x, e.position.z)) step.z = e.position.z;
+    else if (game._walkable(e.position.x, step.z)) step.x = e.position.x;
+    else { step.x = e.position.x; step.z = e.position.z; }
+  }
+  e.position.copy(step);
 
   let ready = null;
   for (const s of u.skills) {
