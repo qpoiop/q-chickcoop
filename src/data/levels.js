@@ -32,10 +32,11 @@ export function tutorialLevel() {
     spawnStart: { x: 0, z: 10 },
     walls: [], platforms: [],
     covers: [[-14, -2], [14, -2], [-8, -12], [8, -12]],   // glowing accent pillars (cover)
-    cores: [{ x: 11, z: 3 }],  // workbench to hack (tutorial HACK step)
+    cores: [{ x: 12, z: 4 }],  // workbench to hack (tutorial HACK step)
+    shop: { x: -12, z: -6 },   // shop stall (tutorial SHOP step) — was missing
     portal: { x: 0, z: -15, to: 'main' }, // exit portal (tutorial's final step)
     spawns: [[-20, -12], [20, -12], [0, -16], [-20, 5], [20, 5]],
-    crates: [[-11, 3]],      // salvage chest to open (tutorial OPEN step)
+    crates: [[12, -8]],      // salvage chest to open (tutorial OPEN step)
     fog: { color: 0x0c1218, near: 60, far: 160 }, bg: 0x161f2a,
     light: { hemi: 0.9, dir: 1.85 },
   };
@@ -124,8 +125,8 @@ export function mysticForestLevel() {
     portal: { x: -5.6, z: 0.5, to: 'boss' },                 // Pentagramme magic circle
     crates: [[-10.0, 0.2], [-2.4, -1.5], [3.9, -27.4], [19.7, -24.6], [22.7, 14.0]],
     spawns: [[-18, -8], [8, -16], [-24, 4], [4, 12], [-14, -22], [16, 6], [-6, 22]],
-    fog: { color: 0x0a140e, near: 100, far: 340 }, bg: 0x131f18,
-    light: { hemi: 0.95, dir: 1.95 },
+    fog: { color: 0x14241a, near: 140, far: 420 }, bg: 0x1b2c22,
+    light: { hemi: 1.5, dir: 2.8 },
   };
 }
 

@@ -245,13 +245,12 @@ export class Game {
         const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
         base.position.y = 0.25; grp.add(base);
       }
-      // interactable beacon: a ground ring + a soft light column rising from it.
-      const gring = new THREE.Mesh(new THREE.RingGeometry(2.4, 2.75, 36), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
-      gring.rotation.x = -Math.PI / 2; gring.position.y = 0.06; grp.add(gring);
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.2, 4.2, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-      col.position.y = 2.1; grp.add(col);
+      // interactable beacon: a glowing ground ring only (no vertical column/dome —
+      // the dome washed over the model and over-glowed). The RING is what glows.
+      const gring = this._beaconRing(0x35e0d0, 2.4);
+      grp.add(gring);
       g.add(grp); this.obstacles.push({ x: c.x, z: c.z, hw: 1.6, hd: 1.6 });
-      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: null, ring: null, gring, col, mark: null, wbMixer, active: true });
+      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: null, ring: null, gring, col: null, mark: null, wbMixer, active: true });
     });
 
     // glowing map-transition portal (hidden until unlocked)
@@ -268,8 +267,7 @@ export class Game {
       const cm = this.toolModels && this.toolModels.chest;
       if (cm) {
         const ch = cloneSkinned(cm.scene); ch.scale.setScalar(cm.fit);
-        const bb = new THREE.Box3().setFromObject(ch); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
-        ch.position.x -= ctr.x; ch.position.z -= ctr.z; ch.position.y -= bb.min.y; grp.add(ch);
+        this._groundModel(ch); grp.add(ch);
         // the GLB's open clip is ~20s and doesn't rebind on the clone — we open the
         // lid procedurally instead, rotating this hinge node.
         ch.traverse((o) => { if (o.name === 'Chest_Top' || /Chest_Top(?!_Final)/i.test(o.name)) lid = o; });
@@ -279,11 +277,10 @@ export class Game {
         const m = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.MeshStandardMaterial({ color: 0x2a3a2a, emissive: 0x1a3a1a, emissiveIntensity: 0.4, roughness: 0.6, metalness: 0.3 }));
         m.position.y = 0.8; grp.add(m);
       }
-      // ground beacon ring so the chest reads as interactable
-      const cgr = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.5, 36), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.4, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-      cgr.rotation.x = -Math.PI / 2; cgr.position.y = 0.05; grp.add(cgr);
+      // same glowing ground ring as the cores so the chest reads as interactable
+      const cgr = this._beaconRing(0xffd23f, 1.8); grp.add(cgr);
       g.add(grp);
-      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, lid, lidRest, lidT: 0, active: true });
+      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, lid, lidRest, lidT: 0, gring: cgr, active: true });
     });
 
     // SHOP stall — walk up and interact to open the weapon shop (reusable)
@@ -296,17 +293,14 @@ export class Game {
         // whole stall onto its side (reads as a floating, tilted "SHOP" sign).
         // Zeroing the wrapper node stands it upright as the pink kiosk it is.
         s.traverse((o) => { if (o.name === 'Sketchfab_model') o.rotation.set(0, 0, 0); });
-        s.updateMatrixWorld(true);
-        const bb = new THREE.Box3().setFromObject(s); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
-        s.position.x -= ctr.x; s.position.z -= ctr.z; s.position.y -= bb.min.y; grp.add(s);
+        this._groundModel(s); grp.add(s);
       } else {
         const m = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 2), new THREE.MeshStandardMaterial({ color: 0x2a2036, emissive: 0x35e0d0, emissiveIntensity: 0.2 }));
         m.position.y = 1.5; grp.add(m);
       }
-      const sgr = new THREE.Mesh(new THREE.RingGeometry(2.2, 2.6, 40), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.45, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-      sgr.rotation.x = -Math.PI / 2; sgr.position.y = 0.05; grp.add(sgr);
+      const sgr = this._beaconRing(0x35e0d0, 2.4); grp.add(sgr);
       g.add(grp); this.obstacles.push({ x: L.shop.x, z: L.shop.z, hw: 1.6, hd: 1.4 });
-      this.interact.push({ type: 'shop', id: 'Shop', x: L.shop.x, z: L.shop.z, r: 3.4, done: false, mesh: grp, sgr, active: true });
+      this.interact.push({ type: 'shop', id: 'Shop', x: L.shop.x, z: L.shop.z, r: 3.4, done: false, mesh: grp, sgr, gring: sgr, active: true });
     }
 
     // safe-zone ring
@@ -364,6 +358,18 @@ export class Game {
     obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= box.min.y;
   }
 
+  // A glowing "interact here" ground ring (additive ring + soft inner disc). Shared
+  // by cores/chests/shop so every interactable reads the same way. Returns a group
+  // (scale-pulsed by the interact animation).
+  _beaconRing(color, r) {
+    const grp = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r * 0.8, r, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; grp.add(ring);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(r * 0.8, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    disc.rotation.x = -Math.PI / 2; disc.position.y = 0.05; grp.add(disc);
+    return grp;
+  }
+
   _makePortal(pos, color) {
     const grp = new THREE.Group(); grp.position.set(pos.x, 0, pos.z);
     const pm = this.toolModels && this.toolModels.portal;
@@ -404,6 +410,7 @@ export class Game {
     // Idempotent: skip meshes that are themselves twins, and meshes already twinned
     // (so re-entering a map doesn't stack twins-of-twins).
     model.traverse((o) => { if ((o.isSkinnedMesh || o.isMesh) && !o.userData.xray && !o.userData._hasXray) src.push(o); });
+    this._xrayTwins = this._xrayTwins || [];
     for (const o of src) {
       let x;
       if (o.isSkinnedMesh) { x = new THREE.SkinnedMesh(o.geometry, mat); x.bind(o.skeleton, o.bindMatrix); x.bindMode = o.bindMode; }
@@ -411,6 +418,8 @@ export class Game {
       x.position.copy(o.position); x.quaternion.copy(o.quaternion); x.scale.copy(o.scale);
       x.frustumCulled = false; x.renderOrder = 20; x.castShadow = false; x.receiveShadow = false;
       x.userData.xray = true; o.userData._hasXray = true;
+      x.visible = false;                 // shown only when the hero is actually occluded
+      this._xrayTwins.push(x);
       o.parent.add(x);
     }
   }
@@ -552,7 +561,7 @@ export class Game {
     const H = { workbench: 4.5, chest: 3.0, shop: 9, portal: 6.5 };
     // per-model self-lit tint: the chest sits in dark forest and read almost black,
     // so it gets a stronger tint; shop/workbench stay subtle to avoid washing out.
-    const TINT = { workbench: 0.14, chest: 0.24, shop: 0.12, portal: 0.18 };
+    const TINT = { workbench: 0.05, chest: 0.1, shop: 0.06, portal: 0.1 };
     for (const [key, url] of Object.entries(ASSETS.toolModels)) {
       const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
       tuneMaterials(g.scene, { metalness: 0.4, shadow: false });
@@ -946,12 +955,8 @@ export class Game {
   _completeInteract(it) {
     if (it.type === 'core' && !it.done) {
       it.done = true;
-      // recolor the beacon to the "breached" green, then dim it out
-      if (it.gring) it.gring.material.color.set(0x59ff9d);
-      if (it.col) it.col.material.color.set(0x59ff9d);
-      if (it.glow) { it.glow.material.color.set(0x59ff9d); it.glow.material.emissive.set(0x59ff9d); }
-      if (it.ring) it.ring.material.color.set(0x59ff9d);
-      if (it.mark) it.mark.visible = false;
+      // recolor the beacon ring group to the "breached" green
+      if (it.gring) it.gring.traverse((o) => { if (o.isMesh && o.material) o.material.color.set(0x59ff9d); });
       this.state.cores++; this._impact(it.mesh.position, 0x59ff9d, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
       const need = (this.L.cores || []).length;
       if (this.state.cores >= need) { this._activatePortal(); }
@@ -1446,6 +1451,7 @@ export class Game {
     // city). On natural maps the whole map is a few combined meshes, so fading one
     // dims half the scene — there the see-through hero (X-ray twin) handles it.
     if (playing && !this._walk) this._updateOcclusion();
+    if (playing) this._updateHeroXray();
     this._updateThreatArrows();
 
     // Adaptive quality: watch a smoothed frame time and shed cost under load so the
@@ -1550,11 +1556,8 @@ export class Game {
         this._tmpQ.setFromAxisAngle(this._axX || (this._axX = new THREE.Vector3(1, 0, 0)), -1.9 * e);
         x.lid.quaternion.copy(x.lidRest).multiply(this._tmpQ);
       }
-      if (x.type === 'core' && !x.done) {
-        if (x.glow) { x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5; x.glow.rotation.y += dt * 1.5; }
-        if (x.gring) { const s = 1 + Math.sin(this.state.time * 3) * 0.06; x.gring.scale.set(s, s, s); }
-        if (x.col) x.col.material.opacity = 0.06 + (Math.sin(this.state.time * 3) * 0.5 + 0.5) * 0.06;
-      }
+      // pulse the interact beacon ring (cores/chests/shop) while it's still active
+      if (x.gring && !x.done) { const s = 1 + Math.sin(this.state.time * 3 + (x.x || 0)) * 0.07; x.gring.scale.set(s, 1, s); }
     });
     // portal animation: spin the model + pulse the beacon light (model-based portal)
     if (this.portalObj && this.portalObj.visible) {
@@ -1836,6 +1839,24 @@ export class Game {
       for (const o of this.obstacles) { if (o.dead || o.env === undefined && !o.hw) continue; if (o === this._gateObs && this.gateOpen) continue; if (Math.abs(px - o.x) < o.hw && Math.abs(pz - o.z) < o.hd) return true; }
     }
     return false;
+  }
+
+  // See-through hero: show the X-ray twins ONLY when something on the map stands
+  // between the camera and the player (otherwise the golden hero shows normally).
+  // A single cam->player raycast per frame; GreaterDepth then limits the twins to
+  // the actually-hidden pixels.
+  _updateHeroXray() {
+    const tw = this._xrayTwins; if (!tw || !tw.length || !this.player) return;
+    let occluded = false;
+    if (this.map) {
+      const origin = this.cam.position, target = this._tmpV || (this._tmpV = new THREE.Vector3());
+      target.copy(this.player.position); target.y += 1.0;
+      const dir = target.clone().sub(origin); const dist = dir.length(); dir.normalize();
+      this._occRay = this._occRay || new THREE.Raycaster();
+      this._occRay.set(origin, dir); this._occRay.far = Math.max(0.1, dist - 1.3);
+      occluded = this._occRay.intersectObject(this.map, true).some((h) => h.object.visible);
+    }
+    for (const t of tw) t.visible = occluded;
   }
 
   // Fade any building meshes standing between the camera and the player so the

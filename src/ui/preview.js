@@ -39,6 +39,7 @@ export class ModelViewer {
 
   _resize() {
     const w = this.canvas.clientWidth || 240, h = this.canvas.clientHeight || 240;
+    this._lastW = w; this._lastH = h;
     this.renderer.setSize(w, h, false);
     if (this.cam) { this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
   }
@@ -88,6 +89,9 @@ export class ModelViewer {
   _loop() {
     if (!this._alive) return;
     requestAnimationFrame(this._loop);
+    // Auto-correct a stale drawing buffer (mobile orientation / URL-bar resize) so
+    // the model never renders stretched to a wrong aspect ratio.
+    if (this.canvas.clientWidth !== this._lastW || this.canvas.clientHeight !== this._lastH) this._resize();
     const dt = Math.min(0.05, this.clock.getDelta());
     if (this.mixer) this.mixer.update(dt);
     if (this.root) {
