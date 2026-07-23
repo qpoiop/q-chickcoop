@@ -9,11 +9,10 @@ export const ASSET_BASE = import.meta.env.BASE_URL || './';
 const p = (rel) => ASSET_BASE.replace(/\/$/, '') + '/' + rel;
 
 export const ASSETS = {
-  // Playable hero = chuck_movie: the best-rigged model (Run / Attack / Fly /
-  // Lean / Boost clips). Swapped in from the boss slot per request.
-  // (chick.glb is unusable — ~0.5u tall, its one animation flings the mesh off
-  //  the ground; not shipped.)
-  player: p('caracter/chuck_movie_angry_birds_from_sonic_dash.glb'),
+  // Playable hero = golden_chicken_hero: an original, on-theme goggled battle
+  // chicken (idle/run clips; attack is procedural). Replaces the earlier
+  // third-party bird asset — on-brand and not someone else's IP character.
+  player: p('caracter/golden_chicken_hero.glb'),
 
   // Character roster — 3 enemies + 2 bosses.
   enemyModels: {
@@ -21,7 +20,7 @@ export const ASSETS = {
     little: p('caracter/lowpoly_bird_animation.glb'),  // brute (melee, scaled up)
     drone:  p('caracter/lady_bug_bird.glb'),           // ranged flyer
     bossA:  p('caracter/chick_stylized_character.glb'),
-    bossB:  p('caracter/golden_chicken_hero.glb'),
+    bossB:  p('caracter/chick_stylized_character.glb'), // golden_chicken is now the player hero
   },
 
   // Weapon frames — one gun model per weapon key (data/weapons.js WEAPON_MODEL_MAP).
