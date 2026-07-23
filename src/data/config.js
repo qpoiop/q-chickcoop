@@ -40,7 +40,9 @@ export const CONFIG = {
   // Drops from a slain non-boss enemy. Weapon drop chance is per-weapon
   // (WEAPONS[k].dropChance) for the next unowned progression frame; health/scrap
   // roll afterwards. healAmount = HP restored by a health pickup.
-  drops: { healthChance: 0.09, scrapChance: 0.12, healAmount: 35 },
+  // pickupLife = seconds an uncollected xp orb / coin lingers before it despawns
+  // (prevents unbounded accumulation when kills happen far from the player).
+  drops: { healthChance: 0.09, scrapChance: 0.12, healAmount: 35, pickupLife: 18 },
 
   // Bloom-lightning FX cadence
   fx: { boltInterval: 0.11 },
