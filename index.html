@@ -248,9 +248,14 @@
   </div>
 
   <!-- loading (stays up until the city map + hero are ready) -->
-  <div id="loading" style="position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;background:#06090e">
-    <div class="spinner"></div>
-    <div style="color:#7ff2e8;font-family:'Chakra Petch';letter-spacing:5px;font-size:14px">LOADING…</div>
+  <div id="loading">
+    <div class="load-glow"></div>
+    <div class="load-logo">CHICK<span>COOP</span></div>
+    <div class="load-bar"><div id="loadBarFill"></div></div>
+    <div class="load-row">
+      <span id="loadLabel" class="load-label">INITIALIZING</span>
+      <span id="loadPct" class="load-pct">0%</span>
+    </div>
   </div>
 </div>
 <script type="module" src="/src/main.js"></script>

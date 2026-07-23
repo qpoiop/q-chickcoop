@@ -15,13 +15,14 @@ export function cloneSkinned(root) { return skeletonClone(root); }
 // pure-JS module, no external wasm to host.
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
-/** Load a GLB. Resolves with { scene, animations } or null on failure. */
-export function loadGLB(url) {
+/** Load a GLB. Resolves with { scene, animations } or null on failure.
+ *  onProg(loaded, total) reports download bytes for boot progress UI. */
+export function loadGLB(url, onProg) {
   return new Promise((resolve) => {
     loader.load(
       url,
       (gltf) => resolve({ scene: gltf.scene, animations: gltf.animations || [] }),
-      undefined,
+      onProg ? (e) => onProg(e.loaded || 0, e.total || 0) : undefined,
       (err) => { console.warn('[assets] load failed:', url, err); resolve(null); },
     );
   });
