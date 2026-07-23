@@ -44,7 +44,7 @@ export class HUD {
       cast: $('hudCast'), castName: $('hudCastName'), castBar: $('hudCastBar'),
       endTitle: $('endTitle'), endLevel: $('endLevel'), endKills: $('endKills'), endTime: $('endTime'),
       skipStart: $('btnSkipTutStart'), langEn: $('langEn'), langKo: $('langKo'),
-      btnPause: $('btnPause'), pauseOverlay: $('pauseOverlay'), musicState: $('musicState'),
+      btnPause: $('btnPause'), pauseOverlay: $('pauseOverlay'), musicState: $('musicState'), sfxState: $('sfxState'),
       combo: $('hudCombo'), comboN: $('hudComboN'), comboLbl: $('hudComboLbl'),
     };
     this._dashCount = -1;
@@ -73,6 +73,7 @@ export class HUD {
     $('btnPause').onclick = () => g.togglePause();
     $('btnResume').onclick = () => g.togglePause();
     $('btnMusic').onclick = () => g.toggleMusic();
+    $('btnSfx').onclick = () => g.toggleSfx();
     $('btnQuit').onclick = () => g.quitToHome();
   }
 
@@ -149,6 +150,7 @@ export class HUD {
     e.btnPause.style.display = (s.started && !s.ended) ? 'flex' : 'none';
     e.pauseOverlay.style.display = (s.panel === 'pause') ? 'flex' : 'none';
     e.musicState.textContent = this.g.audio.enabled ? 'ON' : 'OFF';
+    e.sfxState.textContent = this.g.audio.sfxOn ? 'ON' : 'OFF';
 
     if (s.ended) {
       e.endTitle.textContent = s.win ? t('end.win') : t('end.lose');

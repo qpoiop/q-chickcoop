@@ -449,7 +449,10 @@ export class Game {
   // twins share the source skeleton, so they animate for free.
   _buildPlayerXray(model) {
     if (!model) return;
-    const mat = new THREE.MeshBasicMaterial({ color: 0x7ff2e8, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, fog: false });
+    // toneMapped:true (NOT false) + moderate opacity so the occluded silhouette reads
+    // as a soft teal ghost — at full brightness the bloom pass blew it out to a solid
+    // WHITE blob over trees. Dimmer teal blooms gently instead.
+    const mat = new THREE.MeshBasicMaterial({ color: 0x2fb9ad, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide, toneMapped: true, fog: false });
     mat.depthFunc = THREE.GreaterDepth;   // pass only where a nearer surface already drew (i.e. player is behind it)
     const src = [];
     // Idempotent: skip meshes that are themselves twins, and meshes already twinned
@@ -617,7 +620,13 @@ export class Game {
         if (!o.isMesh && !o.isSkinnedMesh) return;
         o.frustumCulled = true;
         const m = Array.isArray(o.material) ? o.material : [o.material];
-        m.forEach((mat) => { if (mat && mat.emissive) { mat.emissive.copy(mat.color || mat.emissive).multiplyScalar(tint); mat.emissiveIntensity = 1; } });
+        m.forEach((mat) => {
+          if (mat && mat.emissive) { mat.emissive.copy(mat.color || mat.emissive).multiplyScalar(tint); mat.emissiveIntensity = 1; }
+          // Shop model has bright top materials that cross the bloom threshold and
+          // blow out to solid white. Clamp any bright shop material below the
+          // threshold so it reads as a coloured kiosk, not a glowing white box.
+          if (key === 'shop' && mat && mat.color) { const mx = Math.max(mat.color.r, mat.color.g, mat.color.b); if (mx > 0.6) mat.color.multiplyScalar(0.6 / mx); }
+        });
       });
       this.toolModels[key] = { scene: g.scene, clips: g.animations, fit: fitScale(g.scene, H[key] || 2) };
     }
@@ -1426,6 +1435,7 @@ export class Game {
     this.audio.ui(); this.refresh();
   }
   toggleMusic() { this.audio.setMusic(!this.audio.enabled); this.audio.ui(); this.refresh(); }
+  toggleSfx() { this.audio.setSfx(!this.audio.sfxOn); this.audio.ui(); this.refresh(); }
   quitToHome() {
     // stop the run and return to the start screen
     this.enemies.forEach((e) => { if (e.userData.boss) clearBossCast(this, e); if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); });

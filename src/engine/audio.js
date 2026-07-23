@@ -10,7 +10,8 @@ export class Audio {
     this.music = null;
     this.musicGain = null;
     this.sfxGain = null;
-    this.enabled = true;
+    this.enabled = true;   // music on/off
+    this.sfxOn = true;     // sound-effects on/off (independent of music)
     this.started = false;
   }
 
@@ -52,10 +53,11 @@ export class Audio {
     this.enabled = on;
     if (this.music) this.music.volume = on ? 0.34 : 0;
   }
+  setSfx(on) { this.sfxOn = on; }
 
   // ---- SFX: short procedural blips (no extra asset downloads) ----
   _blip({ freq = 440, type = 'square', dur = 0.08, gain = 0.5, slide = 0 }) {
-    if (!this.enabled) return;
+    if (!this.sfxOn) return;
     this._ensureCtx();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
