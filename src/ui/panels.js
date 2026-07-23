@@ -11,7 +11,10 @@ export class Panels {
 
   sync() {
     const p = this.g.state.panel;
-    if (p === this._open && p === 'none') return;
+    // Only (re)build when the OPEN PANEL CHANGES. Rebuilding on every refresh()
+    // (e.g. after a purchase / skill buy) re-created the .panel element, replaying
+    // its entry animation → the "flicker / looks like it closed" (깜빡임) bug.
+    if (p === this._open) return;
     this._open = p;
     this.root.innerHTML = '';
     if (p === 'inv') this._renderInventory();
