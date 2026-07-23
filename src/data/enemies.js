@@ -29,7 +29,7 @@ export const ENEMY_TIERS = [
 export const BOSSES = [
   {
     id: 'dasher', name: 'PRIME ROOSTER', nameKo: '프라임 루스터',
-    model: 'bossA', modelMul: 2.4, hp: 520, spd: 2.8, dmg: 26, r: 3.2, c: 0xff2d55,
+    model: 'bossA', modelMul: 3.6, hp: 520, spd: 2.8, dmg: 26, r: 4.4, c: 0xff2d55,
     skills: [
       { id: 'slam',   type: 'aoe',  name: 'Ground Slam',   nameKo: '대지 강타', cast: 1.4, cd: 6.5, radius: 9.5, dmg: 34, color: 0xff2d55, range: 16 },
       { id: 'charge', type: 'dash', name: 'Rooster Charge', nameKo: '맹돌진',   cast: 1.0, cd: 8.0, dmg: 30, color: 0xff7a5c, width: 3.2, speed: 40, time: 0.55, range: 40 },
@@ -37,7 +37,7 @@ export const BOSSES = [
   },
   {
     id: 'gunner', name: 'IRON TALON', nameKo: '아이언 탤런',
-    model: 'bossB', modelMul: 1.9, hp: 560, spd: 2.2, dmg: 20, r: 3.0, c: 0xffb03b,
+    model: 'bossB', modelMul: 2.9, hp: 560, spd: 2.2, dmg: 20, r: 4.0, c: 0xffb03b,
     skills: [
       { id: 'volley', type: 'ranged', pattern: 'spread', name: 'Feather Volley', nameKo: '깃털 난사', cast: 1.1, cd: 5.0, count: 7,  spread: 0.95, dmg: 16, speed: 26, color: 0xffb03b, range: 60 },
       { id: 'storm',  type: 'ranged', pattern: 'radial', name: 'Talon Storm',    nameKo: '탤런 스톰', cast: 1.4, cd: 7.5, count: 20, dmg: 14, speed: 20, color: 0xff7a5c, range: 999 },
