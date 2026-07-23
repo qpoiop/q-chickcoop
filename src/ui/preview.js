@@ -21,6 +21,8 @@ export class ModelViewer {
     const rim = new THREE.DirectionalLight(0x7ff2e8, 0.7); rim.position.set(-3, 1.5, -2); this.scene.add(rim);
     this.spin = opts.spin != null ? opts.spin : 0.7;
     this.fitH = opts.fitH || 2.2;
+    this.fitBy = opts.fitBy || 'height';
+    this.centerY = !!opts.centerY;
     this.yaw = opts.yaw || 0;
     this.root = null; this.mixer = null; this.clock = new THREE.Clock();
     // Optional "walk showcase": the model paces left↔right across the view, faces
@@ -47,10 +49,16 @@ export class ModelViewer {
     // Skinned meshes collapse to their bind pose under setFromObject — measure via
     // skeleton bones (characterBox) so the fit scale is right.
     const box = characterBox(g.scene); const size = new THREE.Vector3(); box.getSize(size);
-    const s = (o.fitH || this.fitH) / (size.y || 1); g.scene.scale.setScalar(s);
+    // A gun is long on X/Z, not tall — fitting by height alone lets it overflow the
+    // frame sideways. `fitBy:'max'` scales the LONGEST axis to fitH so the whole
+    // model always sits inside the view; `centerY` centres it (props with no "feet").
+    const fitBy = o.fitBy || this.fitBy;
+    const denom = fitBy === 'max' ? (Math.max(size.x, size.y, size.z) || 1) : (size.y || 1);
+    const s = (o.fitH || this.fitH) / denom; g.scene.scale.setScalar(s);
     g.scene.updateMatrixWorld(true);
     const b2 = characterBox(g.scene); const c = new THREE.Vector3(); b2.getCenter(c);
-    g.scene.position.x -= c.x; g.scene.position.z -= c.z; g.scene.position.y -= b2.min.y;
+    const centerY = o.centerY != null ? o.centerY : this.centerY;
+    g.scene.position.x -= c.x; g.scene.position.z -= c.z; g.scene.position.y -= centerY ? c.y : b2.min.y;
     wrap.rotation.y = (o.yaw != null ? o.yaw : this.yaw);
     this.scene.add(wrap); this.root = wrap;
     if (g.animations && g.animations.length) {

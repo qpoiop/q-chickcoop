@@ -161,6 +161,11 @@ export class Game {
   // ---------- world ----------
   _buildWorld() {
     const L = this._levelData(); this.L = L; this.obstacles = []; this.interact = [];
+    // On grid maps the guide anchors are raw coordinates that may land on a tree,
+    // a rock, or a pocket the player can't path to. Snap every placed thing to the
+    // nearest cell reachable from the spawn, so cores/crates/shop/portal are always
+    // stood on real ground and always reachable (fixes unreachable farming points).
+    if (this.map && L.harvest) this._snapAnchors(L);
     if (this.worldG) this.scene.remove(this.worldG);
     const g = new THREE.Group(); this.worldG = g; this.scene.add(g);
 
@@ -487,17 +492,21 @@ export class Game {
   // read at the interaction footprint; clips (if any) drive the hack/open anim.
   async _loadToolModels() {
     if (this.toolModels) return; this.toolModels = {};
-    const H = { workbench: 2.6, chest: 1.9, shop: 6 };
+    const H = { workbench: 2.6, chest: 3.0, shop: 9 };
+    // per-model self-lit tint: the chest sits in dark forest and read almost black,
+    // so it gets a stronger tint; shop/workbench stay subtle to avoid washing out.
+    const TINT = { workbench: 0.1, chest: 0.24, shop: 0.12 };
     for (const [key, url] of Object.entries(ASSETS.toolModels)) {
       const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
       tuneMaterials(g.scene, { metalness: 0.4, shadow: false });
-      // these props read too dark in the night city — give the materials a gentle
-      // self-lit tint so they pop without needing an extra light.
+      // these props read too dark at night — give the materials a gentle self-lit
+      // tint so they pop without needing an extra light.
+      const tint = TINT[key] != null ? TINT[key] : 0.1;
       g.scene.traverse((o) => {
         if (!o.isMesh && !o.isSkinnedMesh) return;
         o.frustumCulled = true;
         const m = Array.isArray(o.material) ? o.material : [o.material];
-        m.forEach((mat) => { if (mat && mat.emissive) { mat.emissive.copy(mat.color || mat.emissive).multiplyScalar(0.1); mat.emissiveIntensity = 1; } });
+        m.forEach((mat) => { if (mat && mat.emissive) { mat.emissive.copy(mat.color || mat.emissive).multiplyScalar(tint); mat.emissiveIntensity = 1; } });
       });
       this.toolModels[key] = { scene: g.scene, clips: g.animations, fit: fitScale(g.scene, H[key] || 2) };
     }
@@ -667,17 +676,82 @@ export class Game {
     return w.bits[j * w.nx + i] === 1;
   }
 
-  // Pick a walkable (and, if we have a flow field, player-reachable) spawn point:
-  // nudge from the requested spot toward the player until one qualifies, so mobs
-  // never spawn stuck inside a tree or in a pocket they can't path out of.
+  // Snap level anchors (spawn/cores/crates/shop/portal) onto cells that are both
+  // walkable AND reachable from the spawn, so nothing is placed inside a tree or in
+  // an island the player can never walk to. BFS a reach mask once, then nearest-snap.
+  _snapAnchors(L) {
+    const w = this._walk; if (!w || !L.spawnStart) return;
+    const { nx, nz, cell, bx, bz, bits } = w;
+    const idxOf = (x, z) => { const cx = Math.round((x + bx) / cell), cz = Math.round((z + bz) / cell); return (cx < 0 || cz < 0 || cx >= nx || cz >= nz) ? -1 : cz * nx + cx; };
+    const nearestWalkable = (x, z) => {
+      const cx = Math.round((x + bx) / cell), cz = Math.round((z + bz) / cell);
+      for (let rad = 0; rad < Math.max(nx, nz); rad++)
+        for (let dz = -rad; dz <= rad; dz++) for (let dx = -rad; dx <= rad; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== rad) continue;
+          const ix = cx + dx, iz = cz + dz; if (ix < 0 || iz < 0 || ix >= nx || iz >= nz) continue;
+          if (bits[iz * nx + ix]) return iz * nx + ix;
+        }
+      return -1;
+    };
+    // BFS the reachable region from the spawn cell.
+    let s = idxOf(L.spawnStart.x, L.spawnStart.z); if (s < 0 || !bits[s]) s = nearestWalkable(L.spawnStart.x, L.spawnStart.z);
+    if (s < 0) return;
+    const reach = new Uint8Array(nx * nz), q = new Int32Array(nx * nz); let head = 0, tail = 0;
+    reach[s] = 1; q[tail++] = s;
+    while (head < tail) { const idx = q[head++], cx = idx % nx, cz = (idx / nx) | 0;
+      if (cx + 1 < nx && bits[idx + 1] && !reach[idx + 1]) { reach[idx + 1] = 1; q[tail++] = idx + 1; }
+      if (cx - 1 >= 0 && bits[idx - 1] && !reach[idx - 1]) { reach[idx - 1] = 1; q[tail++] = idx - 1; }
+      if (cz + 1 < nz && bits[idx + nx] && !reach[idx + nx]) { reach[idx + nx] = 1; q[tail++] = idx + nx; }
+      if (cz - 1 >= 0 && bits[idx - nx] && !reach[idx - nx]) { reach[idx - nx] = 1; q[tail++] = idx - nx; }
+    }
+    const toWorld = (i) => ({ x: (i % nx) * cell - bx, z: ((i / nx) | 0) * cell - bz });
+    const snap = (x, z) => {
+      const ci = idxOf(x, z); if (ci >= 0 && reach[ci]) return { x, z }; // already good — keep exact
+      let best = -1, bd = 1e18;
+      for (let i = 0; i < reach.length; i++) { if (!reach[i]) continue; const p = toWorld(i); const d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < bd) { bd = d; best = i; } }
+      return best >= 0 ? toWorld(best) : { x, z };
+    };
+    const s0 = snap(L.spawnStart.x, L.spawnStart.z); L.spawnStart.x = s0.x; L.spawnStart.z = s0.z;
+    const sp = { x: L.spawnStart.x, z: L.spawnStart.z };
+    // Keep props off the spawn: snap to reachable ground, then if it landed inside
+    // `clear` units of the spawn, push it OUTWARD (away from spawn) to the first
+    // reachable cell past that radius — so the player isn't boxed in on drop-in.
+    const place = (x, z, clear) => {
+      let p = snap(x, z);
+      if (clear && Math.hypot(p.x - sp.x, p.z - sp.z) < clear) {
+        let ax = p.x - sp.x, az = p.z - sp.z; const l = Math.hypot(ax, az) || 1; ax /= l; az /= l;
+        for (let r = clear; r <= clear + 20; r += cell) {
+          const q = snap(sp.x + ax * r, sp.z + az * r);
+          if (Math.hypot(q.x - sp.x, q.z - sp.z) >= clear - 0.1) { p = q; break; }
+        }
+      }
+      return p;
+    };
+    (L.cores || []).forEach((c) => { const p = place(c.x, c.z, 10); c.x = p.x; c.z = p.z; });
+    if (L.shop) { const p = place(L.shop.x, L.shop.z, 8); L.shop.x = p.x; L.shop.z = p.z; }
+    if (L.portal) { const p = place(L.portal.x, L.portal.z, 8); L.portal.x = p.x; L.portal.z = p.z; }
+    if (L.bossSpawn) { const p = snap(L.bossSpawn.x, L.bossSpawn.z); L.bossSpawn.x = p.x; L.bossSpawn.z = p.z; }
+    if (L.crates) L.crates = L.crates.map(([x, z]) => { const p = place(x, z, 9); return [p.x, p.z]; });
+    this._reach = { reach, nx, nz, cell, bx, bz }; // reused by mob spawn to keep them in-region
+  }
+
+  // Pick a mob spawn: walkable, reachable, and at least minDist from the player so
+  // mobs never pop in right on top of them. Search OUTWARD from the requested edge
+  // point (which is already far), never toward the player.
   _spawnWalkable(x, z) {
     if (!this._walk) return { x, z };
-    const reach = (px, pz) => { if (!this._walkable(px, pz)) return false; if (!this._flow) return true; return this._flowDir(px, pz) || (Math.hypot(px - this.player.position.x, pz - this.player.position.z) < 4); };
-    if (reach(x, z)) return { x, z };
-    const p = this.player.position, dx = p.x - x, dz = p.z - z, len = Math.hypot(dx, dz) || 1;
-    for (let step = 4; step <= len; step += 4) { const nx = x + dx / len * step, nz = z + dz / len * step; if (reach(nx, nz)) return { x: nx, z: nz }; }
-    // last resort: a ring around the player
-    for (let a = 0; a < 6.28; a += 0.5) { const nx = p.x + Math.cos(a) * 12, nz = p.z + Math.sin(a) * 12; if (reach(nx, nz)) return { x: nx, z: nz }; }
+    const p = this.player.position, MIN = 16;
+    const ok = (px, pz) => {
+      if (!this._walkable(px, pz)) return false;
+      if (Math.hypot(px - p.x, pz - p.z) < MIN) return false;
+      if (!this._flow) return true;
+      return this._flowDir(px, pz) || Math.hypot(px - p.x, pz - p.z) < 4;
+    };
+    if (ok(x, z)) return { x, z };
+    for (let rad = 2; rad <= 44; rad += 2)
+      for (let a = 0; a < 6.28; a += 0.35) { const nx = x + Math.cos(a) * rad, nz = z + Math.sin(a) * rad; if (ok(nx, nz)) return { x: nx, z: nz }; }
+    // fallback: a reachable point on a ring at MIN distance around the player
+    for (let a = 0; a < 6.28; a += 0.25) { const nx = p.x + Math.cos(a) * MIN, nz = p.z + Math.sin(a) * MIN; if (this._walkable(nx, nz) && (!this._flow || this._flowDir(nx, nz))) return { x: nx, z: nz }; }
     return { x, z };
   }
 
