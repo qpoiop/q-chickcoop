@@ -158,7 +158,7 @@ export function cityStageLevel() {
     cores: [{ x: -30, z: -12 }, { x: 41, z: 2 }],   // hack targets, opposite ends (B was on a rooftop y=4.8 → probe-picked clear ground)
     shop: { x: 16, z: 22 },
     portal: { x: 11, z: 41, to: 'boss' },             // was on a rooftop y=3.3 → probe-picked clear ground, far from spawn
-    crates: [[-18, 10], [22, 6], [-8, -20], [12, -28], [-28, 18], [30, 20]],
+    crates: [[-18, 10], [22, 6], [-8, -20], [12, -28], [-1, 56], [30, 20]],  // was [-28,18] under a building (topmost y=6.2) → probe-picked open ground
     spawns: [[-46, -38], [46, -38], [-46, 34], [46, 34], [0, -48], [-50, 0], [50, 0]],
     fog: { color: 0x0e141c, near: 120, far: 380 }, bg: 0x161d28,
     light: { hemi: 1.1, dir: 2.2 },
