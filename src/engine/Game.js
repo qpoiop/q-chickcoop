@@ -418,12 +418,16 @@ export class Game {
       swirl = new THREE.Mesh(new THREE.CircleGeometry(2.0, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.34, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
       swirl.position.y = 2.5; grp.add(swirl); swirl2 = swirl.clone(); swirl2.rotation.y = Math.PI; grp.add(swirl2);
     }
-    // shared beacon: a ground light-ring + rising column so it reads as a gateway.
-    const gring = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.1, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    // Bright, unmistakable gateway beacon — big ground ring + glow disc + a TALL
+    // pillar of light + strong point light, so the portal reads clearly even on a
+    // dark map and from across the arena (the desert model alone was near-invisible).
+    const gring = new THREE.Mesh(new THREE.RingGeometry(2.8, 3.8, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
     gring.rotation.x = -Math.PI / 2; gring.position.y = 0.06; grp.add(gring);
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.7, 5, 28, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.1, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-    col.position.y = 2.5; grp.add(col);
-    const light = new THREE.PointLight(color, 2.4, 18); light.position.y = 2.5; grp.add(light);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(3.4, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.32, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    disc.rotation.x = -Math.PI / 2; disc.position.y = 0.05; grp.add(disc);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 3.0, 18, 32, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.28, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    col.position.y = 9; grp.add(col);
+    const light = new THREE.PointLight(color, 5, 44); light.position.y = 4; grp.add(light);
     grp.userData = { spin, ring, swirl, swirl2, gring, col, light, ph: 0 };
     return grp;
   }
@@ -1458,7 +1462,7 @@ export class Game {
     if (s === 8) this.state.skillPoints = Math.max(this.state.skillPoints, 1);
     if (step.dummies && !this.tut.dummied) {
       this.tut.dummied = true;
-      for (let k = 0; k < 3; k++) { this._spawnEnemy(); const e = this.enemies[this.enemies.length - 1]; const a = k * 2.1; e.position.set(this.player.position.x + Math.cos(a) * 11, 0, this.player.position.z + Math.sin(a) * 11); e.userData.home = { x: e.position.x, z: e.position.z }; }
+      for (let k = 0; k < 3; k++) { this._spawnEnemy(); const e = this.enemies[this.enemies.length - 1]; const a = k * 2.1; e.position.set(this.player.position.x + Math.cos(a) * 18, 0, this.player.position.z + Math.sin(a) * 18); e.userData.home = { x: e.position.x, z: e.position.z }; }
     }
     this.refresh();
   }
