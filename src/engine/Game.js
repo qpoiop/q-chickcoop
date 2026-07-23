@@ -237,9 +237,10 @@ export class Game {
       const tm = this.toolModels && this.toolModels.workbench;
       if (tm) {
         const wb = cloneSkinned(tm.scene); wb.scale.setScalar(tm.fit);
-        const bb = new THREE.Box3().setFromObject(wb); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
-        wb.position.x -= ctr.x; wb.position.z -= ctr.z; wb.position.y -= bb.min.y; grp.add(wb);
-        if (tm.clips && tm.clips.length) { wbMixer = new THREE.AnimationMixer(wb); wbMixer.clipAction(tm.clips[0]).play(); wbMixer.update(Math.random()); }
+        if (tm.clips && tm.clips.length) { wbMixer = new THREE.AnimationMixer(wb); wbMixer.clipAction(tm.clips[0]).play(); wbMixer.update(0); }
+        // Ground to the real geometry bbox (measure what renders) BEFORE parenting,
+        // so the bench sits ON the floor instead of sinking — bind-pose boxes were off.
+        this._groundModel(wb); grp.add(wb);
       } else {
         const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
         base.position.y = 0.25; grp.add(base);
@@ -345,6 +346,24 @@ export class Game {
   }
 
   // Glowing map-transition / extraction portal (Duckcoop-style).
+  // Centre a model on X/Z and seat it on the floor using its REAL geometry bbox
+  // (transformed by each mesh's matrix), which reflects what actually renders —
+  // setFromObject/bone boxes on skinned props were grounding to the wrong height.
+  // Call before parenting, so the measurement is in the model's own frame.
+  _groundModel(obj) {
+    obj.updateWorldMatrix(true, true);
+    const box = new THREE.Box3(), tmp = new THREE.Box3();
+    obj.traverse((o) => {
+      if ((o.isMesh || o.isSkinnedMesh) && o.geometry) {
+        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+        tmp.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); box.union(tmp);
+      }
+    });
+    if (box.isEmpty()) return;
+    const c = new THREE.Vector3(); box.getCenter(c);
+    obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= box.min.y;
+  }
+
   _makePortal(pos, color) {
     const grp = new THREE.Group(); grp.position.set(pos.x, 0, pos.z);
     const pm = this.toolModels && this.toolModels.portal;
