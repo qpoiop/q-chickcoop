@@ -56,6 +56,13 @@
   후 despawn(마지막 1초 shrink). 재검증 7500프레임/375s: geo 12→12, orbs 40→43,
   kids 86→97 = 전부 바운드. (perf 자체는 건강: render 2ms/sim 0.05ms, 몹 16=+3
   draw call로 인스턴싱됨 — 조기 최적화 안 함.)
+- [x] **아이템 드롭(health/scrap/weapon) 지오메트리 누수** — 위 픽업 누수와 같은 클래스.
+  `_spawnItemDrop`이 드롭마다 geometry 4 + material 4 새로 할당, despawn(worldG.remove)
+  시 dispose 안 함 → 세션 누적 드롭 수만큼 GPU 버퍼 누수(live 수는 22s despawn으로
+  바운드지만 버퍼는 미해제). 수정: geometry 세트 1회 + material 세트 kind별 캐시
+  (`_dropAsset`) 전 인스턴스 재사용. 검증: render-in-loop 3600프레임 드롭 churn →
+  geometries 63→63 평평, ring geo 공유(identity ===). (itemDrops는 이미 life 기반
+  despawn 있었음 — 이번엔 지오/머티리얼 공유만.)
 - [x] 튜토리얼이 void 플랫폼처럼 텅 빔 — 휘도 측정 near-black 72%(작은 아레나+어두운
   배경). floor/bg/fog/light 밝힘. 재측정 near-black 72%→0%, avgLum 54→78.6,
   blowout 0. 첫인상 개선. (폭포=avgLum 81 이미 밝음 → 전 맵 밝기 검증 완료.)
