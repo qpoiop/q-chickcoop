@@ -161,7 +161,24 @@ body.touch #hudHint { display:none !important; }
 /* Epic Deploy button — animated sheen + breathing glow. */
 @keyframes deployGlow { 0%,100%{box-shadow:0 0 30px rgba(255,176,59,.35),0 0 0 rgba(255,176,59,0)} 50%{box-shadow:0 0 54px rgba(255,176,59,.7),0 0 90px rgba(255,90,30,.25)} }
 @keyframes deploySheen { 0%{transform:translateX(-140%) skewX(-20deg)} 60%,100%{transform:translateX(320%) skewX(-20deg)} }
-#btnStart { position:relative; overflow:hidden; animation:deployGlow 2.6s ease-in-out infinite; }
+/* Primary CTA — amber energy button */
+#btnStart { position:relative; overflow:hidden; cursor:pointer; font-family:'Rajdhani';
+  background:linear-gradient(150deg,#5a3410,#2a1806); color:#ffd9a0; border:1.5px solid #ffb03b;
+  padding:15px 52px; font-size:20px; font-weight:700; letter-spacing:5px; text-transform:uppercase;
+  clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);
+  animation:deployGlow 2.6s ease-in-out infinite; }
+/* Secondary CTA — ghost button, same skewed silhouette, calmer teal */
+.home-skip { cursor:pointer; font-family:'Rajdhani'; background:rgba(11,20,26,.6); color:#8fb8c6;
+  border:1.5px solid #2f5563; padding:15px 30px; font-size:15px; font-weight:600; letter-spacing:3px;
+  text-transform:uppercase; clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);
+  transition:color .15s,border-color .15s,background .15s; }
+.home-skip:hover { color:#cfe8f0; border-color:#4a94a8; background:rgba(16,30,38,.75); }
+.home-skip:active { transform:translateY(1px); }
+/* compact controls summary line */
+.home-controls { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:center;
+  font-size:12px; letter-spacing:1.5px; color:#6f8496; text-transform:uppercase; max-width:660px; }
+.home-controls .hc b { color:#9fc7d8; font-weight:700; margin-right:5px; }
+.home-controls .hc-dot { color:#2a3a4a; }
 #btnStart::before { content:""; position:absolute; top:0; left:0; width:36%; height:100%;
   background:linear-gradient(90deg,transparent,rgba(255,240,210,.55),transparent); animation:deploySheen 3.4s ease-in-out infinite; pointer-events:none; }
 #btnStart:hover { background:linear-gradient(150deg,#7a4816,#3a2208); transform:translateY(-1px) scale(1.02); }
