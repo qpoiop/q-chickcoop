@@ -276,6 +276,9 @@ export class Game {
         const m = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.MeshStandardMaterial({ color: 0x2a3a2a, emissive: 0x1a3a1a, emissiveIntensity: 0.4, roughness: 0.6, metalness: 0.3 }));
         m.position.y = 0.8; grp.add(m);
       }
+      // ground beacon ring so the chest reads as interactable
+      const cgr = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.5, 36), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.4, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      cgr.rotation.x = -Math.PI / 2; cgr.position.y = 0.05; grp.add(cgr);
       g.add(grp);
       this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, lid, lidRest, lidT: 0, active: true });
     });
@@ -309,7 +312,10 @@ export class Game {
     const icon2 = icon.clone(); icon2.rotation.y = Math.PI; grp.add(icon2);
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.2, 8), new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }));
     beam.position.y = 1.1; grp.add(beam);
-    grp.userData = { kind, ring, icon, icon2, x: pos.x, z: pos.z, life: 22, ph: Math.random() * 6 };
+    // ground beacon ring so it reads as pickup-able even at a glance
+    const gring = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.15, 32), new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    gring.rotation.x = -Math.PI / 2; gring.position.y = 0.05; grp.add(gring);
+    grp.userData = { kind, ring, icon, icon2, gring, x: pos.x, z: pos.z, life: 22, ph: Math.random() * 6 };
     this.worldG.add(grp); this.itemDrops.push(grp);
   }
 
@@ -473,7 +479,7 @@ export class Game {
         if (!o.isMesh && !o.isSkinnedMesh) return;
         o.frustumCulled = true;
         const m = Array.isArray(o.material) ? o.material : [o.material];
-        m.forEach((mat) => { if (mat && mat.emissive) { mat.emissive.copy(mat.color || mat.emissive).multiplyScalar(0.32); mat.emissiveIntensity = 1; if (mat.roughness !== undefined) mat.roughness = Math.min(mat.roughness, 0.7); } });
+        m.forEach((mat) => { if (mat && mat.emissive) { mat.emissive.copy(mat.color || mat.emissive).multiplyScalar(0.1); mat.emissiveIntensity = 1; } });
       });
       this.toolModels[key] = { scene: g.scene, clips: g.animations, fit: fitScale(g.scene, H[key] || 2) };
     }
