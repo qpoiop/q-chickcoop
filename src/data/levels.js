@@ -84,6 +84,27 @@ export function bossArenaLevel() {
   };
 }
 
+// BOSS / high-risk = the WATERFALL open forest (normalize pipeline, ~1:1 scale).
+// Guide anchors: Table_round spawn, Fountain (round → boss ring), Store shop,
+// Dumpster salvage. This map is texture-less flat-colour, so it wants brighter,
+// cooler light. Exit has no anchor → extraction placed manually near spawn.
+export function waterfallLevel() {
+  const hx = 58, hz = 58;
+  return {
+    id: 'boss', B: 58, bounds: { hx, hz }, harvest: true,
+    mapFit: { normalize: 120, walkTop: 8 },
+    spawnStart: { x: -4.9, z: 5.4 }, safe: { x: -4.9, z: 5.4, r: 6 },
+    walls: [], platforms: [], covers: [], cores: [],
+    boss: true, bossSpawn: { x: -6.4, z: -2.2 },   // Fountain
+    extractionAfterBoss: { x: -4.9, z: 5.4 },        // back at the table (spawn)
+    shop: { x: -5.8, z: 11.2 },                      // Store
+    crates: [[-7.0, 11.6], [-12.8, -16.1], [-23.5, 2.7], [-3.3, 8.6]],
+    spawns: [[-20, -8], [10, -16], [-24, 3], [4, 10], [-13, -16]],
+    fog: { color: 0x0c1418, near: 110, far: 360 }, bg: 0x14202a,
+    light: { hemi: 1.05, dir: 2.1 },
+  };
+}
+
 // MAIN = the MYSTICAL FOREST (main farming stage). Loaded with the normalize
 // pipeline (scale the long axis to 120, centre on origin); anchor coords below are
 // in that normalized space, taken from the map guide (FireCamp/Temple/Pentagramme…).
@@ -109,7 +130,7 @@ export function mysticForestLevel() {
 export const MAPS = {
   tutorial: { id: 'tutorial', model: null, build: tutorialLevel },       // small tiled bay
   main: { id: 'main', model: ASSETS.forestMain, build: mysticForestLevel }, // mystical forest GLB
-  boss: { id: 'boss', model: null, build: bossArenaLevel },              // pure arena
+  boss: { id: 'boss', model: ASSETS.forestOpen, build: waterfallLevel },     // waterfall forest GLB
 };
 
 // Procedural fallback arena (used only if a map GLB fails to load).
