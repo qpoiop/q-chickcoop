@@ -121,7 +121,7 @@ export function mysticForestLevel() {
   const hx = 66, hz = 66;
   return {
     id: 'main', B: 66, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 180, walkTop: 12 },
+    mapFit: { normalize: 180, walkTop: 12, trimOpen: 0.9 },  // trimOpen: block the bare ground field (blue void); 0.9 = only the most-open cells, keep connecting paths
     exposure: 1.4,    // brighter than default, but low enough that the shop top doesn't bloom out
     spawnStart: { x: -13.8, z: -7.5 },                       // FireCamp
     walls: [], platforms: [], covers: [],
