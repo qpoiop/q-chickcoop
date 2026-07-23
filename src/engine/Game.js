@@ -784,6 +784,29 @@ export class Game {
         const x = -bx2 + i * cell, z = -bz2 + j * cell; const h = probe(x, z);
         if (h && h.point.y > -3 && h.point.y < hi) bits[j * nx + i] = 1;
       }
+      // Trim large BARE-GROUND expanses. The map's ground plane extends far past the
+      // actual content (e.g. the blue empty field west of the forest — flat Ground_Sol
+      // lit blue by the sky hemisphere). A walkable cell with NO blocked cell
+      // (tree/rock/void = non-walkable) within R cells is open dead space you should
+      // not walk into; drop it. Real play cells are always ringed by trees/rocks so
+      // they survive. Opt-in per map via mapFit.trimOpen (true = R4, or a number).
+      if (level.mapFit && level.mapFit.trimOpen) {
+        // Metric = local walkable DENSITY (not "any blocked nearby" — the bare field
+        // has scattered rocks that defeated that). Content is broken up by trees so
+        // its density is moderate; a bare field is >~85% open. Trim the high-density
+        // cells → the empty fields drop out, the tree-broken play area survives.
+        const R = 4, thresh = typeof level.mapFit.trimOpen === 'number' ? level.mapFit.trimOpen : 0.82;
+        const src = bits.slice();
+        for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+          const k = j * nx + i; if (!src[k]) continue;
+          let wk = 0, tot = 0;
+          for (let dj = -R; dj <= R; dj++) for (let di = -R; di <= R; di++) {
+            const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+            tot++; if (src[jj * nx + ii]) wk++;
+          }
+          if (wk / tot > thresh) bits[k] = 0;
+        }
+      }
       this._walk = { cell, bx: bx2, bz: bz2, nx, nz, bits };
 
       // Spawn the player in the most OPEN part of the walkable area (the cell with the
