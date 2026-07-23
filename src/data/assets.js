@@ -38,6 +38,13 @@ export const ASSETS = {
     storm: p('effect/lightningv1.glb'),
   },
 
+  // Interaction props — the workbench you hack (data cores) + the salvage chest
+  // you crack open for scrap.
+  toolModels: {
+    workbench: p('tools/workbench.glb'),
+    chest:     p('tools/stylized_chest.glb'),
+  },
+
   // Level geometry — urban city map for the main 시가전 stage.
   cityMap: p('scene/chicken_gun_fruzer_-_city.glb'),
 

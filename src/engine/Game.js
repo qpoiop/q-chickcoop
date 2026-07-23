@@ -132,6 +132,7 @@ export class Game {
     this._loadEnemyModels();
     this._loadWeaponModels();
     this._loadEffectModels();
+    this._loadToolModels();
 
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: CONFIG.spawn.grace };
     this.refresh();
@@ -217,24 +218,34 @@ export class Game {
       this.obstacles.push(this._gateObs = { x: L.gate.x, z: L.gate.z, hw: gAcross ? 0.7 : gw / 2, hd: gAcross ? gw / 2 : 0.7 });
     }
 
-    // data cores (optional)
+    // data cores — a hackable WORKBENCH with a floating teal energy core on top
+    // (the core is the glow/hack target; the bench is the physical console).
     (L.cores || []).forEach((c, i) => {
       const grp = new THREE.Group(); grp.position.set(c.x, 0, c.z);
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
-      base.position.y = 0.25; base.castShadow = true; grp.add(base);
-      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.4, 6), new THREE.MeshStandardMaterial({ color: 0x35e0d0, emissive: 0x35e0d0, emissiveIntensity: 0.85 }));
-      cyl.position.y = 1.7; grp.add(cyl);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.08, 8, 24), new THREE.MeshBasicMaterial({ color: 0x35e0d0 }));
-      ring.rotation.x = Math.PI / 2; ring.position.y = 1.2; grp.add(ring);
+      let wbMixer = null;
+      const tm = this.toolModels && this.toolModels.workbench;
+      if (tm) {
+        const wb = cloneSkinned(tm.scene); wb.scale.setScalar(tm.fit);
+        const bb = new THREE.Box3().setFromObject(wb); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
+        wb.position.x -= ctr.x; wb.position.z -= ctr.z; wb.position.y -= bb.min.y; grp.add(wb);
+        if (tm.clips && tm.clips.length) { wbMixer = new THREE.AnimationMixer(wb); wbMixer.clipAction(tm.clips[0]).play(); wbMixer.update(Math.random()); }
+      } else {
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
+        base.position.y = 0.25; grp.add(base);
+      }
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x35e0d0, emissive: 0x35e0d0, emissiveIntensity: 0.85 }));
+      cyl.position.y = 3.1; grp.add(cyl);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.07, 8, 24), new THREE.MeshBasicMaterial({ color: 0x35e0d0 }));
+      ring.rotation.x = Math.PI / 2; ring.position.y = 3.1; grp.add(ring); ring.userData.spin = true;
       // floating "interact here" beacon: ground ring + light column + hovering marker
       const gring = new THREE.Mesh(new THREE.RingGeometry(2.4, 2.75, 36), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }));
       gring.rotation.x = -Math.PI / 2; gring.position.y = 0.06; grp.add(gring);
       const col = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.6, 6), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
       col.position.y = 2.3; grp.add(col);
       const mark = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), new THREE.MeshBasicMaterial({ color: 0x7ff2e8 }));
-      mark.position.y = 4.4; grp.add(mark);
+      mark.position.y = 4.6; grp.add(mark);
       g.add(grp); this.obstacles.push({ x: c.x, z: c.z, hw: 1.6, hd: 1.6 });
-      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: cyl, ring, gring, mark, active: true });
+      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: cyl, ring, gring, mark, wbMixer, active: true });
     });
 
     // glowing map-transition portal (hidden until unlocked)
@@ -244,11 +255,22 @@ export class Game {
       this.interact.push({ type: 'portal', id: 'Portal', to: L.portal.to, x: L.portal.x, z: L.portal.z, r: 3.4, done: false, active: false, mesh: pg });
     }
 
-    // loot crates
+    // loot crates — a salvage CHEST you crack open for scrap
     L.crates.forEach(([x, z]) => {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.MeshStandardMaterial({ color: 0x2a3a2a, emissive: 0x1a3a1a, emissiveIntensity: 0.4, roughness: 0.6, metalness: 0.3 }));
-      m.position.set(x, 0.8, z); m.castShadow = true; g.add(m);
-      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: m, active: true });
+      const grp = new THREE.Group(); grp.position.set(x, 0, z);
+      let chestMixer = null, chestClip = null;
+      const cm = this.toolModels && this.toolModels.chest;
+      if (cm) {
+        const ch = cloneSkinned(cm.scene); ch.scale.setScalar(cm.fit);
+        const bb = new THREE.Box3().setFromObject(ch); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
+        ch.position.x -= ctr.x; ch.position.z -= ctr.z; ch.position.y -= bb.min.y; grp.add(ch);
+        if (cm.clips && cm.clips.length) { chestMixer = new THREE.AnimationMixer(ch); chestClip = cm.clips[0]; } // played once on open
+      } else {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.MeshStandardMaterial({ color: 0x2a3a2a, emissive: 0x1a3a1a, emissiveIntensity: 0.4, roughness: 0.6, metalness: 0.3 }));
+        m.position.y = 0.8; grp.add(m);
+      }
+      g.add(grp);
+      this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, chestMixer, chestClip, active: true });
     });
 
     // safe-zone ring
@@ -427,6 +449,19 @@ export class Game {
       this.weaponModels[key] = { scene: g.scene, fit: fitScale(g.scene, lens[key] || 1.25) };
       this._gunWrap(key); // pre-clone/center now so weapon swaps never hitch
       if (this.aimGroup && this.chicken) this._attachGun(this.state.weapon);
+    }
+  }
+
+  // Interaction props (workbench = data core, chest = salvage). Sized so they
+  // read at the interaction footprint; clips (if any) drive the hack/open anim.
+  async _loadToolModels() {
+    if (this.toolModels) return; this.toolModels = {};
+    const H = { workbench: 2.6, chest: 1.9 };
+    for (const [key, url] of Object.entries(ASSETS.toolModels)) {
+      const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
+      tuneMaterials(g.scene, { metalness: 0.4, shadow: false });
+      g.scene.traverse((o) => { if (o.isMesh || o.isSkinnedMesh) o.frustumCulled = true; });
+      this.toolModels[key] = { scene: g.scene, clips: g.animations, fit: fitScale(g.scene, H[key] || 2) };
     }
   }
 
@@ -662,9 +697,16 @@ export class Game {
       if (this.state.cores >= need) { this._activatePortal(); }
       else { this.state.objectiveKey = 'obj.coreB'; }
     } else if (it.type === 'crate' && !it.done) {
-      it.done = true; it.mesh.visible = false; const o = this.obstacles.find((x) => x.x === it.x && x.z === it.z); if (o) o.dead = true;
-      this._impact(it.mesh.position, 0x59ff9d, 14, 5); this.fx.shake = 0.25; this.audio.pickup();
-      const md = this._mods(); this.state.gold += Math.ceil((8 + Math.random() * 10) * md.gold); this._gainXp(6 * md.xp); this._event(t('evt.salvage'));
+      it.done = true; const o = this.obstacles.find((x) => x.x === it.x && x.z === it.z); if (o) o.dead = true;
+      // crack it open: play the chest's open clip once (fall back to a pop) and
+      // spray scrap coins out of the lid for a tactile payout.
+      if (it.chestMixer && it.chestClip) { const a = it.chestMixer.clipAction(it.chestClip); a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.play(); it.chestOpening = true; }
+      else it.mesh.visible = false;
+      const cp = new THREE.Vector3(it.x, 1, it.z);
+      this._impact(cp, 0xffd23f, 16, 6); this.fx.shake = 0.28; this.audio.pickup();
+      const md = this._mods(); const payout = Math.ceil((8 + Math.random() * 10) * md.gold);
+      for (let k = 0; k < 4; k++) this._drop(new THREE.Vector3(it.x + (Math.random() - 0.5) * 1.4, 0, it.z + (Math.random() - 0.5) * 1.4), 1);
+      this.state.gold += payout; this._gainXp(6 * md.xp); this._event(t('evt.salvage'));
     } else if (it.type === 'portal' && it.active) { this._enterPortal(it.to);
     } else if (it.type === 'extract' && it.active) { this._win(); }
     this.refresh();
@@ -1163,9 +1205,12 @@ export class Game {
     // channeled interaction (hold E / USE to fill the gauge) + core pulse
     this._updateChannel(dt);
     this.interact.forEach((x) => {
+      if (x.wbMixer) x.wbMixer.update(rdt); // workbench idle loop
+      if (x.chestOpening && x.chestMixer) x.chestMixer.update(rdt); // chest lid opening
       if (x.type === 'core' && !x.done) {
-        if (x.glow) x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5;
-        if (x.mark) { x.mark.rotation.y += dt * 2; x.mark.position.y = 4.4 + Math.sin(this.state.time * 3) * 0.25; }
+        if (x.glow) { x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5; x.glow.rotation.y += dt * 1.5; }
+        if (x.ring) x.ring.rotation.z += dt * 1.2;
+        if (x.mark) { x.mark.rotation.y += dt * 2; x.mark.position.y = 4.6 + Math.sin(this.state.time * 3) * 0.25; }
         if (x.gring) { const s = 1 + Math.sin(this.state.time * 3) * 0.06; x.gring.scale.set(s, s, s); }
       }
     });
