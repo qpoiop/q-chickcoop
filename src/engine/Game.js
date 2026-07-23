@@ -61,7 +61,9 @@ export class Game {
   }
 
   refresh() { this.hud.sync(); this.panels.sync(); }
-  _mods() { return computeModifiers(this.state.ranks); }
+  // Memoized: ranks is replaced by reference on every skill buy / reset, so a
+  // reference check lets the per-frame hot path skip the recompute + allocation.
+  _mods() { if (this._modRanks !== this.state.ranks) { this._modRanks = this.state.ranks; this._modCache = computeModifiers(this.state.ranks); } return this._modCache; }
   get isTouch() { return this.input ? this.input.isTouch : this._touchGuess; }
 
   // ---------- boot ----------
@@ -1598,7 +1600,7 @@ export class Game {
 
   _updateBullets(dt) {
     for (let i = this.bullets.length - 1; i >= 0; i--) {
-      const b = this.bullets[i]; b.position.add(b.userData.dir.clone().multiplyScalar(b.userData.vel * dt)); b.userData.life -= dt;
+      const b = this.bullets[i]; b.position.addScaledVector(b.userData.dir, b.userData.vel * dt); b.userData.life -= dt;
       if (b.userData.flare) { b.rotation.x += b.userData.spin * dt; b.rotation.z += b.userData.spin * 0.7 * dt; }
       let dead = b.userData.life <= 0;
       for (const o of this.obstacles) { if (o.dead) continue; if (o === this._gateObs && this.gateOpen) continue; if (Math.abs(b.position.x - o.x) < o.hw + 0.2 && Math.abs(b.position.z - o.z) < o.hd + 0.2) { dead = true; this._impact(b.position, b.userData.col, 3, 2); break; } }
@@ -1619,7 +1621,9 @@ export class Game {
     let dmgTaken = 0; this._hitFrom = null; this._hitFromD = 1e9;
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i], u = e.userData;
-      const to = this.player.position.clone().sub(e.position); to.y = 0; const d = to.length(); to.normalize();
+      // scratch vector reused each iteration (fully consumed within it; boss code
+      // clones `to` when it stores it) — no per-enemy per-frame allocation.
+      const to = (this._toVec || (this._toVec = new THREE.Vector3())).copy(this.player.position).sub(e.position); to.y = 0; const d = to.length(); to.normalize();
       if (u.boss) {
         updateBoss(this, e, to, d, dt, rdt); // chase / telegraphed skill / dash
       } else {
@@ -1633,7 +1637,7 @@ export class Game {
           // chase along the flow field (paths around walls/trees); kite/fallback = direct.
           let mv = to;
           if (dir > 0 && this._flowDir(e.position.x, e.position.z)) mv = this._flowVec;
-          const ep = e.position.clone().addScaledVector(mv, dir * u.spd * dt);
+          const ep = (this._epVec || (this._epVec = new THREE.Vector3())).copy(e.position).addScaledVector(mv, dir * u.spd * dt);
           this._collide(ep, u.r * 0.7); this._keepOutSafe(ep, u.r);
           // don't clip through non-walkable terrain; slide along it instead
           if (this._walk && !this._walkable(ep.x, ep.z)) {
@@ -1737,12 +1741,13 @@ export class Game {
     // scrap/XP on the ground (player earned ~nothing → couldn't afford the shop).
     // A wide radius + strong pull means kills reliably fund progression.
     const pickR = 6 * md.pickup, pull = 19;
-    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = this.player.position.clone().sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.add(to.normalize().multiplyScalar(pull * dt)); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
-    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; c.rotation.z += dt * 5; const to = this.player.position.clone().sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.add(to.normalize().multiplyScalar(pull * dt)); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
+    const P = this._pickVec || (this._pickVec = new THREE.Vector3()); // reused scratch — no per-pickup alloc
+    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = P.copy(this.player.position).sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
+    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; c.rotation.z += dt * 5; const to = P.copy(this.player.position).sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
     const pr2 = 6 * md.pickup;
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
       const it = this.itemDrops[i]; const u = it.userData; u.life -= dt; u.ring.rotation.z += dt * 1.6; it.position.y = Math.sin(this.state.time * 2 + u.ph) * 0.12;
-      const to = this.player.position.clone().sub(it.position); to.y = 0; const d = to.length(); if (d < pr2) it.position.add(to.normalize().multiplyScalar(15 * dt).setY(0));
+      const to = P.copy(this.player.position).sub(it.position); to.y = 0; const d = to.length(); if (d < pr2) { to.normalize(); it.position.x += to.x * 15 * dt; it.position.z += to.z * 15 * dt; }
       if (d < 1.4) { this._collectItem(u.kind); this.worldG.remove(it); this.itemDrops.splice(i, 1); continue; }
       if (u.life <= 0) { this.worldG.remove(it); this.itemDrops.splice(i, 1); }
     }
