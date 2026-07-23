@@ -187,7 +187,11 @@ over many unverified ones. Log what was done + what's next at the bottom.
       COMBO→RAMPAGE→CARNAGE with tier colours; resets when the window lapses; tracks
       `streakBest`. Verified: ×2..×6 chain + reset + best=6; badge repositioned to
       top:12% to clear the level-up/acquire toasts; no console errors.
-- [ ] Minimap or off-screen threat arrows (mobile-readable).
+- [x] **Off-screen threat arrows** (2026-07-23): edge-clamped, pulsing DOM arrows
+      (pooled ≤6, rebuilt each frame from the camera projection) point to aggro'd
+      enemies + boss that are off-screen — red for mobs, orange for boss, nearest
+      first. Verified: 3 off-screen threats → 3 arrows at the correct edges pointing
+      outward, no console errors. Mobile-first (you can't see all threats on a phone).
 - [ ] Two more enemy archetypes (bomber that rushes+explodes, shielder).
 
 ### P2 — polish / meta
@@ -223,5 +227,9 @@ over many unverified ones. Log what was done + what's next at the bottom.
   no teleport + locomotion intact + no errors. Animation-only, no UI impact.
 - 2026-07-23 (hourly loop #7) — P1 boss 2-phase: enrage at 50% HP (faster, quicker
   skills, banner) + telegraphed meteor arena hazard. Verified phase flip, buffs,
-  meteors, no errors. **Next:** off-screen threat arrows (mobile), then enemy
-  archetypes.
+  meteors, no errors.
+- 2026-07-23 (user-flagged) — fixed dead economy (magnet radius) + tutorial flow +
+  interaction icons; baked REAL-PLAY verification into §5.
+- 2026-07-23 (hourly loop #8) — full real-play sweep (economy accrues, no FX leak in
+  the real loop, mobile clean) then P1 off-screen threat arrows. All gates green.
+  **Next:** two more enemy archetypes (bomber, shielder).

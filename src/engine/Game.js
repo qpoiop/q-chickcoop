@@ -1058,6 +1058,7 @@ export class Game {
     this._animateDetached(rdt);
     this._updateCamera(rdt, fx, playing);
     if (playing) this._updateOcclusion();
+    this._updateThreatArrows();
 
     if (this.bloom) { const bs = CONFIG.render.bloom; if (this.bloom.strength !== bs) this.bloom.strength = bs; }
     if (this.composer && CONFIG.render.bloom > 0.01) this.composer.render(); else this.rend.render(this.scene, this.cam);
@@ -1429,6 +1430,49 @@ export class Game {
       const s = o.material && o.material.userData._occ;
       if (s) { o.material.opacity = Math.min(s.opacity, o.material.opacity + 0.15); if (o.material.opacity >= s.opacity - 0.02) { o.material.opacity = s.opacity; o.material.transparent = s.transparent; o.material.depthWrite = true; this._occFaded.delete(o); } }
       else this._occFaded.delete(o);
+    }
+  }
+
+  // Edge-of-screen arrows pointing to off-screen aggro'd threats (+ boss). Pooled
+  // DOM (≤6), rebuilt each frame from the camera projection — mobile-readable, no
+  // per-arrow allocation after warmup.
+  _updateThreatArrows() {
+    if (this._threats === undefined) {
+      const host = document.createElement('div');
+      host.id = 'hudThreats';
+      host.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:11;overflow:hidden';
+      (this.dom.mount && this.dom.mount.parentElement ? this.dom.mount.parentElement : document.body).appendChild(host);
+      this._threats = [];
+      for (let i = 0; i < 6; i++) {
+        const a = document.createElement('div'); a.className = 'threat-arrow'; a.style.display = 'none';
+        a.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 4l10 8-10 8z"/></svg>';
+        host.appendChild(a); this._threats.push(a);
+      }
+    }
+    const playing = this.state.started && !this.state.ended && this.state.panel === 'none';
+    if (!playing) { this._threats.forEach((a) => { if (a.style.display !== 'none') a.style.display = 'none'; }); return; }
+    const cam = this.cam, W = window.innerWidth, H = window.innerHeight, cx = W / 2, cy = H / 2, margin = 46;
+    const v = new THREE.Vector3(); const list = [];
+    for (const e of this.enemies) {
+      const u = e.userData; if (!u.aggro && !u.boss) continue;
+      v.copy(e.position); v.y = 1.2; v.project(cam);
+      const behind = v.z > 1;
+      const onScreen = !behind && v.x >= -0.98 && v.x <= 0.98 && v.y >= -0.98 && v.y <= 0.98;
+      if (onScreen) continue;
+      let nx = v.x, ny = v.y; if (behind) { nx = -nx; ny = -ny; }
+      const ang = Math.atan2(-ny, nx);
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      const t = Math.min((cx - margin) / Math.max(1e-3, Math.abs(ca)), (cy - margin) / Math.max(1e-3, Math.abs(sa)));
+      list.push({ ex: cx + ca * t, ey: cy + sa * t, ang, boss: !!u.boss, d: e.position.distanceToSquared(this.player.position) });
+    }
+    list.sort((a, b) => a.d - b.d);
+    for (let i = 0; i < this._threats.length; i++) {
+      const a = this._threats[i], it = list[i];
+      if (!it) { if (a.style.display !== 'none') a.style.display = 'none'; continue; }
+      a.style.display = 'block';
+      a.style.left = it.ex + 'px'; a.style.top = it.ey + 'px';
+      a.style.transform = `translate(-50%,-50%) rotate(${it.ang}rad)`;
+      a.style.color = it.boss ? '#ff8a3b' : '#ff3b6b';
     }
   }
 

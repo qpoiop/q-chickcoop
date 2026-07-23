@@ -114,6 +114,12 @@ body.playing #bottomToasts { display:none !important; }
   text-transform:uppercase; opacity:.85; margin-top:2px; text-shadow:0 0 10px var(--cc); }
 #hudCombo.pop .combo-n { animation: comboPop .32s cubic-bezier(.2,1.4,.4,1); }
 
+/* Off-screen threat arrows (edge-clamped, point to unseen aggro'd enemies/boss) */
+.threat-arrow { position:absolute; width:26px; height:26px; opacity:.9;
+  filter:drop-shadow(0 0 6px currentColor); animation:threatPulse 1.1s ease-in-out infinite; }
+.threat-arrow svg { width:26px; height:26px; display:block; }
+@keyframes threatPulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+
 /* Map-transition spinner */
 @keyframes spin360 { to { transform: rotate(360deg); } }
 .spinner { width:56px; height:56px; border-radius:50%;
