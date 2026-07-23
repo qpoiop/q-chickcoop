@@ -179,7 +179,7 @@
 
   <!-- map-transition fade + loading spinner -->
   <div id="fadeRef" style="position:absolute;inset:0;z-index:19;background:#06090e;opacity:0;pointer-events:none;transition:opacity .3s"></div>
-  <div id="transOverlay" style="display:none;position:absolute;inset:0;z-index:21;place-items:center;pointer-events:none">
+  <div id="transOverlay" style="display:none;position:absolute;inset:0;z-index:21;place-items:center;pointer-events:none;background:#06090e">
     <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
       <div class="spinner"></div>
       <div data-i18n="trans.loading" style="font-family:'Chakra Petch';letter-spacing:5px;color:#7ff2e8;font-size:13px;text-transform:uppercase">Entering…</div>
@@ -240,6 +240,7 @@
     <h2 class="panel-title" data-i18n="pause.title" style="margin-bottom:8px">SYSTEM MENU</h2>
     <button id="btnResume" class="menu-btn" data-i18n="pause.resume">Resume</button>
     <button id="btnMusic" class="menu-btn"><span data-i18n="pause.music">Music</span> · <span id="musicState">ON</span></button>
+    <button id="btnSfx" class="menu-btn"><span data-i18n="pause.sfx">SFX</span> · <span id="sfxState">ON</span></button>
     <button id="btnQuit" class="menu-btn danger" data-i18n="pause.quit">Quit to Home</button>
   </div>
 

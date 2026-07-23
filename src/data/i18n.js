@@ -55,7 +55,7 @@ const STR = {
     'tt.dmg': 'DMG', 'tt.rate': 'Rate', 'tt.move': 'Move', 'tt.hull': 'Max Hull', 'tt.armor': 'Armor',
     'tt.crit': 'Crit', 'tt.dashChg': 'Dash', 'tt.xp': 'XP', 'tt.scrap': 'Scrap', 'tt.chg': '{n} chg',
     'end.win': 'SECTOR CLEARED', 'end.lose': 'FRAME DOWN', 'end.level': 'Level', 'end.kills': 'Kills', 'end.time': 'Time', 'end.redeploy': 'Redeploy',
-    'pause.eyebrow': 'Paused', 'pause.title': 'SYSTEM MENU', 'pause.resume': 'Resume', 'pause.music': 'Music', 'pause.quit': 'Quit to Home',
+    'pause.eyebrow': 'Paused', 'pause.title': 'SYSTEM MENU', 'pause.resume': 'Resume', 'pause.music': 'Music', 'pause.sfx': 'SFX', 'pause.quit': 'Quit to Home',
     'loading': 'LOADING…', 'trans.loading': 'Entering…',
   },
   ko: {
@@ -92,7 +92,7 @@ const STR = {
     'tt.dmg': '피해', 'tt.rate': '연사', 'tt.move': '이동', 'tt.hull': '최대 체력', 'tt.armor': '방어',
     'tt.crit': '치명', 'tt.dashChg': '대시', 'tt.xp': '경험치', 'tt.scrap': '고철', 'tt.chg': '{n} 충전',
     'end.win': '구역 정리 완료', 'end.lose': '격추됨', 'end.level': '레벨', 'end.kills': '처치', 'end.time': '시간', 'end.redeploy': '재출격',
-    'pause.eyebrow': '일시정지', 'pause.title': '시스템 메뉴', 'pause.resume': '계속하기', 'pause.music': '음악', 'pause.quit': '홈으로 나가기',
+    'pause.eyebrow': '일시정지', 'pause.title': '시스템 메뉴', 'pause.resume': '계속하기', 'pause.music': '음악', 'pause.sfx': '효과음', 'pause.quit': '홈으로 나가기',
     'loading': '로딩 중…', 'trans.loading': '이동 중…',
   },
 };
