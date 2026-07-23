@@ -122,14 +122,14 @@ export function mysticForestLevel() {
   return {
     id: 'main', B: 66, bounds: { hx, hz }, harvest: true,
     mapFit: { normalize: 180, walkTop: 12 },
-    exposure: 1.55,   // brighter than default but not blown out (shop area was over-bright at 1.85)
+    exposure: 1.4,    // brighter than default, but low enough that the shop top doesn't bloom out
     spawnStart: { x: -13.8, z: -7.5 },                       // FireCamp
     walls: [], platforms: [], covers: [],
     // cores on OPPOSITE sides (Temple west, Mine east) so breaching both means
     // crossing the whole map.
-    cores: [{ x: -34.7, z: 26.4 }, { x: 34.1, z: 21.0 }],    // Temple (W lab), Mine (E lab)
+    cores: [{ x: -34.7, z: 26.4 }, { x: 12.0, z: -6.0 }],    // Temple (W lab, visible), central-east lab
     shop: { x: 2.3, z: -10.5 },                              // stall by the camp
-    portal: { x: 34.1, z: 21.0, to: 'city' },                // AT the eastern lab (core B) — the hacked lab becomes the gateway
+    portal: { x: -34.7, z: 26.4, to: 'city' },               // AT workbench A (Temple) — a visible structure, per feedback
     crates: [[-24.5, -41.6], [-14.3, -48.2], [5.9, -41.1], [29.6, -36.9], [45.0, -4.5]],
     spawns: [[-27, -12], [12, -24], [-36, 6], [6, 18], [-21, -33], [24, 9], [-9, 33]],
     fog: { color: 0x2a4636, near: 170, far: 520 }, bg: 0x36543f,

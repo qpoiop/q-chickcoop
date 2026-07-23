@@ -606,7 +606,7 @@ export class Game {
     const H = { workbench: 4.5, chest: 3.0, shop: 9, portal: 6.5 };
     // per-model self-lit tint: the chest sits in dark forest and read almost black,
     // so it gets a stronger tint; shop/workbench stay subtle to avoid washing out.
-    const TINT = { workbench: 0.05, chest: 0.1, shop: 0.06, portal: 0.1 };
+    const TINT = { workbench: 0.05, chest: 0.1, shop: 0.0, portal: 0.1 };  // shop: no self-glow (top was blooming/dazzling)
     for (const [key, url] of Object.entries(ASSETS.toolModels)) {
       const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
       tuneMaterials(g.scene, { metalness: 0.4, shadow: false });
