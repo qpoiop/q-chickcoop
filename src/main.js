@@ -1,5 +1,7 @@
 import './style.css';
 import { Game } from './engine/Game.js';
+import { ModelViewer } from './ui/preview.js';
+import { ASSETS } from './data/assets.js';
 
 // Bootstrap: collect the DOM handles the engine needs, then start the game.
 const $ = (id) => document.getElementById(id);
@@ -13,6 +15,14 @@ const dom = {
 
 const game = new Game(dom);
 window.__CHICKCOOP = game; // debug handle
+
+// Home hero — a large rotating showcase of the playable chicken on the start screen.
+const heroCanvas = $('homeHero');
+if (heroCanvas) {
+  const hero = new ModelViewer(heroCanvas, { camDist: 5.2, camY: 1.15, fitH: 2.3, spin: 0.6, yaw: -0.4, fov: 30 });
+  window.__hero = hero;
+  hero.load(ASSETS.player).then(() => { hero._loaded = true; }).catch((e) => { hero._err = String(e); });
+}
 
 // Keep the canvas sized to the visual viewport on mobile (URL bar show/hide).
 if (window.visualViewport) {
