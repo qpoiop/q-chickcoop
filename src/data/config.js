@@ -17,6 +17,10 @@ export const CONFIG = {
   player: {
     radius: 0.7, moveSpeed: 10.2, sprintMul: 1.35, accel: 16,
     dashSpeed: 34, dashTime: 0.22, iframe: 0.32, dashRegen: 1.0,
+    // Touch auto-aim hysteresis: a rival target must be within this fraction of
+    // the current target's distance to steal the lock. <1 = sticky (no aim
+    // oscillation between two near-equidistant mobs); 1 = always-nearest (jitter).
+    autoAimStick: 0.6,
     // faceAim false → the body turns toward the MOVEMENT (left-stick) direction;
     // the gun/aim ring still tracks the aim independently.
     baseMaxHp: 100, height: 2.5, faceAim: false,

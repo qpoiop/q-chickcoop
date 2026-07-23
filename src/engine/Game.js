@@ -1638,10 +1638,20 @@ export class Game {
     } else {
       if (this.input.rightStick && (this.input.aimVec.x || this.input.aimVec.y)) { this.aim.set(this.input.aimVec.x, 0, this.input.aimVec.y); if (this._camFlip) this.aim.negate(); this.aim.normalize(); }
       else {
-        let nearest = null, nd = 1e9;
-        for (const e of this.enemies) { if (!e.userData.aggro && !e.userData.boss) continue; const d = e.position.distanceToSquared(this.player.position); if (d < nd) { nd = d; nearest = e; } }
-        if (!nearest) for (const e of this.enemies) { const d = e.position.distanceToSquared(this.player.position); if (d < nd) { nd = d; nearest = e; } }
-        if (nearest) this.aim.copy(nearest.position.clone().sub(this.player.position).setY(0).normalize());
+        // Touch auto-aim with target hysteresis: hold the current target until it
+        // dies / leaves the aggro set, only switching when a rival is meaningfully
+        // closer (autoAimStick). Stops the aim oscillating between two near-equidistant
+        // mobs — which jitters the gun and sprays shots between them.
+        const pp = this.player.position, cur = this._autoTarget;
+        const held = cur && this.enemies.includes(cur) && (cur.userData.aggro || cur.userData.boss);
+        let n = null, nd = 1e9; // strict nearest aggro'd (or boss) target
+        for (const e of this.enemies) { if (!e.userData.aggro && !e.userData.boss) continue; const d = e.position.distanceToSquared(pp); if (d < nd) { nd = d; n = e; } }
+        let best;
+        if (held) { const curD = cur.position.distanceToSquared(pp); best = (n && nd < curD * CONFIG.player.autoAimStick) ? n : cur; } // keep lock unless a rival is meaningfully closer
+        else best = n;
+        if (!best) { let ad = 1e9; for (const e of this.enemies) { const d = e.position.distanceToSquared(pp); if (d < ad) { ad = d; best = e; } } } // no threats aggro'd → face nearest anything
+        this._autoTarget = best;
+        if (best) this.aim.copy(best.position.clone().sub(pp).setY(0).normalize());
       }
     }
     if (this.aim.lengthSq() > 0) { this.face = Math.atan2(this.aim.x, this.aim.z); this.aimGroup.rotation.y = this.face; }
