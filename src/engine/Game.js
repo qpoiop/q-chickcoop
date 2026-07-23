@@ -353,18 +353,42 @@ export class Game {
     const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; this._iconTex[key] = tex; return tex;
   }
 
+  // Cache the drop visuals per kind — geometry+material are identical for every
+  // instance of a kind, so allocating them per drop leaked GPU buffers that
+  // worldG.remove never disposes (same class as the orb/coin leak — ARCHITECTURE §8).
+  _dropAsset(kind) {
+    if (!this._dropGeo) this._dropGeo = {
+      ring: new THREE.TorusGeometry(0.85, 0.1, 10, 28),
+      icon: new THREE.CircleGeometry(0.62, 28),
+      beam: new THREE.CylinderGeometry(0.14, 0.14, 2.2, 8),
+      gring: new THREE.RingGeometry(0.85, 1.15, 32),
+    };
+    this._dropMat = this._dropMat || {};
+    if (!this._dropMat[kind]) {
+      const conf = { weapon: { glyph: '✦', color: '#ffd23f' }, health: { glyph: '✚', color: '#59ff9d' }, scrap: { glyph: '◈', color: '#ffb03b' } }[kind] || { glyph: '✦', color: '#ffd23f' };
+      this._dropMat[kind] = {
+        color: conf.color,
+        ring: new THREE.MeshStandardMaterial({ color: conf.color, emissive: conf.color, emissiveIntensity: 1.4 }),
+        icon: new THREE.MeshBasicMaterial({ map: this._iconTexture(conf.glyph, conf.color), transparent: true, side: THREE.DoubleSide }),
+        beam: new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }),
+        gring: new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }),
+      };
+    }
+    return { geo: this._dropGeo, mat: this._dropMat[kind] };
+  }
+
   _spawnItemDrop(pos, kind) {
-    const conf = { weapon: { glyph: '✦', color: '#ffd23f' }, health: { glyph: '✚', color: '#59ff9d' }, scrap: { glyph: '◈', color: '#ffb03b' } }[kind] || { glyph: '✦', color: '#ffd23f' };
+    const { geo, mat } = this._dropAsset(kind);
     const grp = new THREE.Group(); grp.position.set(pos.x, 0, pos.z);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.1, 10, 28), new THREE.MeshStandardMaterial({ color: conf.color, emissive: conf.color, emissiveIntensity: 1.4 }));
+    const ring = new THREE.Mesh(geo.ring, mat.ring);
     ring.rotation.x = Math.PI / 2; ring.position.y = 1.1; grp.add(ring);
-    const icon = new THREE.Mesh(new THREE.CircleGeometry(0.62, 28), new THREE.MeshBasicMaterial({ map: this._iconTexture(conf.glyph, conf.color), transparent: true, side: THREE.DoubleSide }));
+    const icon = new THREE.Mesh(geo.icon, mat.icon);
     icon.position.y = 1.1; grp.add(icon);
     const icon2 = icon.clone(); icon2.rotation.y = Math.PI; grp.add(icon2);
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.2, 8), new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const beam = new THREE.Mesh(geo.beam, mat.beam);
     beam.position.y = 1.1; grp.add(beam);
     // ground beacon ring so it reads as pickup-able even at a glance
-    const gring = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.15, 32), new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const gring = new THREE.Mesh(geo.gring, mat.gring);
     gring.rotation.x = -Math.PI / 2; gring.position.y = 0.05; grp.add(gring);
     grp.userData = { kind, ring, icon, icon2, gring, x: pos.x, z: pos.z, life: 22, ph: Math.random() * 6 };
     this.worldG.add(grp); this.itemDrops.push(grp);
