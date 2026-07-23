@@ -120,6 +120,12 @@ RAF는 백그라운드 탭에서 스로틀되니 프레임타임을 RAF로 재�
 - **함정**: 드롭/FX 메시는 **geometry+material을 공유 캐시**로. 인스턴스마다 new 하면
   scene.remove가 dispose 안 해 GPU 버퍼 누수. 수집으로만 제거되는 것은 시간기반
   despawn도 둔다(`CONFIG.drops.pickupLife`).
+- **몹 GLB는 geometry/material 공유(누수 아님, 검증됨)**. `cloneSkinned`=three
+  `SkeletonUtils.clone`은 hierarchy+skeleton만 복제하고 **BufferGeometry는 공유**한다.
+  같은 tier 몹은 geometry uuid 동일, 72회 스폰/킬에도 geometries 평평. **몹 사망 경로에
+  `geometry.dispose()` 넣지 말 것** — 공유 geo라 다른 몹·원본 템플릿이 깨진다.
+  ⚠ 누수 감사 시 **반드시 같은 tier로, 리스폰 끄고**(‑`_simulate` 대신 `_updateEnemies`
+  직접) 측정. 다른 tier=다른 모델이라 "고유 geo"로 오탐한다(2026-07 실제 오탐 사례).
 
 ## 9. 열린 이슈 / 백로그
 

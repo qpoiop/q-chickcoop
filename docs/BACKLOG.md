@@ -14,12 +14,16 @@
     없음), 563셀. (밀도 트림은 여기서 extraction 끊겨 부적합했음.)
 - [ ] **맵 좌로 90도 회전** — `mapFit.yaw`를 넣되 **앵커 좌표도 같은 각도로 회전**
   해야 함. 안 하면 배치 다 어긋남. (MAP_GUIDE 4절)
-- [ ] **몹 GLB 지오메트리 누수(신규 발견)** — `cloneSkinned`가 몹마다 geometry를
-  **고유 복제**(공유 X, 몹당 mesh geo 9개)하고, 사망 시 `scene.remove`만 하고
-  `geometry.dispose()` 안 함 → GPU 지오메트리가 세션 누적 스폰 수만큼 증가, 미해제.
-  검증: 16몹 죽여도 geometries 79→79 안 떨어짐. 픽업 누수보다 큼(몹당 9 geo).
-  수정 방향: (a) cloneSkinned가 BufferGeometry 공유(three SkeletonUtils.clone 기본)
-  하도록, 또는 (b) 사망 시 고유 geo dispose. (a)가 근본(메모리+누수 동시 해결).
+- [x] ~~몹 GLB 지오메트리 누수~~ **오탐(false alarm) — 누수 아님, 재검증 완료.**
+  지난 사이클 판정은 **혼동된 테스트**였음: 서로 다른 tier(grunt/brute/drone)는
+  당연히 다른 모델→다른 geometry라 "고유"로 보였고, `_simulate`가 테스트 중 계속
+  리스폰해 live 수가 흔들렸음. 정밀 재검증: (1) 같은 tier 몹 2마리는 SkinnedMesh
+  geometry **uuid 동일**(공유 확인) — `cloneSkinned`=three `SkeletonUtils.clone`은
+  hierarchy+skeleton만 복제하고 BufferGeometry는 **공유**함. (2) 같은 tier 12몹
+  스폰=+1 geo. (3) 72회 스폰/킬 사이클 → geometries [66,70,70,70,70,70] **평평**
+  (사이클당 증가 0). **⚠ 절대 geometry.dispose 추가 금지** — 공유 geo라 dispose하면
+  다른 몹/원본 템플릿이 깨진다. FX 배열(parts/ghosts/fxSprites/dmgNums/bullets/
+  enemyBullets)도 전부 bounded 확인. **전 픽업/FX/몹 누수 감사 종료 = clean.**
 - [x] **코어 B / 포탈이 안 보이는 곳에 배치됨** — probe 검증 완료: 코어 B (18,-6)
   = 중앙 `Ground_Sol`, 포탈 = Temple 구조물(코어 A 자리). 둘 다 밝게 보이는 곳.
   (최종 시각 확인은 실기기에서.)
