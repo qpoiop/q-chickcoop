@@ -98,7 +98,9 @@ export function waterfallLevel() {
   const hx = 118, hz = 118;
   return {
     id: 'boss', B: 118, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 240, walkTop: 12 },  // NOTE: density trimOpen doesn't fit here — Town_plane IS the main surface (trimming made extraction unreachable). Needs a different bound. (BACKLOG)
+    // Town_plane is the play surface here, so bound play to the content bbox (+15)
+    // instead of density-trimming (which made extraction unreachable).
+    mapFit: { normalize: 240, walkTop: 12, boundToContent: 15 },
     spawnStart: { x: -9.8, z: 10.8 }, safe: { x: -9.8, z: 10.8, r: 10 },
     walls: [], platforms: [], covers: [], cores: [],
     boss: true, bossSpawn: { x: -12.8, z: -4.4 },   // Fountain

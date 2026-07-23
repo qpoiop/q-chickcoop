@@ -807,6 +807,29 @@ export class Game {
           if (wk / tot > thresh) bits[k] = 0;
         }
       }
+      // Bound walkable to the CONTENT bbox (+margin). For maps whose ground plane
+      // IS the play surface (e.g. the waterfall's Town_plane) the density trim can't
+      // help — instead confine play to the box around the real anchors (spawn/cores/
+      // shop/portal/crates/boss/extraction; NOT mob `spawns`, which sit far out on
+      // purpose). Everything past the margin is bare off-play plane. Opt-in per map.
+      if (level.mapFit && level.mapFit.boundToContent) {
+        const margin = typeof level.mapFit.boundToContent === 'number' ? level.mapFit.boundToContent : 15;
+        const pts = [];
+        [level.spawnStart, level.shop, level.portal, level.bossSpawn, level.extractionAfterBoss, level.safe]
+          .forEach((o) => { if (o && o.x != null) pts.push(o); });
+        (level.cores || []).forEach((c) => pts.push(c));
+        (level.crates || []).forEach((c) => pts.push({ x: c[0], z: c[1] }));
+        if (pts.length) {
+          let mnx = 1e9, mxx = -1e9, mnz = 1e9, mxz = -1e9;
+          pts.forEach((p) => { if (p.x < mnx) mnx = p.x; if (p.x > mxx) mxx = p.x; if (p.z < mnz) mnz = p.z; if (p.z > mxz) mxz = p.z; });
+          mnx -= margin; mxx += margin; mnz -= margin; mxz += margin;
+          for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+            const k = j * nx + i; if (!bits[k]) continue;
+            const x = -bx2 + i * cell, z = -bz2 + j * cell;
+            if (x < mnx || x > mxx || z < mnz || z > mxz) bits[k] = 0;
+          }
+        }
+      }
       this._walk = { cell, bx: bx2, bz: bz2, nx, nz, bits };
 
       // Spawn the player in the most OPEN part of the walkable area (the cell with the
