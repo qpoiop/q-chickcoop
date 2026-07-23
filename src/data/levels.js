@@ -122,7 +122,7 @@ export function mysticForestLevel() {
   return {
     id: 'main', B: 66, bounds: { hx, hz }, harvest: true,
     mapFit: { normalize: 180, walkTop: 12 },
-    exposure: 1.85,   // brighten the whole map at the renderer (it read too dark)
+    exposure: 1.55,   // brighter than default but not blown out (shop area was over-bright at 1.85)
     spawnStart: { x: -13.8, z: -7.5 },                       // FireCamp
     walls: [], platforms: [], covers: [],
     // cores on OPPOSITE sides (Temple west, Mine east) so breaching both means
