@@ -126,7 +126,8 @@ export class HUD {
     e.skipStart.style.display = this.g._tutSeen ? 'none' : 'inline';
 
     const w = WEAPONS[s.weapon] || WEAPONS.flare;
-    e.weaponIcon.textContent = w.icon; e.weaponIcon.style.borderColor = w.color; e.weaponIcon.style.color = w.color; e.weaponIcon.style.boxShadow = `0 0 12px ${w.glow}`;
+    e.weaponIcon.style.borderColor = w.color; e.weaponIcon.style.boxShadow = `0 0 12px ${w.glow}`;
+    if (window.__updateGun) window.__updateGun(s.weapon); // rotate the matching 3D gun (no-op if unchanged)
     e.weaponName.textContent = locName(w);
 
     e.objLabel.textContent = s.tutorial ? t('hud.tutorial') : t('hud.objective');

@@ -35,7 +35,9 @@ export class ModelViewer {
   }
 
   async load(url, o = {}) {
-    const g = await loadGLB(url); if (!g || !this._alive) return;
+    if (url === this._url) return; this._url = url;               // no-op if unchanged
+    const g = await loadGLB(url); if (!g || !this._alive || url !== this._url) return;
+    if (this.root) { this.scene.remove(this.root); this.root = null; this.mixer = null; } // swap out the old model
     const wrap = new THREE.Group(); wrap.add(g.scene);
     g.scene.updateMatrixWorld(true);
     // Skinned meshes collapse to their bind pose under setFromObject — measure via
