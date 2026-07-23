@@ -1943,8 +1943,9 @@ export class Game {
     // A wide radius + strong pull means kills reliably fund progression.
     const pickR = 4 * md.pickup, pull = 16;
     const P = this._pickVec || (this._pickVec = new THREE.Vector3()); // reused scratch — no per-pickup alloc
-    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = P.copy(this.player.position).sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
-    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; c.rotation.z += dt * 5; const to = P.copy(this.player.position).sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
+    const pLife = CONFIG.drops.pickupLife;
+    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; const age = this.state.time - o.userData.born; if (age > pLife) { this.scene.remove(o); this.orbs.splice(i, 1); continue; } if (age > pLife - 1) o.scale.setScalar(Math.max(0.05, pLife - age)); o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = P.copy(this.player.position).sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
+    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; const age = this.state.time - c.userData.born; if (age > pLife) { this.scene.remove(c); this.coins.splice(i, 1); continue; } if (age > pLife - 1) c.scale.setScalar(Math.max(0.05, pLife - age)); c.rotation.z += dt * 5; const to = P.copy(this.player.position).sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
     const pr2 = 4 * md.pickup;
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
       const it = this.itemDrops[i]; const u = it.userData; u.life -= dt; u.ring.rotation.z += dt * 1.6; it.position.y = Math.sin(this.state.time * 2 + u.ph) * 0.12;
@@ -2148,9 +2149,17 @@ export class Game {
 
   _drop(pos, tier) {
     const md = this._mods();
-    const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), new THREE.MeshStandardMaterial({ color: 0x59ff9d, emissive: 0x59ff9d, emissiveIntensity: 1.8 }));
-    orb.position.copy(pos); orb.position.y = 0.6; orb.userData = { xp: (3 + tier * 4) * md.xp }; this.scene.add(orb); this.orbs.push(orb);
-    if (Math.random() < 0.85 + tier * 0.15) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 10), new THREE.MeshStandardMaterial({ color: 0xffd23f, emissive: 0xffd23f, emissiveIntensity: 0.9, metalness: 0.8 })); c.position.copy(pos); c.position.y = 0.45; c.rotation.x = Math.PI / 2; c.userData = { gold: Math.ceil((4 + tier * 4) * md.gold) }; this.scene.add(c); this.coins.push(c); }
+    // Geometry/material are shared across every pickup instance (cached once) —
+    // allocating them per drop leaked GPU buffers that scene.remove never frees.
+    if (!this._orbGeo) {
+      this._orbGeo = new THREE.IcosahedronGeometry(0.16, 0);
+      this._orbMat = new THREE.MeshStandardMaterial({ color: 0x59ff9d, emissive: 0x59ff9d, emissiveIntensity: 1.8 });
+      this._coinGeo = new THREE.CylinderGeometry(0.17, 0.17, 0.08, 10);
+      this._coinMat = new THREE.MeshStandardMaterial({ color: 0xffd23f, emissive: 0xffd23f, emissiveIntensity: 0.9, metalness: 0.8 });
+    }
+    const orb = new THREE.Mesh(this._orbGeo, this._orbMat);
+    orb.position.copy(pos); orb.position.y = 0.6; orb.userData = { xp: (3 + tier * 4) * md.xp, born: this.state.time }; this.scene.add(orb); this.orbs.push(orb);
+    if (Math.random() < 0.85 + tier * 0.15) { const c = new THREE.Mesh(this._coinGeo, this._coinMat); c.position.copy(pos); c.position.y = 0.45; c.rotation.x = Math.PI / 2; c.userData = { gold: Math.ceil((4 + tier * 4) * md.gold), born: this.state.time }; this.scene.add(c); this.coins.push(c); }
   }
 
   // Level-up world burst: expanding green ring + spark shower at the player.
