@@ -179,8 +179,12 @@ body.playing #bottomToasts { display:none !important; }
 }
 
 /* Panels ------------------------------------------------------------------- */
-.panel { position:absolute; inset:0; z-index:25; background:rgba(6,9,14,.88);
+/* Panels / end / pause are focused MODALS — near-opaque + blur so the live HUD
+   and gameplay don't bleed through and make them read as weak overlays. */
+.panel { position:absolute; inset:0; z-index:25; background:rgba(6,9,14,.96);
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
   display:flex; flex-direction:column; padding:clamp(14px,3vw,34px); animation:popIn .22s ease-out; }
+#endOverlay, #pauseOverlay { -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
 .panel-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
 .panel-eyebrow { font-size:12px; letter-spacing:6px; color:#35e0d0; text-transform:uppercase; }
 .panel-title { margin:2px 0 0; font-family:'Chakra Petch'; font-weight:700; font-size:clamp(24px,4vw,38px); color:#eef6fb; letter-spacing:1px; }
