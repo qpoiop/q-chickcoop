@@ -1081,7 +1081,9 @@ export class Game {
     this.fx.camKick.addScaledVector(this.aim, -(bt.type === 'orb' ? 0.6 : heavy ? 0.42 : bt.type === 'drop' ? 0.06 : 0.24));
     this.audio.shoot(this.state.weapon);
     if (w.fx === 'lightning') { this.game._boltT = this.game._boltT || 0; if (this.state.time >= this.game._boltT) { this._lightningFX(); this.game._boltT = this.state.time + CONFIG.fx.boltInterval; } }
-    if (this._tut && this.tut.step === 1) { this.tut.shots++; if (this.tut.shots >= 6) this._tutAdvance(); }
+    // FIRE lesson now completes by destroying the scarecrow (see _updateTutorial);
+    // count shots only as an anti-softlock fallback if the target is somehow gone.
+    if (this._tut && this.tut.step === 1 && !this.tut.fireTarget) { this.tut.shots++; if (this.tut.shots >= 6) this._tutAdvance(); }
   }
 
   // ---------- enemies ----------
@@ -1130,6 +1132,44 @@ export class Game {
     const hb = this._makeHpBar(conf.c); g.userData.hpBar = hb.group; g.userData.hpFill = hb.fill; g.userData.barY = tier === 2 ? 2.0 : 2.7;
     this.scene.add(hb.group);
     this.scene.add(g); this.enemies.push(g);
+  }
+
+  // A straw training dummy for the FIRE lesson: a cross-post scarecrow placed far
+  // out in front. It never moves or hits back — the player just shoots it apart.
+  // Returns the entity so the tutorial can watch for its destruction.
+  _spawnScarecrow(dist = 14) {
+    const grp = new THREE.Group();
+    const straw = new THREE.MeshStandardMaterial({ color: 0xd9a441, emissive: 0x6b4a12, emissiveIntensity: 0.5, roughness: 0.9 });
+    const burlap = new THREE.MeshStandardMaterial({ color: 0xcdb083, emissive: 0x5a4a2a, emissiveIntensity: 0.5, roughness: 1 });
+    const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.9 });
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 2.6, 8), wood); post.position.y = 1.3; grp.add(post);
+    const arms = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.16, 0.16), wood); arms.position.y = 1.85; grp.add(arms);
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.8, 6, 10), straw); body.position.y = 1.55; grp.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), burlap); head.position.y = 2.35; grp.add(head);
+    // burlap-sack face (two stitched eyes + a seam mouth), turned to the player
+    const dot = new THREE.MeshBasicMaterial({ color: 0x241a10 });
+    const eL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), dot); eL.position.set(-0.14, 2.4, 0.38); grp.add(eL);
+    const eR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), dot); eR.position.set(0.14, 2.4, 0.38); grp.add(eR);
+    const hat = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.5, 10), straw); hat.position.y = 2.75; grp.add(hat);
+    const strawTuft = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.5, 5), straw);
+    strawTuft.position.set(1.15, 1.85, 0); strawTuft.rotation.z = Math.PI / 2; grp.add(strawTuft);
+    grp.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    // Place it out in front, toward the arena centre (0,0) from the player, so it's
+    // always on-screen regardless of which way the player last moved.
+    const p = this.player.position;
+    let dx = -p.x, dz = -p.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    grp.position.set(p.x + dx * dist, 0, p.z + dz * dist);
+    // aim the player's facing at it too, so the arrow/camera lead points forward
+    this.aim.set(dx, 0, dz); this.face = Math.atan2(dx, dz); this.aimGroup.rotation.y = this.face;
+    const hp = 40;
+    // Wide hit radius: bullets fly at ~1.05 height while this sits at y=0, so a small
+    // r would let dead-on shots miss on the vertical gap. It's a big target anyway.
+    grp.userData = { hp, maxHp: hp, spd: 0, dmg: 0, r: 1.5, tier: 0, spin: 0, mesh: body, mixer: null, glb: false,
+      tint: 0xd9a441, home: { x: grp.position.x, z: grp.position.z }, aggro: false, sightR: 0, static: true, dummy: true,
+      atkRange: 0, windup: 0, atkCd: 0, ranged: false, keep: 0, projSpeed: 0, fireT: 0, windT: 0, lungeT: 0, atkT: 0 };
+    const hb = this._makeHpBar(0xd9a441); grp.userData.hpBar = hb.group; grp.userData.hpFill = hb.fill; grp.userData.barY = 3.1;
+    this.scene.add(hb.group); this.scene.add(grp); this.enemies.push(grp);
+    return grp;
   }
 
   _spawnBoss() {
@@ -1278,6 +1318,8 @@ export class Game {
       return;
     }
     const step = TUTORIAL[s]; this.state.objectiveKey = 'tut:' + s; this._event(getLang() === 'ko' ? (step.toastKo || '') : (step.toast || '')); this.tut.killBase = this.state.kills; this.tut.timer = 0;
+    // FIRE lesson: stand a straw scarecrow out in front to shoot apart.
+    if (s === 1) this.tut.fireTarget = this._spawnScarecrow(14);
     if (s === 3) this._spawnItemDrop({ x: this.player.position.x + Math.cos(this.face) * 6, z: this.player.position.z + Math.sin(this.face) * 6 }, 'scrap');
     // Buy step: grant enough scrap for the cheapest STILL-UNOWNED weapon (the
     // pickup step already gifted the first one), so the shop lesson can't soft-lock.
@@ -1550,7 +1592,8 @@ export class Game {
           }
           e.position.copy(ep);
         };
-        if (!u.aggro) { /* dormant: hold position */ }
+        if (u.static) { e.rotation.y = Math.atan2(to.x, to.z); /* training dummy: never moves or strikes, just takes hits */ }
+        else if (!u.aggro) { /* dormant: hold position */ }
         else if (u.ranged) {
           // kite: hold ~keep distance, fire from range with a telegraph
           if (u.windT <= 0) { if (d > u.keep + 2) move(1); else if (d < u.keep - 3) move(-1); }
@@ -1657,6 +1700,7 @@ export class Game {
   _updateTutorial(dt) {
     const st = this.tut;
     if (st.step === 0) { st.move += this.vel.length() * dt; if (st.move > 7) this._tutAdvance(); }
+    else if (st.step === 1) { if (st.fireTarget && (st.fireTarget.userData.hp <= 0 || !st.fireTarget.parent)) { st.fireTarget = null; this._tutAdvance(); } }
     else if (st.step === 4) { if (this.state.kills - st.killBase >= 3) this._tutAdvance(); }
     // step 5 (buy a weapon) is completed by an actual purchase — see pickWeapon().
     // No auto-advance: the player must open the Shop and spend scrap.
