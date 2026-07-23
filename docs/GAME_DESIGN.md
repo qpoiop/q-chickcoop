@@ -103,7 +103,12 @@ Each hour, in order. Stop and fix the first failing gate before adding features.
    visual check. This is the verified mobile-render harness — use it every loop.
 3. **Logic/play check** — via `window.__CHICKCOOP`: verify grounding, bounds,
    weapon pickup (no auto-swap), enemy aggro gate, interaction channel, no console
-   errors.
+   errors. **Verify by REAL PLAY, not forced state** — do NOT set gold/hp/owned
+   directly then declare success. Simulate the actual loop: kill enemies with real
+   bullets, let drops magnet in, confirm gold ACCRUES and a weapon becomes
+   affordable; run the tutorial through its real step conditions. Forced-state
+   tests hid a dead economy (drops never collected → 0 gold) and a timer-skipped
+   buy step. If a check needs you to grant resources to pass, that itself is a bug.
 4. **Performance check** — frame-step or FPS probe with mobs active; watch for
    long frames, growing object counts, leaked materials.
 5. **Improve** — pull the top open item from the backlog (§6). Implement one
@@ -120,6 +125,14 @@ over many unverified ones. Log what was done + what's next at the bottom.
 ## 6. Prioritized Backlog (loop pulls top open item)
 
 ### P0 — correctness / blocking
+- [x] **Economy was dead + interaction icons** (2026-07-23, user-reported): the
+      pickup magnet radius (3.4) was smaller than typical kill range, so scrap/XP
+      drops were left on the ground — a real-combat sim showed **0 gold after 20
+      kills**, so the shop was unaffordable ("돈이 없다"). Widened the magnet to 9.5
+      with a stronger pull + higher/again-more-reliable coin drops. Re-sim: 15 kills
+      → 68 gold, all collected, nerf (40) affordable by ~kill 7. Also redrew the 4
+      interaction icons bolder/clearer (HACK chip, GET loot-crate, GO portal, EXIT
+      lift-off). Baked "verify by REAL PLAY not forced state" into §5.
 - [x] **Tutorial flow fixes** (2026-07-23, user-reported): (1) the buy/shop step
       auto-completed on a 4s timer without buying — now it requires an actual
       purchase (`pickWeapon`), with 60 scrap granted at step start so it can't

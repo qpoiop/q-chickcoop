@@ -1323,10 +1323,13 @@ export class Game {
   }
 
   _updatePickups(dt, md) {
-    const pickR = 3.4 * md.pickup;
-    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = this.player.position.clone().sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.add(to.normalize().multiplyScalar(16 * dt)); if (d < 1.1) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
-    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; c.rotation.z += dt * 5; const to = this.player.position.clone().sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.add(to.normalize().multiplyScalar(16 * dt)); if (d < 1.1) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
-    const pr2 = 3.6 * md.pickup;
+    // Generous magnet: kills happen at bullet range, so a small radius left most
+    // scrap/XP on the ground (player earned ~nothing → couldn't afford the shop).
+    // A wide radius + strong pull means kills reliably fund progression.
+    const pickR = 9.5 * md.pickup, pull = 20;
+    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = this.player.position.clone().sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.add(to.normalize().multiplyScalar(pull * dt)); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
+    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; c.rotation.z += dt * 5; const to = this.player.position.clone().sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.add(to.normalize().multiplyScalar(pull * dt)); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
+    const pr2 = 9.5 * md.pickup;
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
       const it = this.itemDrops[i]; const u = it.userData; u.life -= dt; u.ring.rotation.z += dt * 1.6; it.position.y = Math.sin(this.state.time * 2 + u.ph) * 0.12;
       const to = this.player.position.clone().sub(it.position); to.y = 0; const d = to.length(); if (d < pr2) it.position.add(to.normalize().multiplyScalar(15 * dt).setY(0));
@@ -1448,7 +1451,7 @@ export class Game {
     const md = this._mods();
     const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), new THREE.MeshStandardMaterial({ color: 0x59ff9d, emissive: 0x59ff9d, emissiveIntensity: 1.8 }));
     orb.position.copy(pos); orb.position.y = 0.6; orb.userData = { xp: (3 + tier * 4) * md.xp }; this.scene.add(orb); this.orbs.push(orb);
-    if (Math.random() < 0.6 + tier * 0.2) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 10), new THREE.MeshStandardMaterial({ color: 0xffd23f, emissive: 0xffd23f, emissiveIntensity: 0.9, metalness: 0.8 })); c.position.copy(pos); c.position.y = 0.45; c.rotation.x = Math.PI / 2; c.userData = { gold: Math.ceil((2 + tier * 3) * md.gold) }; this.scene.add(c); this.coins.push(c); }
+    if (Math.random() < 0.85 + tier * 0.15) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 10), new THREE.MeshStandardMaterial({ color: 0xffd23f, emissive: 0xffd23f, emissiveIntensity: 0.9, metalness: 0.8 })); c.position.copy(pos); c.position.y = 0.45; c.rotation.x = Math.PI / 2; c.userData = { gold: Math.ceil((4 + tier * 4) * md.gold) }; this.scene.add(c); this.coins.push(c); }
   }
 
   // Level-up world burst: expanding green ring + spark shower at the player.
