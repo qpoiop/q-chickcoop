@@ -418,17 +418,27 @@ export class Game {
       swirl = new THREE.Mesh(new THREE.CircleGeometry(2.0, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.34, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
       swirl.position.y = 2.5; grp.add(swirl); swirl2 = swirl.clone(); swirl2.rotation.y = Math.PI; grp.add(swirl2);
     }
-    // Bright, unmistakable gateway beacon — big ground ring + glow disc + a TALL
-    // pillar of light + strong point light, so the portal reads clearly even on a
-    // dark map and from across the arena (the desert model alone was near-invisible).
-    const gring = new THREE.Mesh(new THREE.RingGeometry(2.8, 3.8, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-    gring.rotation.x = -Math.PI / 2; gring.position.y = 0.06; grp.add(gring);
-    const disc = new THREE.Mesh(new THREE.CircleGeometry(3.4, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.32, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-    disc.rotation.x = -Math.PI / 2; disc.position.y = 0.05; grp.add(disc);
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 3.0, 18, 32, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.28, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
-    col.position.y = 9; grp.add(col);
-    const light = new THREE.PointLight(color, 5, 44); light.position.y = 4; grp.add(light);
-    grp.userData = { spin, ring, swirl, swirl2, gring, col, light, ph: 0 };
+    // The beacon must read from the OVERHEAD camera. Two past bugs killed it:
+    //  (1) a y≈0.06 ground ring was BURIED under uneven terrain (ground sat at y≈0.3),
+    //  (2) a vertical light column is edge-on → invisible from straight above.
+    // Fix: FLAT (horizontal) bright rings floating ~1.2–2.5u above the ground, drawn
+    // on top (depthTest off + high renderOrder) so terrain/workbench can't hide them.
+    // depthTest ON: trees/buildings naturally occlude it (semi-transparent, NOT a
+    // solid white overlay drawn on top). Raised ~1.2u so uneven ground can't bury it.
+    const flat = (op) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(3.2, 48), flat(0.3));
+    disc.rotation.x = -Math.PI / 2; disc.position.y = 1.15; grp.add(disc);
+    const gring = new THREE.Mesh(new THREE.RingGeometry(3.0, 4.1, 56), flat(0.9));
+    gring.rotation.x = -Math.PI / 2; gring.position.y = 1.2; grp.add(gring);
+    const swRing = new THREE.Mesh(new THREE.RingGeometry(1.5, 2.1, 44), flat(0.85));
+    swRing.rotation.x = -Math.PI / 2; swRing.position.y = 2.4; grp.add(swRing);
+    const swDisc = new THREE.Mesh(new THREE.CircleGeometry(1.9, 44), flat(0.32));
+    swDisc.rotation.x = -Math.PI / 2; swDisc.position.y = 2.35; grp.add(swDisc);
+    // faint tall column for side views + strong glow light
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(2.8, 3.2, 12, 28, 1, true), flat(0.16));
+    col.position.y = 6.5; grp.add(col);
+    const light = new THREE.PointLight(color, 5.5, 46); light.position.y = 4; grp.add(light);
+    grp.userData = { spin, ring, swirl: null, swirl2: null, gring, col, light, ph: 0 };
     return grp;
   }
 
