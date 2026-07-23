@@ -715,6 +715,7 @@ export class Game {
       const need = (this.L.cores || []).length;
       if (this.state.cores >= need) { this._activatePortal(); }
       else { this.state.objectiveKey = 'obj.coreB'; }
+      if (this._tut && this.tut.step === 7) this._tutAdvance(); // tutorial HACK step
     } else if (it.type === 'crate' && !it.done) {
       it.done = true; const o = this.obstacles.find((x) => x.x === it.x && x.z === it.z); if (o) o.dead = true;
       // crack it open: play the chest's open clip once (fall back to a pop) and
@@ -726,7 +727,11 @@ export class Game {
       const md = this._mods(); const payout = Math.ceil((8 + Math.random() * 10) * md.gold);
       for (let k = 0; k < 4; k++) this._drop(new THREE.Vector3(it.x + (Math.random() - 0.5) * 1.4, 0, it.z + (Math.random() - 0.5) * 1.4), 1);
       this.state.gold += payout; this._gainXp(6 * md.xp); this._event(t('evt.salvage'));
-    } else if (it.type === 'portal' && it.active) { this._enterPortal(it.to);
+      if (this._tut && this.tut.step === 6) this._tutAdvance(); // tutorial OPEN step
+    } else if (it.type === 'portal' && it.active) {
+      // Portal is the tutorial's final step — finish the tutorial, then cross.
+      if (this._tut) { this._tut = false; this._tutSeen = true; this.state.tutorial = false; this._event(t('evt.tutDone')); }
+      this._enterPortal(it.to);
     } else if (it.type === 'extract' && it.active) { this._win(); }
     this.refresh();
   }
@@ -1093,6 +1098,8 @@ export class Game {
       const need = costs.length ? Math.min(...costs) : 40;
       this.state.gold = Math.max(this.state.gold, need + 10);
     }
+    // Upgrade step: hand out a skill point so the Tech-Tree lesson can't soft-lock.
+    if (s === 8) this.state.skillPoints = Math.max(this.state.skillPoints, 1);
     if (step.dummies && !this.tut.dummied) {
       this.tut.dummied = true;
       for (let k = 0; k < 3; k++) { this._spawnEnemy(); const e = this.enemies[this.enemies.length - 1]; const a = k * 2.1; e.position.set(this.player.position.x + Math.cos(a) * 11, 0, this.player.position.z + Math.sin(a) * 11); e.userData.home = { x: e.position.x, z: e.position.z }; }
@@ -1417,10 +1424,10 @@ export class Game {
     // Generous magnet: kills happen at bullet range, so a small radius left most
     // scrap/XP on the ground (player earned ~nothing → couldn't afford the shop).
     // A wide radius + strong pull means kills reliably fund progression.
-    const pickR = 9.5 * md.pickup, pull = 20;
+    const pickR = 6 * md.pickup, pull = 19;
     for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = this.player.position.clone().sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.add(to.normalize().multiplyScalar(pull * dt)); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
     for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; c.rotation.z += dt * 5; const to = this.player.position.clone().sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.add(to.normalize().multiplyScalar(pull * dt)); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
-    const pr2 = 9.5 * md.pickup;
+    const pr2 = 6 * md.pickup;
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
       const it = this.itemDrops[i]; const u = it.userData; u.life -= dt; u.ring.rotation.z += dt * 1.6; it.position.y = Math.sin(this.state.time * 2 + u.ph) * 0.12;
       const to = this.player.position.clone().sub(it.position); to.y = 0; const d = to.length(); if (d < pr2) it.position.add(to.normalize().multiplyScalar(15 * dt).setY(0));
@@ -1624,6 +1631,8 @@ export class Game {
     const prevOk = idx === 0 || ((this.state.ranks[branch.nodes[idx - 1].id] || 0) > 0);
     if (cur >= node.max || this.state.skillPoints < node.cost || !prevOk) return;
     this.state.ranks = { ...this.state.ranks, [id]: cur + 1 }; this.state.skillPoints -= node.cost; this.audio.ui(); this.refresh();
+    // Tutorial UPGRADE step completes when a skill point is spent.
+    if (this._tut && this.tut.step === 8) { this.openPanel('none'); this._tutAdvance(); }
   }
   pickWeapon(key) {
     const ww = this.WEAPONS[key]; const own = !!this.state.owned[key];
@@ -1631,8 +1640,8 @@ export class Game {
     if (own) { this.state.weapon = key; this._attachGun(key); }
     else { if (this.state.gold < (ww.cost || 0)) return; this.state.gold -= (ww.cost || 0); this.state.owned = { ...this.state.owned, [key]: true }; this.state.weapon = key; this._attachGun(key); bought = true; }
     this.audio.ui(); this.refresh();
-    // Tutorial buy step completes on a real purchase.
-    if (bought && this._tut && this.tut.step === 5) { this.openPanel('none'); this._tutAdvance(); }
+    // Tutorial SHOP step completes when the player picks any weapon (buy or equip).
+    if (this._tut && this.tut.step === 5) { this.openPanel('none'); this._tutAdvance(); }
   }
 
   // Quick-switch between OWNED weapons (HUD readout click / number keys / cycle).

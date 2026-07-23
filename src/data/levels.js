@@ -29,9 +29,10 @@ export function tutorialLevel() {
     floorColor: 0x2c3644, gridColor1: 0x4f7c92, gridColor2: 0x26313c, accent: 0x35e0d0, edgeColor: 0x35e0d0,
     spawnStart: { x: 0, z: 8 },
     walls: [], platforms: [], covers: [],
-    cores: [[9, 2]],        // a workbench to show the hack prop in the training bay
+    cores: [{ x: 9, z: 2 }],  // workbench to hack (tutorial HACK step)
+    portal: { x: 0, z: -13, to: 'main' }, // exit portal (tutorial's final step)
     spawns: [[-18, -10], [18, -10], [0, -14], [-18, 4], [18, 4]],
-    crates: [[-9, 2]],      // a salvage chest prop
+    crates: [[-9, 2]],      // salvage chest to open (tutorial OPEN step)
     fog: { color: 0x0c1218, near: 55, far: 150 }, bg: 0x141c26,
     light: { hemi: 0.75, dir: 1.6 },
   };
