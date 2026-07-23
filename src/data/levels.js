@@ -31,7 +31,7 @@ export function tutorialLevel() {
     floorColor: 0x243244, gridColor1: 0x5a86a0, gridColor2: 0x2a3648, accent: 0x35e0d0, edgeColor: 0xffb84a,
     spawnStart: { x: 0, z: 10 },
     walls: [], platforms: [],
-    covers: [[-14, -2], [14, -2], [-8, -12], [8, -12]],   // glowing accent pillars (cover)
+    covers: [],   // no crystal-pillars in the training bay — kept clean
     cores: [{ x: 12, z: 4 }],  // workbench to hack (tutorial HACK step)
     shop: { x: -12, z: -6 },   // shop stall (tutorial SHOP step) — was missing
     portal: { x: 0, z: -15, to: 'main' }, // exit portal (tutorial's final step)
