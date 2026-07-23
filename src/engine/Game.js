@@ -1016,9 +1016,14 @@ export class Game {
     }
     const step = TUTORIAL[s]; this.state.objectiveKey = 'tut:' + s; this._event(getLang() === 'ko' ? (step.toastKo || '') : (step.toast || '')); this.tut.killBase = this.state.kills; this.tut.timer = 0;
     if (s === 3) this._spawnItemDrop({ x: this.player.position.x + Math.cos(this.face) * 6, z: this.player.position.z + Math.sin(this.face) * 6 }, 'weapon');
-    // Buy step: make sure the player can afford the cheapest weapon so the shop
-    // lesson can't soft-lock; the step completes on the actual purchase.
-    if (s === 5) this.state.gold = Math.max(this.state.gold, 60);
+    // Buy step: grant enough scrap for the cheapest STILL-UNOWNED weapon (the
+    // pickup step already gifted the first one), so the shop lesson can't soft-lock.
+    // The step completes on the actual purchase (see pickWeapon).
+    if (s === 5) {
+      const costs = Object.keys(this.WEAPONS).filter((k) => !this.state.owned[k] && (this.WEAPONS[k].cost || 0) > 0).map((k) => this.WEAPONS[k].cost);
+      const need = costs.length ? Math.min(...costs) : 40;
+      this.state.gold = Math.max(this.state.gold, need + 10);
+    }
     if (step.dummies && !this.tut.dummied) {
       this.tut.dummied = true;
       for (let k = 0; k < 3; k++) { this._spawnEnemy(); const e = this.enemies[this.enemies.length - 1]; const a = k * 2.1; e.position.set(this.player.position.x + Math.cos(a) * 11, 0, this.player.position.z + Math.sin(a) * 11); e.userData.home = { x: e.position.x, z: e.position.z }; }
