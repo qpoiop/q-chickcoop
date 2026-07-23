@@ -110,8 +110,9 @@ export class HUD {
     const s = this.g.state, e = this.el;
     e.start.style.display = (!s.started && !s.ended) ? 'flex' : 'none';
     e.end.style.display = s.ended ? 'flex' : 'none';
-    // install / update toasts belong on the home screen only — never over gameplay
-    document.body.classList.toggle('playing', s.started && !s.ended);
+    // install / update toasts belong on the HOME screen only — never over gameplay
+    // OR the end screen (which is not home). Show only when neither started nor ended.
+    document.body.classList.toggle('playing', s.started || s.ended);
     if (!s.started || s.ended) this.hideCombo();
     e.skipStart.style.display = this.g._tutSeen ? 'none' : 'inline';
 
@@ -142,7 +143,7 @@ export class HUD {
       e.endTitle.textContent = s.win ? t('end.win') : t('end.lose');
       e.endTitle.style.color = s.win ? '#59ff9d' : '#ff3b6b';
       e.endTitle.style.textShadow = `0 0 40px ${s.win ? 'rgba(89,255,157,.5)' : 'rgba(255,59,107,.45)'}`;
-      e.end.style.background = `radial-gradient(80% 80% at 50% 40%,${s.win ? 'rgba(10,30,20,.7)' : 'rgba(30,10,16,.7)'},rgba(6,9,14,.95))`;
+      e.end.style.background = `radial-gradient(80% 80% at 50% 40%,${s.win ? 'rgba(10,32,22,.92)' : 'rgba(32,10,16,.92)'},rgba(6,9,14,.985))`;
       e.endLevel.textContent = s.level; e.endKills.textContent = s.kills; e.endTime.textContent = fmtTime(s.time);
     }
     this.tick();
