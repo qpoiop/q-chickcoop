@@ -98,7 +98,7 @@ export function waterfallLevel() {
   const hx = 118, hz = 118;
   return {
     id: 'boss', B: 118, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 240, walkTop: 12 },
+    mapFit: { normalize: 240, walkTop: 12 },  // NOTE: density trimOpen doesn't fit here — Town_plane IS the main surface (trimming made extraction unreachable). Needs a different bound. (BACKLOG)
     spawnStart: { x: -9.8, z: 10.8 }, safe: { x: -9.8, z: 10.8, r: 10 },
     walls: [], platforms: [], covers: [], cores: [],
     boss: true, bossSpawn: { x: -12.8, z: -4.4 },   // Fountain
@@ -147,7 +147,7 @@ export function cityStageLevel() {
   const hx = 58, hz = 58;
   return {
     id: 'city', B: 58, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 120, walkTop: 6 },
+    mapFit: { normalize: 120, walkTop: 6, trimOpen: 0.9 },  // block open grass/void fields you can stroll into (roads survive — bordered by buildings)
     // spawn at the map's open central plaza (measured walkable centroid) — the
     // guessed edge coord snapped to a cramped corner. Anchors below are spread
     // across the (nearly map-wide) walkable area; _snapAnchors keeps reachable ones.
