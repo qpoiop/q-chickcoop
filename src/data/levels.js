@@ -93,19 +93,21 @@ export function bossArenaLevel() {
 // Dumpster salvage. This map is texture-less flat-colour, so it wants brighter,
 // cooler light. Exit has no anchor → extraction placed manually near spawn.
 export function waterfallLevel() {
-  const hx = 58, hz = 58;
+  // scaled up ×1.3 (normalize 120→156, bounds 58→74): the arena was too small —
+  // you toured it in a few steps. Anchors below are the guide coords ×1.3.
+  const hx = 74, hz = 74;
   return {
-    id: 'boss', B: 58, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 120, walkTop: 8 },
-    spawnStart: { x: -4.9, z: 5.4 }, safe: { x: -4.9, z: 5.4, r: 6 },
+    id: 'boss', B: 74, bounds: { hx, hz }, harvest: true,
+    mapFit: { normalize: 156, walkTop: 10 },
+    spawnStart: { x: -6.4, z: 7.0 }, safe: { x: -6.4, z: 7.0, r: 7.5 },
     walls: [], platforms: [], covers: [], cores: [],
-    boss: true, bossSpawn: { x: -6.4, z: -2.2 },   // Fountain
-    extractionAfterBoss: { x: -4.9, z: 5.4 },        // back at the table (spawn)
-    shop: { x: -5.8, z: 11.2 },                      // Store
-    crates: [[-7.0, 11.6], [-12.8, -16.1], [-23.5, 2.7], [-3.3, 8.6]],
-    spawns: [[-20, -8], [10, -16], [-24, 3], [4, 10], [-13, -16]],
-    fog: { color: 0x0c1418, near: 110, far: 360 }, bg: 0x14202a,
-    light: { hemi: 1.05, dir: 2.1 },
+    boss: true, bossSpawn: { x: -8.3, z: -2.9 },   // Fountain
+    extractionAfterBoss: { x: -6.4, z: 7.0 },        // back at the table (spawn)
+    shop: { x: -7.5, z: 14.6 },                      // Store
+    crates: [[-9.1, 15.1], [-16.6, -20.9], [-30.6, 3.5], [-4.3, 11.2]],
+    spawns: [[-26, -10], [13, -21], [-31, 4], [5, 13], [-17, -21]],
+    fog: { color: 0x0c1418, near: 130, far: 420 }, bg: 0x14202a,
+    light: { hemi: 1.15, dir: 2.3 },
   };
 }
 
@@ -122,10 +124,13 @@ export function mysticForestLevel() {
     mapFit: { normalize: 120, walkTop: 8 },
     spawnStart: { x: -9.2, z: -5.0 },                        // FireCamp
     walls: [], platforms: [], covers: [],
-    cores: [{ x: -23.1, z: 17.6 }, { x: -16.3, z: -27.7 }],  // Temple, Mine (hack targets)
+    // cores on OPPOSITE sides (Temple west, Mine east) so breaching both means
+    // crossing the whole map — no more hack-both-from-one-spot.
+    cores: [{ x: -23.1, z: 17.6 }, { x: 22.7, z: 14.0 }],    // Temple, Mine (east)
     shop: { x: 1.5, z: -7 },                                 // stall by the camp
-    portal: { x: -5.6, z: 0.5, to: 'city' },                 // Pentagramme magic circle → stage 3 (city)
-    crates: [[-10.0, 0.2], [-2.4, -1.5], [3.9, -27.4], [19.7, -24.6], [22.7, 14.0]],
+    portal: { x: 7.6, z: -26.1, to: 'city' },                // CityDoor (a real gate) — off the magic circle
+    // crates spread across the north/east ruins (was clustered at the centre camp)
+    crates: [[-16.3, -27.7], [-9.5, -32.1], [3.9, -27.4], [19.7, -24.6], [30.0, -3.0]],
     spawns: [[-18, -8], [8, -16], [-24, 4], [4, 12], [-14, -22], [16, 6], [-6, 22]],
     fog: { color: 0x1c3226, near: 150, far: 460 }, bg: 0x27402f,
     light: { hemi: 2.3, dir: 3.8 },   // brighter — the forest read too dark
