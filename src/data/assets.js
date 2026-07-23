@@ -44,6 +44,7 @@ export const ASSETS = {
     workbench: p('tools/workbench.glb'),
     chest:     p('tools/stylized_chest.glb'),
     shop:      p('tools/low_poly_generic_shop.glb'),
+    portal:    p('tools/desert_portal.glb'),
   },
 
   // Level geometry.

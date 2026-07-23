@@ -29,6 +29,9 @@ export class ModelViewer {
     // its heading, and pauses to turn/pose at the edges — a lively home cameo.
     this.walk = opts.walkRange ? { range: opts.walkRange, speed: opts.walkSpeed || 2.2, x: 0, dir: 1, state: 'walk', t: 0, yaw: Math.PI / 2, yawT: Math.PI / 2 } : null;
     this._actions = {};
+    // Stay hidden until the model is loaded, fitted, and drawn once — otherwise the
+    // first frames show an unfitted/wrong-size flash before the scale settles.
+    this._shown = false; this.canvas.style.opacity = '0';
     this._alive = true; this._loop = this._loop.bind(this);
     window.addEventListener('resize', () => this._resize());
     requestAnimationFrame(this._loop);
@@ -74,6 +77,11 @@ export class ModelViewer {
         this.mixer.clipAction(idle).play();
       }
     }
+    // Draw one fitted frame and reveal immediately (don't wait on the rAF loop, which
+    // can be throttled) — the model is already scaled/centred, so no flash.
+    if (this.mixer) this.mixer.update(0);
+    this.renderer.render(this.scene, this.cam);
+    if (!this._shown) { this._shown = true; this.canvas.style.opacity = '1'; }
     return this;
   }
 
@@ -87,6 +95,8 @@ export class ModelViewer {
       else this.root.rotation.y += this.spin * dt;
     }
     this.renderer.render(this.scene, this.cam);
+    // reveal once the model exists and has been drawn (avoids the unfitted flash)
+    if (this.root && !this._shown) { this._shown = true; this.canvas.style.transition = 'opacity .35s ease'; this.canvas.style.opacity = '1'; }
   }
 
   _stepWalk(dt) {

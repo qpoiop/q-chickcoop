@@ -226,8 +226,9 @@ export class Game {
       this.obstacles.push(this._gateObs = { x: L.gate.x, z: L.gate.z, hw: gAcross ? 0.7 : gw / 2, hd: gAcross ? gw / 2 : 0.7 });
     }
 
-    // data cores — a hackable WORKBENCH with a floating teal energy core on top
-    // (the core is the glow/hack target; the bench is the physical console).
+    // data cores — the hackable WORKBENCH (the provided lab model). No procedural
+    // crystal/marker on top; just the model + a ground light-ring rising beacon so
+    // it reads as interactable.
     (L.cores || []).forEach((c, i) => {
       const grp = new THREE.Group(); grp.position.set(c.x, 0, c.z);
       let wbMixer = null;
@@ -241,19 +242,13 @@ export class Game {
         const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
         base.position.y = 0.25; grp.add(base);
       }
-      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x35e0d0, emissive: 0x35e0d0, emissiveIntensity: 0.85 }));
-      cyl.position.y = 3.1; grp.add(cyl);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.1, 0.07, 8, 24), new THREE.MeshBasicMaterial({ color: 0x35e0d0 }));
-      ring.rotation.x = Math.PI / 2; ring.position.y = 3.1; grp.add(ring); ring.userData.spin = true;
-      // floating "interact here" beacon: ground ring + light column + hovering marker
-      const gring = new THREE.Mesh(new THREE.RingGeometry(2.4, 2.75, 36), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false }));
+      // interactable beacon: a ground ring + a soft light column rising from it.
+      const gring = new THREE.Mesh(new THREE.RingGeometry(2.4, 2.75, 36), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }));
       gring.rotation.x = -Math.PI / 2; gring.position.y = 0.06; grp.add(gring);
-      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.6, 6), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending, depthWrite: false }));
-      col.position.y = 2.3; grp.add(col);
-      const mark = new THREE.Mesh(new THREE.OctahedronGeometry(0.42, 0), new THREE.MeshBasicMaterial({ color: 0x7ff2e8 }));
-      mark.position.y = 4.6; grp.add(mark);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 2.2, 4.2, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      col.position.y = 2.1; grp.add(col);
       g.add(grp); this.obstacles.push({ x: c.x, z: c.z, hw: 1.6, hd: 1.6 });
-      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: cyl, ring, gring, mark, wbMixer, active: true });
+      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: null, ring: null, gring, col, mark: null, wbMixer, active: true });
     });
 
     // glowing map-transition portal (hidden until unlocked)
@@ -350,16 +345,28 @@ export class Game {
   // Glowing map-transition / extraction portal (Duckcoop-style).
   _makePortal(pos, color) {
     const grp = new THREE.Group(); grp.position.set(pos.x, 0, pos.z);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.26, 14, 44), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.9, metalness: 0.4, roughness: 0.3 }));
-    ring.position.y = 2.5; grp.add(ring);
-    const swirl = new THREE.Mesh(new THREE.CircleGeometry(2.0, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.34, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-    swirl.position.y = 2.5; grp.add(swirl); const swirl2 = swirl.clone(); swirl2.rotation.y = Math.PI; grp.add(swirl2);
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 6, 28, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.1, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-    beam.position.y = 3; grp.add(beam);
-    const base = new THREE.Mesh(new THREE.CircleGeometry(2.4, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.2, side: THREE.DoubleSide }));
-    base.rotation.x = -Math.PI / 2; base.position.y = 0.05; grp.add(base);
-    const light = new THREE.PointLight(color, 2.4, 16); light.position.y = 2.5; grp.add(light);
-    grp.userData = { ring, swirl, swirl2, light, base, ph: 0 };
+    const pm = this.toolModels && this.toolModels.portal;
+    let spin = null, ring = null, swirl = null, swirl2 = null;
+    if (pm) {
+      // Use the provided desert_portal model, grounded + centred.
+      const m = cloneSkinned(pm.scene); m.scale.setScalar(pm.fit);
+      m.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(m); const ctr = new THREE.Vector3(); bb.getCenter(ctr);
+      m.position.x -= ctr.x; m.position.z -= ctr.z; m.position.y -= bb.min.y; grp.add(m); spin = m;
+    } else {
+      // procedural fallback ring/swirl (only if the model failed to load)
+      ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.26, 14, 44), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.9, metalness: 0.4, roughness: 0.3 }));
+      ring.position.y = 2.5; grp.add(ring);
+      swirl = new THREE.Mesh(new THREE.CircleGeometry(2.0, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.34, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      swirl.position.y = 2.5; grp.add(swirl); swirl2 = swirl.clone(); swirl2.rotation.y = Math.PI; grp.add(swirl2);
+    }
+    // shared beacon: a ground light-ring + rising column so it reads as a gateway.
+    const gring = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.1, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    gring.rotation.x = -Math.PI / 2; gring.position.y = 0.06; grp.add(gring);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.7, 5, 28, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.1, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    col.position.y = 2.5; grp.add(col);
+    const light = new THREE.PointLight(color, 2.4, 18); light.position.y = 2.5; grp.add(light);
+    grp.userData = { spin, ring, swirl, swirl2, gring, col, light, ph: 0 };
     return grp;
   }
 
@@ -521,10 +528,10 @@ export class Game {
   // read at the interaction footprint; clips (if any) drive the hack/open anim.
   async _loadToolModels() {
     if (this.toolModels) return; this.toolModels = {};
-    const H = { workbench: 2.6, chest: 3.0, shop: 9 };
+    const H = { workbench: 4.5, chest: 3.0, shop: 9, portal: 6.5 };
     // per-model self-lit tint: the chest sits in dark forest and read almost black,
     // so it gets a stronger tint; shop/workbench stay subtle to avoid washing out.
-    const TINT = { workbench: 0.1, chest: 0.24, shop: 0.12 };
+    const TINT = { workbench: 0.14, chest: 0.24, shop: 0.12, portal: 0.18 };
     for (const [key, url] of Object.entries(ASSETS.toolModels)) {
       const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
       tuneMaterials(g.scene, { metalness: 0.4, shadow: false });
@@ -756,11 +763,13 @@ export class Game {
       }
       return p;
     };
-    (L.cores || []).forEach((c) => { const p = place(c.x, c.z, 10); c.x = p.x; c.z = p.z; });
-    if (L.shop) { const p = place(L.shop.x, L.shop.z, 8); L.shop.x = p.x; L.shop.z = p.z; }
-    if (L.portal) { const p = place(L.portal.x, L.portal.z, 8); L.portal.x = p.x; L.portal.z = p.z; }
+    // Keep guide positions when reachable; only snap the unreachable ones, and only
+    // push props out of a small spawn bubble so the drop-in isn't fully boxed.
+    (L.cores || []).forEach((c) => { const p = place(c.x, c.z, 6); c.x = p.x; c.z = p.z; });
+    if (L.shop) { const p = place(L.shop.x, L.shop.z, 6); L.shop.x = p.x; L.shop.z = p.z; }
+    if (L.portal) { const p = place(L.portal.x, L.portal.z, 6); L.portal.x = p.x; L.portal.z = p.z; }
     if (L.bossSpawn) { const p = snap(L.bossSpawn.x, L.bossSpawn.z); L.bossSpawn.x = p.x; L.bossSpawn.z = p.z; }
-    if (L.crates) L.crates = L.crates.map(([x, z]) => { const p = place(x, z, 9); return [p.x, p.z]; });
+    if (L.crates) L.crates = L.crates.map(([x, z]) => { const p = place(x, z, 6); return [p.x, p.z]; });
     this._reach = { reach, nx, nz, cell, bx, bz }; // reused by mob spawn to keep them in-region
   }
 
@@ -915,8 +924,13 @@ export class Game {
 
   _completeInteract(it) {
     if (it.type === 'core' && !it.done) {
-      it.done = true; it.glow.material.color.set(0x59ff9d); it.glow.material.emissive.set(0x59ff9d); it.ring.material.color.set(0x59ff9d);
-      if (it.mark) it.mark.visible = false; if (it.gring) it.gring.visible = false;
+      it.done = true;
+      // recolor the beacon to the "breached" green, then dim it out
+      if (it.gring) it.gring.material.color.set(0x59ff9d);
+      if (it.col) it.col.material.color.set(0x59ff9d);
+      if (it.glow) { it.glow.material.color.set(0x59ff9d); it.glow.material.emissive.set(0x59ff9d); }
+      if (it.ring) it.ring.material.color.set(0x59ff9d);
+      if (it.mark) it.mark.visible = false;
       this.state.cores++; this._impact(it.mesh.position, 0x59ff9d, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
       const need = (this.L.cores || []).length;
       if (this.state.cores >= need) { this._activatePortal(); }
@@ -1517,13 +1531,18 @@ export class Game {
       }
       if (x.type === 'core' && !x.done) {
         if (x.glow) { x.glow.material.emissiveIntensity = 1.1 + Math.sin(this.state.time * 4) * 0.5; x.glow.rotation.y += dt * 1.5; }
-        if (x.ring) x.ring.rotation.z += dt * 1.2;
-        if (x.mark) { x.mark.rotation.y += dt * 2; x.mark.position.y = 4.6 + Math.sin(this.state.time * 3) * 0.25; }
         if (x.gring) { const s = 1 + Math.sin(this.state.time * 3) * 0.06; x.gring.scale.set(s, s, s); }
+        if (x.col) x.col.material.opacity = 0.06 + (Math.sin(this.state.time * 3) * 0.5 + 0.5) * 0.06;
       }
     });
-    // portal swirl animation
-    if (this.portalObj && this.portalObj.visible) { const u = this.portalObj.userData; u.ring.rotation.z += dt * 1.4; u.swirl.rotation.z -= dt * 2.2; u.swirl2.rotation.z += dt * 2.2; u.light.intensity = 2 + Math.sin(this.state.time * 4) * 0.9; }
+    // portal animation: spin the model + pulse the beacon light (model-based portal)
+    if (this.portalObj && this.portalObj.visible) {
+      const u = this.portalObj.userData;
+      if (u.spin) u.spin.rotation.y += dt * 1.0;
+      if (u.ring) u.ring.rotation.z += dt * 1.4;
+      if (u.swirl) { u.swirl.rotation.z -= dt * 2.2; u.swirl2.rotation.z += dt * 2.2; }
+      if (u.light) u.light.intensity = 2 + Math.sin(this.state.time * 4) * 0.9;
+    }
 
     if (this.state.hp <= 0) { this.state.hp = 0; this._end(); }
 
