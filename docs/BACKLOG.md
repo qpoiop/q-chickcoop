@@ -43,6 +43,9 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] 튜토리얼이 void 플랫폼처럼 텅 빔 — 휘도 측정 near-black 72%(작은 아레나+어두운
+  배경). floor/bg/fog/light 밝힘. 재측정 near-black 72%→0%, avgLum 54→78.6,
+  blowout 0. 첫인상 개선. (폭포=avgLum 81 이미 밝음 → 전 맵 밝기 검증 완료.)
 - [x] 시티맵 너무 어두움 — 캔버스 평균 휘도 측정: avgLum 34(숲 57), near-black
   53%. exposure 1.4 + light hemi1.1→1.9/dir2.2→3.2 + 밝은 fog/bg. 재측정
   avgLum 51.5, near-black 36%, blowout 0 = 숲과 비슷·읽을 만함. (측정법 MAP_GUIDE.)

@@ -28,7 +28,7 @@ export function tutorialLevel() {
     id: 'tutorial', B: 26, bounds: { hx, hz }, arena: true, lavaRing: true,
     // a clean, warmly-lit training yard: teal energy grid + amber boundary, a few
     // accent pillars for cover so it reads as a place, not an empty plane.
-    floorColor: 0x243244, gridColor1: 0x5a86a0, gridColor2: 0x2a3648, accent: 0x35e0d0, edgeColor: 0xffb84a,
+    floorColor: 0x31465c, gridColor1: 0x6a96b0, gridColor2: 0x34455a, accent: 0x35e0d0, edgeColor: 0xffb84a,
     spawnStart: { x: 0, z: 10 },
     walls: [], platforms: [],
     covers: [],   // no crystal-pillars in the training bay — kept clean
@@ -37,8 +37,10 @@ export function tutorialLevel() {
     portal: { x: 0, z: -15, to: 'main' }, // exit portal (tutorial's final step)
     spawns: [[-20, -12], [20, -12], [0, -16], [-20, 5], [20, 5]],
     crates: [[12, -8]],      // salvage chest to open (tutorial OPEN step)
-    fog: { color: 0x0c1218, near: 60, far: 160 }, bg: 0x161f2a,
-    light: { hemi: 0.9, dir: 1.85 },
+    // brighter, less void-like training bay (was ~72% near-black — read as an empty
+    // platform in the dark; first impression). Lighter floor/bg + fog pushed back.
+    fog: { color: 0x1a2836, near: 90, far: 240 }, bg: 0x28384a,
+    light: { hemi: 1.5, dir: 2.6 },
   };
 }
 
