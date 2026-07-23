@@ -114,9 +114,11 @@ export function waterfallLevel() {
 // in that normalized space, taken from the map guide (FireCamp/Temple/Pentagramme…).
 // Collision comes from the walkable grid (trees/rocks read as tall → non-walkable).
 export function mysticForestLevel() {
-  const hx = 58, hz = 58;
+  // bounds tightened to the actual content (all anchors sit within ~±28); at 58
+  // the player could walk far past the art into the void ("맵 밖으로 나가짐").
+  const hx = 46, hz = 46;
   return {
-    id: 'main', B: 58, bounds: { hx, hz }, harvest: true,
+    id: 'main', B: 46, bounds: { hx, hz }, harvest: true,
     mapFit: { normalize: 120, walkTop: 8 },
     spawnStart: { x: -9.2, z: -5.0 },                        // FireCamp
     walls: [], platforms: [], covers: [],
@@ -125,8 +127,8 @@ export function mysticForestLevel() {
     portal: { x: -5.6, z: 0.5, to: 'city' },                 // Pentagramme magic circle → stage 3 (city)
     crates: [[-10.0, 0.2], [-2.4, -1.5], [3.9, -27.4], [19.7, -24.6], [22.7, 14.0]],
     spawns: [[-18, -8], [8, -16], [-24, 4], [4, 12], [-14, -22], [16, 6], [-6, 22]],
-    fog: { color: 0x14241a, near: 140, far: 420 }, bg: 0x1b2c22,
-    light: { hemi: 1.5, dir: 2.8 },
+    fog: { color: 0x1c3226, near: 150, far: 460 }, bg: 0x27402f,
+    light: { hemi: 2.3, dir: 3.8 },   // brighter — the forest read too dark
   };
 }
 

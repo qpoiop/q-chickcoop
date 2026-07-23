@@ -236,6 +236,7 @@ export class Game {
     // it reads as interactable.
     (L.cores || []).forEach((c, i) => {
       const grp = new THREE.Group(); grp.position.set(c.x, 0, c.z);
+      grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera, not its back
       let wbMixer = null;
       const tm = this.toolModels && this.toolModels.workbench;
       if (tm) {
@@ -266,6 +267,7 @@ export class Game {
     // loot crates — a salvage CHEST you crack open for scrap
     L.crates.forEach(([x, z]) => {
       const grp = new THREE.Group(); grp.position.set(x, 0, z);
+      grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera
       let lid = null, lidRest = null;
       const cm = this.toolModels && this.toolModels.chest;
       if (cm) {
@@ -289,6 +291,7 @@ export class Game {
     // SHOP stall — walk up and interact to open the weapon shop (reusable)
     if (L.shop) {
       const grp = new THREE.Group(); grp.position.set(L.shop.x, 0, L.shop.z);
+      grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera, not its back
       const sm = this.toolModels && this.toolModels.shop;
       if (sm) {
         const s = cloneSkinned(sm.scene); s.scale.setScalar(sm.fit);
