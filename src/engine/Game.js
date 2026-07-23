@@ -311,6 +311,31 @@ export class Game {
       disc.rotation.x = -Math.PI / 2; disc.position.set(L.safe.x, 0.03, L.safe.z); g.add(disc);
     }
     this.itemDrops = [];
+
+    // Tutorial: reveal interactables one step at a time so the sequence is enforced
+    // (you can't hack the core before the HACK step and skip ahead). Each object is
+    // hidden + non-interactable + its collider disabled until its step (see
+    // _tutReveal, called from _tutAdvance).
+    if (this._tut) {
+      const stepFor = { shop: 5, crate: 6, core: 7 };
+      const cur = (this.tut && this.tut.step) || 0;
+      for (const it of this.interact) {
+        const s = stepFor[it.type]; if (s == null) continue;
+        it.tutStep = s; it.obs = this.obstacles.find((o) => o.x === it.x && o.z === it.z) || null;
+        if (cur < s) { it.active = false; it.tutHidden = true; if (it.mesh) it.mesh.visible = false; if (it.obs) it.obs.dead = true; }
+      }
+    }
+  }
+
+  // Reveal any tutorial interactable whose gated step has now been reached.
+  _tutReveal(step) {
+    for (const it of this.interact) {
+      if (it.tutHidden && it.tutStep === step) {
+        it.tutHidden = false; it.active = true;
+        if (it.mesh) it.mesh.visible = true;
+        if (it.obs) it.obs.dead = false;
+      }
+    }
   }
 
   _iconTexture(glyph, color) {
@@ -1370,6 +1395,10 @@ export class Game {
   // redeploy) drops straight into the city. _goToMap does the map load + build.
   _reset(tutorial) {
     this._tut = !!tutorial;
+    // Cover the screen BEFORE the start overlay is dismissed, so the home-background
+    // map isn't flashed for a frame while the real map loads.
+    if (this.dom.trans) this.dom.trans.style.display = 'grid';
+    this._fade(1, 0);
     Object.assign(this.state, this._freshState(), { started: true, tutorial: this._tut });
     this.tut = { step: 0, move: 0, shots: 0, dashed: false, killBase: 0, timer: 0, dummied: false };
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: this._tut ? CONFIG.spawn.tutGrace : CONFIG.spawn.grace };
@@ -1387,6 +1416,7 @@ export class Game {
       return;
     }
     const step = TUTORIAL[s]; this.state.objectiveKey = 'tut:' + s; this._event(getLang() === 'ko' ? (step.toastKo || '') : (step.toast || '')); this.tut.killBase = this.state.kills; this.tut.timer = 0;
+    this._tutReveal(s);   // pop in the object this step is about (shop/chest/core)
     // FIRE lesson: stand a straw scarecrow out in front to shoot apart.
     if (s === 1) this.tut.fireTarget = this._spawnScarecrow(14);
     if (s === 3) this._spawnItemDrop({ x: this.player.position.x + Math.cos(this.face) * 6, z: this.player.position.z + Math.sin(this.face) * 6 }, 'scrap');
