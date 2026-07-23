@@ -46,8 +46,10 @@ export const ASSETS = {
     shop:      p('tools/low_poly_generic_shop.glb'),
   },
 
-  // Level geometry — urban city map for the main 시가전 stage.
-  cityMap: p('scene/chicken_gun_fruzer_-_city.glb'),
+  // Level geometry.
+  cityMap:    p('scene/chicken_gun_fruzer_-_city.glb'),   // legacy urban stage
+  forestMain: p('scene/mystical_forest_cartoon.glb'),      // main farming forest
+  forestOpen: p('scene/low_poly_scene_forest_waterfall.glb'), // open high-risk area
 
   // Audio
   bgm: p('bgm/leberch-comedy-cartoon-375836.mp3'),
