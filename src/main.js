@@ -19,7 +19,7 @@ window.__CHICKCOOP = game; // debug handle
 // Home hero — a large rotating showcase of the playable chicken on the start screen.
 const heroCanvas = $('homeHero');
 if (heroCanvas) {
-  const hero = new ModelViewer(heroCanvas, { camDist: 5.2, camY: 1.15, fitH: 2.3, spin: 0.6, yaw: -0.4, fov: 30 });
+  const hero = new ModelViewer(heroCanvas, { camDist: 7, camY: 1.4, lookY: 1.0, fitH: 2.1, fov: 36, walkRange: 4.6, walkSpeed: 2.3 });
   window.__hero = hero;
   hero.load(ASSETS.player).then(() => { hero._loaded = true; }).catch((e) => { hero._err = String(e); });
 }

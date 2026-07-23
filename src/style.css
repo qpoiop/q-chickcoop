@@ -163,9 +163,9 @@ body.touch #hudHint { display:none !important; }
    always-on HUD button is hidden. (Inventory / Tech Tree stay.) */
 #btnArsenal { display:none !important; }
 
-/* Home hero showcase sits off to the side; hide it where it would crowd the
-   centred content (narrow / short screens) so text/buttons never get covered. */
-@media (max-width: 1100px), (max-height: 560px) { #homeHero { display: none !important; } }
+/* Home hero paces along the bottom strip; hide on short screens where it would
+   crowd the stacked content. */
+@media (max-height: 560px) { #homeHero { display: none !important; } }
 
 /* Loot pickup chips (recent drops, bottom-left) */
 .loot-chip { display:flex; align-items:center; gap:9px;
