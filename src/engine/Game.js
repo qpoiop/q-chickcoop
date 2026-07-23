@@ -364,6 +364,29 @@ export class Game {
   }
 
   // ---------- player ----------
+  // See-through hero: a silhouette twin of the player model that draws ONLY where
+  // the player is occluded (depthFunc GreaterDepth). Occluder-agnostic — works no
+  // matter how the trees/buildings are meshed, unlike fading the occluders. The
+  // twins share the source skeleton, so they animate for free.
+  _buildPlayerXray(model) {
+    if (!model) return;
+    const mat = new THREE.MeshBasicMaterial({ color: 0x7ff2e8, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, fog: false });
+    mat.depthFunc = THREE.GreaterDepth;   // pass only where a nearer surface already drew (i.e. player is behind it)
+    const src = [];
+    // Idempotent: skip meshes that are themselves twins, and meshes already twinned
+    // (so re-entering a map doesn't stack twins-of-twins).
+    model.traverse((o) => { if ((o.isSkinnedMesh || o.isMesh) && !o.userData.xray && !o.userData._hasXray) src.push(o); });
+    for (const o of src) {
+      let x;
+      if (o.isSkinnedMesh) { x = new THREE.SkinnedMesh(o.geometry, mat); x.bind(o.skeleton, o.bindMatrix); x.bindMode = o.bindMode; }
+      else x = new THREE.Mesh(o.geometry, mat);
+      x.position.copy(o.position); x.quaternion.copy(o.quaternion); x.scale.copy(o.scale);
+      x.frustumCulled = false; x.renderOrder = 20; x.castShadow = false; x.receiveShadow = false;
+      x.userData.xray = true; o.userData._hasXray = true;
+      o.parent.add(x);
+    }
+  }
+
   _buildPlayer() {
     if (this.player) this.scene.remove(this.player);
     const p = new THREE.Group();
@@ -399,6 +422,7 @@ export class Game {
         this.attackAction.setEffectiveWeight(0);
       }
       this.chicken.fit = null;
+      this._buildPlayerXray(this.chickenModel);
     } else {
       const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.6, 1, 6, 12), new THREE.MeshStandardMaterial({ color: 0x123038, emissive: 0x0e3030, emissiveIntensity: 0.5, roughness: 0.4, metalness: 0.5 }));
       body.position.y = 1.1; body.castShadow = true; faceG.add(body); p.userData.body = body;
@@ -1383,7 +1407,10 @@ export class Game {
 
     this._animateDetached(rdt);
     this._updateCamera(rdt, fx, playing);
-    if (playing) this._updateOcclusion();
+    // Occluder-fade only helps when occluders are separable meshes (procedural /
+    // city). On natural maps the whole map is a few combined meshes, so fading one
+    // dims half the scene — there the see-through hero (X-ray twin) handles it.
+    if (playing && !this._walk) this._updateOcclusion();
     this._updateThreatArrows();
 
     // Adaptive quality: watch a smoothed frame time and shed cost under load so the
