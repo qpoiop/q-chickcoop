@@ -51,6 +51,9 @@ export const ASSETS = {
   forestMain: p('scene/mystical_forest_cartoon.glb'),      // main farming forest
   forestOpen: p('scene/low_poly_scene_forest_waterfall.glb'), // open high-risk area
 
+  // HUD showcase props
+  rawChicken: p('item/raw_chicken.glb'),   // health indicator by the HP bar
+
   // Audio
   bgm: p('bgm/leberch-comedy-cartoon-375836.mp3'),
 };

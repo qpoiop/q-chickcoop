@@ -24,6 +24,19 @@ if (heroCanvas) {
   hero.load(ASSETS.player).then(() => { hero._loaded = true; }).catch((e) => { hero._err = String(e); });
 }
 
+// HUD 3D previews: a rotating gun in the weapon readout + a raw-chicken health icon.
+const gunCanvas = $('hudGunCanvas');
+if (gunCanvas) {
+  const gunView = new ModelViewer(gunCanvas, { camDist: 2.3, camY: 0.1, lookY: 0, fitH: 1.25, spin: 1.3, yaw: -0.5, fov: 34 });
+  window.__updateGun = (weaponKey) => { const url = ASSETS.weaponModels[weaponKey]; if (url) gunView.load(url, { fitH: 1.25 }).catch(() => {}); };
+  window.__updateGun(game.state.weapon);
+}
+const hpCanvas = $('hudHpChicken');
+if (hpCanvas) {
+  const hpView = new ModelViewer(hpCanvas, { camDist: 2.6, camY: 0.7, lookY: 0.65, fitH: 1.5, spin: 0.5, yaw: -0.3, fov: 34 });
+  hpView.load(ASSETS.rawChicken).catch(() => {});
+}
+
 // Keep the canvas sized to the visual viewport on mobile (URL bar show/hide).
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => game._resize && game._resize());
