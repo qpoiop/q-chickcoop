@@ -80,6 +80,9 @@
       </div>
     </div>
 
+    <!-- loot log: recent pickups pop here (icon + amount), newest on top -->
+    <div id="lootLog" style="position:absolute;bottom:74px;left:20px;display:flex;flex-direction:column-reverse;gap:6px;pointer-events:none;z-index:9"></div>
+
     <!-- weapon readout bottom-left (click / Q / number keys to switch) -->
     <button id="hudWeaponBox" title="Switch weapon (Q / 1-5)" style="pointer-events:auto;cursor:pointer;position:absolute;bottom:18px;left:20px;display:flex;align-items:center;gap:11px;background:rgba(11,18,26,.82);border:1px solid #2a3a4a;padding:9px 14px;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);font-family:'Rajdhani';transition:border-color .15s">
       <div id="hudWeaponIcon" style="width:34px;height:34px;flex:none;display:grid;place-items:center;border:1.5px solid #ffb03b;color:#ffb03b;font-family:'Chakra Petch';font-weight:700;box-shadow:0 0 12px rgba(255,176,59,.5)">☄</div>

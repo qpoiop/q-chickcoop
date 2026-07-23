@@ -749,7 +749,7 @@ export class Game {
       else this._event(t('evt.salvage'));
       const payout = Math.ceil((10 + Math.random() * 14) * md.gold);
       for (let k = 0; k < 4; k++) this._drop(new THREE.Vector3(it.x + (Math.random() - 0.5) * 1.4, 0, it.z + (Math.random() - 0.5) * 1.4), 1);
-      this.state.gold += payout; this._gainXp(8 * md.xp);
+      this.state.gold += payout; this._gainXp(8 * md.xp); this.hud.pushLoot('◈', '+' + payout, '#ffd23f');
       if (this._tut && this.tut.step === 6) this._tutAdvance(); // tutorial OPEN step
     } else if (it.type === 'portal' && it.active) {
       // Portal is the tutorial's final step — finish the tutorial, then cross.
@@ -831,11 +831,11 @@ export class Game {
       const key = WEAPON_DROP_ORDER.find((k) => !this.state.owned[k]);
       // Acquire only — do NOT auto-swap the active weapon out from under the
       // player mid-fight; they switch via number keys / cycle / shop.
-      if (key) { this.state.owned = { ...this.state.owned, [key]: true }; this._event(t('evt.acquired', { name: locName(this.WEAPONS[key]) })); }
-      else { this.state.gold += 30; this._event(t('evt.scrap30')); }
+      if (key) { const w = this.WEAPONS[key]; this.state.owned = { ...this.state.owned, [key]: true }; this._event(t('evt.acquired', { name: locName(w) })); this.hud.pushLoot(w.icon, locName(w), w.color); }
+      else { this.state.gold += 30; this._event(t('evt.scrap30')); this.hud.pushLoot('◈', '+30', '#ffb03b'); }
     } else if (kind === 'health') {
-      this.state.hp = Math.min(this.state.maxHp + Math.round(md.hp), this.state.hp + CONFIG.drops.healAmount); this._event(t('evt.hull', { n: CONFIG.drops.healAmount }));
-    } else { this.state.gold += Math.ceil(20 * md.gold); this._event(t('evt.scrap')); }
+      this.state.hp = Math.min(this.state.maxHp + Math.round(md.hp), this.state.hp + CONFIG.drops.healAmount); this._event(t('evt.hull', { n: CONFIG.drops.healAmount })); this.hud.pushLoot('✚', '+' + CONFIG.drops.healAmount, '#59ff9d');
+    } else { const amt = Math.ceil(20 * md.gold); this.state.gold += amt; this._event(t('evt.scrap')); this.hud.pushLoot('◈', '+' + amt, '#ffb03b'); }
     this.audio.pickup(); this.fx.shake = Math.min(0.5, this.fx.shake + 0.06); // gentle, no seizure on magnet pickups
     if (this._tut && this.tut.step === 3) this._tutAdvance();
     this.refresh();

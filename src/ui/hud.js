@@ -217,6 +217,18 @@ export class HUD {
   }
   hideCombo() { if (this.el.combo) this.el.combo.style.display = 'none'; }
 
+  // Loot pickup chip (icon + amount) — pops bottom-left, newest on top, auto-fades.
+  pushLoot(icon, label, color) {
+    const log = document.getElementById('lootLog'); if (!log) return;
+    const el = document.createElement('div'); el.className = 'loot-chip';
+    el.style.setProperty('--lc', color || '#ffd23f');
+    const ic = document.createElement('span'); ic.className = 'loot-ic'; ic.textContent = icon || '✦';
+    const lb = document.createElement('span'); lb.className = 'loot-lb'; lb.textContent = label || '';
+    el.appendChild(ic); el.appendChild(lb); log.appendChild(el);
+    while (log.children.length > 5) log.removeChild(log.firstChild);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 2600);
+  }
+
   // ---- fast numeric updates ----
   tick() {
     const s = this.g.state, e = this.el, md = computeModifiers(s.ranks);

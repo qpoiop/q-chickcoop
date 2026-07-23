@@ -159,6 +159,21 @@ body.touch #hudHint { display:none !important; }
 .threat-arrow svg { width:26px; height:26px; display:block; }
 @keyframes threatPulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
 
+/* Loot pickup chips (recent drops, bottom-left) */
+.loot-chip { display:flex; align-items:center; gap:9px;
+  background:linear-gradient(180deg,rgba(22,32,42,.96),rgba(9,14,20,.96));
+  border:1px solid var(--lc,#ffd23f); border-left:3px solid var(--lc,#ffd23f);
+  padding:6px 13px 6px 9px; clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%);
+  box-shadow:0 3px 10px rgba(0,0,0,.5); opacity:1; /* opacity stays on so it's visible even if the intro animation is throttled */
+  animation:lootIn .3s cubic-bezier(.2,1.3,.4,1); }
+.loot-chip.out { animation:lootOut .4s forwards; }
+.loot-ic { width:26px; height:26px; display:grid; place-items:center; color:var(--lc,#ffd23f);
+  font-family:'Chakra Petch'; font-weight:700; font-size:17px; line-height:1;
+  filter:drop-shadow(0 0 6px var(--lc,#ffd23f)); }
+.loot-lb { font-family:'Rajdhani'; font-weight:700; font-size:14px; letter-spacing:1px; color:#eaf3f8; white-space:nowrap; }
+@keyframes lootIn { from{ transform:translateX(-18px) scale(.9) } to{ transform:none } }
+@keyframes lootOut { to{ opacity:0; transform:translateX(-18px) } }
+
 /* Boot loading screen — logo + progress bar + % */
 #loading { position:absolute; inset:0; z-index:30; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:22px;
