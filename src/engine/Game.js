@@ -762,11 +762,17 @@ export class Game {
       // instead of jammed against an edge. A cheap two-pass chamfer distance transform
       // over the grid, then pick the max. Keeps the map + all guide anchors untouched.
       if (level.mapFit && level.mapFit.normalize && level.spawnStart) {
+        // clearance (chamfer distance to nearest wall/void), two passes
         const INF = 1e6, dist = new Float32Array(nx * nz);
         for (let k = 0; k < nx * nz; k++) dist[k] = bits[k] ? INF : 0;
         for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i > 0) d = Math.min(d, dist[k - 1] + 1); if (j > 0) d = Math.min(d, dist[k - nx] + 1); dist[k] = d; }
-        let best = -1, bd = -1;
-        for (let j = nz - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i < nx - 1) d = Math.min(d, dist[k + 1] + 1); if (j < nz - 1) d = Math.min(d, dist[k + nx] + 1); dist[k] = d; if (d > bd) { bd = d; best = k; } }
+        for (let j = nz - 1; j >= 0; j--) for (let i = nx - 1; i >= 0; i--) { const k = j * nx + i; if (!bits[k]) continue; let d = dist[k]; if (i < nx - 1) d = Math.min(d, dist[k + 1] + 1); if (j < nz - 1) d = Math.min(d, dist[k + nx] + 1); dist[k] = d; }
+        // Pick the most-open cell NEAR the designer's spawnStart (within a radius),
+        // so the intended location is honoured — just nudged onto nearby open ground,
+        // not teleported to a far/edge pocket that merely has the highest clearance.
+        const sc = Math.round((level.spawnStart.x + bx2) / cell), sj = Math.round((level.spawnStart.z + bz2) / cell);
+        const R = 6; let best = -1, bd = -1;
+        for (let dj = -R; dj <= R; dj++) for (let di = -R; di <= R; di++) { const ii = sc + di, jj = sj + dj; if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue; const k = jj * nx + ii; if (!bits[k]) continue; if (dist[k] > bd) { bd = dist[k]; best = k; } }
         if (best >= 0) { const s = { x: -bx2 + (best % nx) * cell, z: -bz2 + ((best / nx) | 0) * cell }; level.spawnStart.x = s.x; level.spawnStart.z = s.z; if (this._streetSpawn) { this._streetSpawn.x = s.x; this._streetSpawn.z = s.z; } }
       }
     }

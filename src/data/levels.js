@@ -141,7 +141,10 @@ export function cityStageLevel() {
   return {
     id: 'city', B: 58, bounds: { hx, hz }, harvest: true,
     mapFit: { normalize: 120, walkTop: 6 },
-    spawnStart: { x: 0, z: 40 },
+    // spawn at the map's open central plaza (measured walkable centroid) — the
+    // guessed edge coord snapped to a cramped corner. Anchors below are spread
+    // across the (nearly map-wide) walkable area; _snapAnchors keeps reachable ones.
+    spawnStart: { x: 5, z: -1 },
     walls: [], platforms: [], covers: [],
     cores: [{ x: -30, z: -12 }, { x: 30, z: -14 }],   // hack targets, opposite ends
     shop: { x: 16, z: 22 },
