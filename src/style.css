@@ -163,9 +163,9 @@ body.touch #hudHint { display:none !important; }
    always-on HUD button is hidden. (Inventory / Tech Tree stay.) */
 #btnArsenal { display:none !important; }
 
-/* Home hero paces along the bottom strip; hide on short screens where it would
-   crowd the stacked content. */
-@media (max-height: 560px) { #homeHero { display: none !important; } }
+/* Home hero paces along the bottom strip. On short/landscape phones it stays
+   visible as a shorter background strip (behind the CTAs, pointer-events:none). */
+@media (max-height: 560px) { #homeHero { height: min(34vh, 190px) !important; } }
 
 /* Loot pickup chips (recent drops, bottom-left) */
 .loot-chip { display:flex; align-items:center; gap:9px;
@@ -272,20 +272,21 @@ body.touch #hudHint { display:none !important; }
   .ctrl-pill { padding: 8px 12px; }
   .ctrl-lbl { font-size: 10px; }
 }
-/* Landscape phones: keep comfortable spacing but guarantee the whole thing
-   scrolls so the Deploy button + footer are never clipped. */
+/* Landscape phones: compact everything so the essential block (title + Deploy +
+   Skip) fits WITHOUT scrolling, and the hero showcase stays visible behind. We
+   drop the long description + control hints (they're the height hogs) and centre
+   the rest. */
 @media (orientation: landscape) and (max-height: 560px) {
-  /* top-align + generous top padding so the title is never clipped; everything
-     below scrolls. */
-  #startOverlay { justify-content: flex-start !important; gap: 9px !important;
-    overflow-y: auto !important;
-    padding: calc(20px + env(safe-area-inset-top)) 20px 44px !important; }
-  #startOverlay h1 { font-size: clamp(28px, 8vh, 52px) !important; }
+  #startOverlay { justify-content: center !important; gap: 8px !important;
+    overflow: hidden !important;
+    padding: calc(12px + env(safe-area-inset-top)) 20px calc(12px + env(safe-area-inset-bottom)) !important; }
+  #startOverlay h1 { font-size: clamp(26px, 7.5vh, 46px) !important; }
   #startOverlay > div:first-of-type { margin-top: 0 !important; }
-  #startOverlay p { font-size: 12.5px !important; max-width: 640px !important; line-height: 1.4 !important; }
+  #startOverlay p { display: none !important; }          /* description: hide to free vertical space */
+  .home-controls { display: none !important; }            /* control-summary line: hide on phones */
   #btnStart { padding: 11px 38px !important; font-size: 16px !important; }
-  #homeKbdControls { display: none !important; } /* keyboard hints irrelevant on a phone; frees vertical space */
-  #bottomToasts { bottom: calc(8px + env(safe-area-inset-bottom)) !important; }
+  #homeKbdControls { display: none !important; }
+  #bottomToasts { bottom: calc(6px + env(safe-area-inset-bottom)) !important; }
 }
 
 /* Panels ------------------------------------------------------------------- */

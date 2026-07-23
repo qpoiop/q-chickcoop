@@ -23,18 +23,21 @@ import { ASSETS } from './assets.js';
 // TUTORIAL = a small, clean tiled training bay. Compact; just teaches the
 // basics (move / fire / dash / pickup / fight), then hands off to the city.
 export function tutorialLevel() {
-  const hx = 24, hz = 18;
+  const hx = 26, hz = 20;
   return {
-    id: 'tutorial', B: 24, bounds: { hx, hz }, arena: true, lavaRing: true,
-    floorColor: 0x2c3644, gridColor1: 0x4f7c92, gridColor2: 0x26313c, accent: 0x35e0d0, edgeColor: 0x35e0d0,
-    spawnStart: { x: 0, z: 8 },
-    walls: [], platforms: [], covers: [],
-    cores: [{ x: 9, z: 2 }],  // workbench to hack (tutorial HACK step)
-    portal: { x: 0, z: -13, to: 'main' }, // exit portal (tutorial's final step)
-    spawns: [[-18, -10], [18, -10], [0, -14], [-18, 4], [18, 4]],
-    crates: [[-9, 2]],      // salvage chest to open (tutorial OPEN step)
-    fog: { color: 0x0c1218, near: 55, far: 150 }, bg: 0x141c26,
-    light: { hemi: 0.75, dir: 1.6 },
+    id: 'tutorial', B: 26, bounds: { hx, hz }, arena: true, lavaRing: true,
+    // a clean, warmly-lit training yard: teal energy grid + amber boundary, a few
+    // accent pillars for cover so it reads as a place, not an empty plane.
+    floorColor: 0x243244, gridColor1: 0x5a86a0, gridColor2: 0x2a3648, accent: 0x35e0d0, edgeColor: 0xffb84a,
+    spawnStart: { x: 0, z: 10 },
+    walls: [], platforms: [],
+    covers: [[-14, -2], [14, -2], [-8, -12], [8, -12]],   // glowing accent pillars (cover)
+    cores: [{ x: 11, z: 3 }],  // workbench to hack (tutorial HACK step)
+    portal: { x: 0, z: -15, to: 'main' }, // exit portal (tutorial's final step)
+    spawns: [[-20, -12], [20, -12], [0, -16], [-20, 5], [20, 5]],
+    crates: [[-11, 3]],      // salvage chest to open (tutorial OPEN step)
+    fog: { color: 0x0c1218, near: 60, far: 160 }, bg: 0x161f2a,
+    light: { hemi: 0.9, dir: 1.85 },
   };
 }
 
