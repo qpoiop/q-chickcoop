@@ -160,8 +160,9 @@ export function cityStageLevel() {
     portal: { x: 11, z: 41, to: 'boss' },             // was on a rooftop y=3.3 → probe-picked clear ground, far from spawn
     crates: [[-18, 10], [22, 6], [-8, -20], [12, -28], [-1, 56], [30, 20]],  // was [-28,18] under a building (topmost y=6.2) → probe-picked open ground
     spawns: [[-46, -38], [46, -38], [-46, 34], [46, 34], [0, -48], [-50, 0], [50, 0]],
-    fog: { color: 0x0e141c, near: 120, far: 380 }, bg: 0x161d28,
-    light: { hemi: 1.1, dir: 2.2 },
+    fog: { color: 0x16202c, near: 130, far: 420 }, bg: 0x24303f,
+    exposure: 1.4,   // city read too dark (avg luminance ~34 vs forest ~57; 53% near-black)
+    light: { hemi: 1.9, dir: 3.2 },
   };
 }
 

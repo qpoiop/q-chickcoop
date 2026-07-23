@@ -43,6 +43,9 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] 시티맵 너무 어두움 — 캔버스 평균 휘도 측정: avgLum 34(숲 57), near-black
+  53%. exposure 1.4 + light hemi1.1→1.9/dir2.2→3.2 + 밝은 fog/bg. 재측정
+  avgLum 51.5, near-black 36%, blowout 0 = 숲과 비슷·읽을 만함. (측정법 MAP_GUIDE.)
 - [x] **시티** 코어B/포탈이 지붕 위에 박혀 안 보임 — probe로 확인: coreB (44,-13)
   y=4.8, portal (0,-44) y=3.3 = 둘 다 elevated plane(지붕) 위 클리핑. (유저의
   "코어B/포탈 안 보임"이 이 시티 배치였음 — 앞서 숲 것만 보고 성급히 닫았던 것 정정.)
