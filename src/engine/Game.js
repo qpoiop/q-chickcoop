@@ -209,7 +209,7 @@ export class Game {
       if (L.lavaRing) {
         const col = L.edgeColor || 0xff5a1e;
         const bx = (L.bounds ? L.bounds.hx : L.B), bz = (L.bounds ? L.bounds.hz : L.B);
-        const edge = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.08, z); g.add(m); };
+        const edge = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), this._fxMat(col, 0.6)); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.08, z); g.add(m); };
         const t = 5;
         edge(bx * 2 + t * 2, t, 0, -bz - t / 2); edge(bx * 2 + t * 2, t, 0, bz + t / 2);
         edge(t, bz * 2, -bx - t / 2, 0); edge(t, bz * 2, bx + t / 2, 0);
@@ -370,8 +370,8 @@ export class Game {
         color: conf.color,
         ring: new THREE.MeshStandardMaterial({ color: conf.color, emissive: conf.color, emissiveIntensity: 1.4 }),
         icon: new THREE.MeshBasicMaterial({ map: this._iconTexture(conf.glyph, conf.color), transparent: true, side: THREE.DoubleSide }),
-        beam: new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }),
-        gring: new THREE.MeshBasicMaterial({ color: conf.color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }),
+        beam: this._fxMat(conf.color, 0.28),
+        gring: this._fxMat(conf.color, 0.5, { side: true }),
       };
     }
     return { geo: this._dropGeo, mat: this._dropMat[kind] };
@@ -416,11 +416,26 @@ export class Game {
   // A glowing "interact here" ground ring (additive ring + soft inner disc). Shared
   // by cores/chests/shop so every interactable reads the same way. Returns a group
   // (scale-pulsed by the interact animation).
+  // Additive, transparent, depth-write-off material — the standard glow/FX look
+  // that was copy-pasted across every ring / beam / halo / muzzle. `side` = draw
+  // both faces (flat ground decals), `tone` = tone-mapped (false to punch past bloom).
+  _fxMat(color, opacity = 1, { side = false, tone = true } = {}) {
+    return new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending, side: side ? THREE.DoubleSide : THREE.FrontSide, toneMapped: tone });
+  }
+
+  // Expanding ground shockwave ring that fades as it grows (fxSprites contract).
+  _burstRing(pos, color, { inner = 0.6, outer = 1.0, seg = 40, life = 0.6, grow = 7, opacity = 0.9, y = 0.12 } = {}) {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(inner, outer, seg), this._fxMat(color, opacity, { side: true }));
+    ring.rotation.x = -Math.PI / 2; ring.position.set(pos.x, y, pos.z);
+    ring.userData = { life, max: life, grow }; this.fxSprites.push(ring); this.scene.add(ring);
+    return ring;
+  }
+
   _beaconRing(color, r) {
     const grp = new THREE.Group();
-    const ring = new THREE.Mesh(new THREE.RingGeometry(r * 0.8, r, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r * 0.8, r, 44), this._fxMat(color, 0.6, { side: true }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; grp.add(ring);
-    const disc = new THREE.Mesh(new THREE.CircleGeometry(r * 0.8, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.12, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(r * 0.8, 44), this._fxMat(color, 0.12, { side: true }));
     disc.rotation.x = -Math.PI / 2; disc.position.y = 0.05; grp.add(disc);
     return grp;
   }
@@ -439,7 +454,7 @@ export class Game {
       // procedural fallback ring/swirl (only if the model failed to load)
       ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.26, 14, 44), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.9, metalness: 0.4, roughness: 0.3 }));
       ring.position.y = 2.5; grp.add(ring);
-      swirl = new THREE.Mesh(new THREE.CircleGeometry(2.0, 44), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.34, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      swirl = new THREE.Mesh(new THREE.CircleGeometry(2.0, 44), this._fxMat(color, 0.34, { side: true }));
       swirl.position.y = 2.5; grp.add(swirl); swirl2 = swirl.clone(); swirl2.rotation.y = Math.PI; grp.add(swirl2);
     }
     // The beacon must read from the OVERHEAD camera. Two past bugs killed it:
@@ -449,7 +464,7 @@ export class Game {
     // on top (depthTest off + high renderOrder) so terrain/workbench can't hide them.
     // depthTest ON: trees/buildings naturally occlude it (semi-transparent, NOT a
     // solid white overlay drawn on top). Raised ~1.2u so uneven ground can't bury it.
-    const flat = (op) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false });
+    const flat = (op) => this._fxMat(color, op, { side: true, tone: false });
     const disc = new THREE.Mesh(new THREE.CircleGeometry(3.2, 48), flat(0.3));
     disc.rotation.x = -Math.PI / 2; disc.position.y = 1.15; grp.add(disc);
     const gring = new THREE.Mesh(new THREE.RingGeometry(3.0, 4.1, 56), flat(0.9));
@@ -555,7 +570,7 @@ export class Game {
     const sp = (ov && ov.map === this.mapId) ? ov : ((this.L && this.L.spawnStart) ? this.L.spawnStart : { x: 0, z: 34 });
     p.position.set(sp.x, 0, sp.z); this.scene.add(p); this.player = p;
 
-    this.muzzle = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    this.muzzle = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), this._fxMat(0xffffff, 0));
     this.muzzle.rotation.x = -Math.PI / 2; aimG.add(this.muzzle); this.muzzle.position.set(0, 1.05, 2.1);
     this.gunLight = new THREE.PointLight(0x7ff2e8, 0, 10); this.gunLight.position.set(0, 1.2, 1.6); aimG.add(this.gunLight);
 
@@ -1276,7 +1291,7 @@ export class Game {
     } else if (bt.type === 'orb') {
       const size = bt.size || 1.1;
       b = new THREE.Mesh(new THREE.SphereGeometry(size, 18, 18), new THREE.MeshStandardMaterial({ color: bt.color || '#1a1030', emissive: 0x2a1050, emissiveIntensity: 0.8, roughness: 0.25, metalness: 0.4 }));
-      const halo = new THREE.Mesh(new THREE.SphereGeometry(size * 1.35, 14, 14), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const halo = new THREE.Mesh(new THREE.SphereGeometry(size * 1.35, 14, 14), this._fxMat(col, 0.3));
       b.add(halo);
     } else if (bt.type === 'beam') {
       b = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 2.2, 6), new THREE.MeshBasicMaterial({ color: crit ? 0xffffff : col }));
@@ -1390,7 +1405,7 @@ export class Game {
   _makeTeleRing() {
     if (!this._teleGeo) {
       this._teleGeo = new THREE.RingGeometry(0.82, 1.0, 32);
-      this._teleMat = new THREE.MeshBasicMaterial({ color: 0xff2d55, transparent: true, opacity: 0.6, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+      this._teleMat = this._fxMat(0xff2d55, 0.6, { side: true });
     }
     const tr = new THREE.Mesh(this._teleGeo, this._teleMat);
     tr.rotation.x = -Math.PI / 2; tr.position.y = 0.06; tr.visible = false;
@@ -1465,12 +1480,7 @@ export class Game {
   _stormFX(pos) {
     // Procedural boss-entrance shockwave (the storm GLB was never shipped): a few
     // expanding additive rings + a spark burst at the boss's feet.
-    for (let k = 0; k < 3; k++) {
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.6, 1.0, 40), new THREE.MeshBasicMaterial({ color: k ? 0xff7a5c : 0xffb03b, transparent: true, opacity: 0.9, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-      ring.rotation.x = -Math.PI / 2; ring.position.set(pos.x, 0.15 + k * 0.05, pos.z);
-      const life = 0.7 + k * 0.15; ring.userData = { life, max: life, grow: 10 + k * 6 };
-      this.fxSprites.push(ring); this.scene.add(ring);
-    }
+    for (let k = 0; k < 3; k++) this._burstRing(pos, k ? 0xff7a5c : 0xffb03b, { life: 0.7 + k * 0.15, grow: 10 + k * 6, y: 0.15 + k * 0.05 });
     this._impact(new THREE.Vector3(pos.x, 1.2, pos.z), 0xff5533, 26, 7);
   }
   _pulse(el, to, ms) { if (!el) return; el.style.opacity = to; setTimeout(() => { el.style.opacity = 0; }, ms); }
@@ -1508,7 +1518,7 @@ export class Game {
     const b = this.player.userData.body;
     const geo = b ? b.geometry : (this._ghostGeo || (this._ghostGeo = new THREE.CapsuleGeometry(0.5, (CONFIG.player.height || 1.9) * 0.5, 4, 8)));
     const y = b ? 1.1 : (CONFIG.player.height || 1.9) * 0.55;
-    const gm = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const gm = new THREE.Mesh(geo, this._fxMat(0x35e0d0, 0.45));
     gm.position.copy(this.player.position); gm.position.y = y; gm.rotation.y = this.bodyFace || 0;
     gm.userData = { life: 0.3 }; this.scene.add(gm); this.ghosts.push(gm);
   }
@@ -2220,8 +2230,7 @@ export class Game {
   // Level-up world burst: expanding green ring + spark shower at the player.
   _levelBurst() {
     if (!this.player) return; const p = this.player.position;
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.6, 1.0, 40), new THREE.MeshBasicMaterial({ color: 0x59ff9d, transparent: true, opacity: 0.95, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
-    ring.rotation.x = -Math.PI / 2; ring.position.set(p.x, 0.12, p.z); ring.userData = { life: 0.6, max: 0.6, grow: 7 }; this.fxSprites.push(ring); this.scene.add(ring);
+    this._burstRing(p, 0x59ff9d, { life: 0.6, grow: 7, opacity: 0.95 });
     this._impact(new THREE.Vector3(p.x, 1, p.z), 0x59ff9d, 26, 7);
   }
 
