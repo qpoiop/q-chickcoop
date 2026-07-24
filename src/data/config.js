@@ -41,7 +41,7 @@ export const CONFIG = {
 
   // Farming phase before the boss (main map): survive/loot for `farmTime` sec, then
   // you're sent straight to the boss room.
-  farmTime: 180,
+  farmTime: 60,
 
   // Difficulty multipliers (picked on the home screen). Scales enemy hp / damage.
   difficulty: {

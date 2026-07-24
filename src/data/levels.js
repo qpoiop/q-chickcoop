@@ -84,8 +84,9 @@ export function cityStageLevel() {
     floorColor: 0x263349, gridColor1: 0x5a7ba0, gridColor2: 0x2c3d56, accent: 0x35e0d0, edgeColor: 0xffb84a,
     spawnStart: { x: 0, z: 54 },                      // START at the near edge, not the centre
     walls: [], platforms: [], covers: [], cores: [],
-    shop: { x: 24, z: 46 },                           // by the entrance — gear up before pushing in
-    crates: [[-24, 32], [22, 14], [-14, -16], [16, -46], [0, -30]],
+    shop: { x: -28, z: -54 },                         // top border (far edge)
+    portal: { x: 0, z: -56, to: 'boss' },             // always open — enter the boss any time (or wait out the timer)
+    crates: [[-24, 32], [22, 14], [-14, -16], [16, -46], [24, -30]],
     // spawns spread DOWN the lane (ahead of the advancing player) so combat is
     // continuous as you push forward — not a single perimeter ring.
     spawns: [[-26, 34], [26, 34], [-28, 8], [28, 8], [-26, -20], [26, -20], [0, -40], [-24, -50], [24, -50]],
