@@ -1966,7 +1966,7 @@ export class Game {
         this.scene.remove(e); this.enemies.splice(i, 1); this.fx.shake = Math.min(1, this.fx.shake + (u.tier === 1 ? 0.28 : 0.12)); this.fx.freeze = Math.max(this.fx.freeze, u.tier === 1 ? 0.07 : 0.035); continue;
       }
     }
-    if (dmgTaken > 0 && this.game.hurtT <= 0 && fx.iframe <= 0) { this.state.hp -= dmgTaken; this.game.hurtT = 0.6; this._flash(); this.audio.hurt(); this.fx.shake = Math.min(1, this.fx.shake + 0.35); this.fx.freeze = Math.max(this.fx.freeze, 0.05); this.fx.hitPunch = 1; this._showHitDir(); }
+    if (dmgTaken > 0 && this.game.hurtT <= 0 && fx.iframe <= 0) { this.state.hp -= dmgTaken; this.game.hurtT = CONFIG.player.hitCd; this._flash(); this.audio.hurt(); this.fx.shake = Math.min(1, this.fx.shake + 0.35); this.fx.freeze = Math.max(this.fx.freeze, 0.05); this.fx.hitPunch = 1; this._showHitDir(); }
     this.game.hurtT = Math.max(0, this.game.hurtT - rdt);
     if (md.regen > 0 && this.state.hp < this.state.maxHp) this.state.hp = Math.min(this.state.maxHp, this.state.hp + md.regen * dt);
     const lr = this.dom.low; if (lr) lr.style.opacity = this.state.hp / this.state.maxHp < 0.3 ? (0.4 + 0.4 * Math.sin(this.state.time * 6)) : 0;
@@ -1996,7 +1996,7 @@ export class Game {
   _bossHitPlayer(dmg, fromPos) {
     if (this.game.hurtT > 0 || this.fx.iframe > 0 || this.game.grace > 0) return;
     const md = this._mods();
-    this.state.hp -= dmg * (1 - md.armor); this.game.hurtT = 0.6;
+    this.state.hp -= dmg * (1 - md.armor); this.game.hurtT = CONFIG.player.hitCd;
     this._flash(); this.audio.hurt(); this.fx.shake = Math.min(1, this.fx.shake + 0.4); this.fx.freeze = Math.max(this.fx.freeze, 0.05); this.fx.hitPunch = 1;
     if (fromPos) { this._hitFrom = fromPos.clone ? fromPos.clone() : new THREE.Vector3(fromPos.x, 0, fromPos.z); this._showHitDir(); }
     if (this.state.hp <= 0) { this.state.hp = 0; this._end(); }
@@ -2009,8 +2009,8 @@ export class Game {
     const pickR = 4 * md.pickup, pull = 16;
     const P = this._pickVec || (this._pickVec = new THREE.Vector3()); // reused scratch — no per-pickup alloc
     const pLife = CONFIG.drops.pickupLife;
-    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; const age = this.state.time - o.userData.born; if (age > pLife) { this.scene.remove(o); this.orbs.splice(i, 1); continue; } if (age > pLife - 1) o.scale.setScalar(Math.max(0.05, pLife - age)); o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = P.copy(this.player.position).sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
-    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; const age = this.state.time - c.userData.born; if (age > pLife) { this.scene.remove(c); this.coins.splice(i, 1); continue; } if (age > pLife - 1) c.scale.setScalar(Math.max(0.05, pLife - age)); c.rotation.z += dt * 5; const to = P.copy(this.player.position).sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.addScaledVector(to.normalize(), pull * dt); if (d < 1.3) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
+    for (let i = this.orbs.length - 1; i >= 0; i--) { const o = this.orbs[i]; const age = this.state.time - o.userData.born; if (age > pLife) { this.scene.remove(o); this.orbs.splice(i, 1); continue; } if (age > pLife - 1) o.scale.setScalar(Math.max(0.05, pLife - age)); o.rotation.y += dt * 3; o.position.y = 0.7 + Math.sin(this.state.time * 4 + i) * 0.1; const to = P.copy(this.player.position).sub(o.position); to.y = 0; const d = to.length(); if (d < pickR) o.position.addScaledVector(to.normalize(), pull * dt); if (d < CONFIG.drops.grab) { this._gainXp(o.userData.xp); this.scene.remove(o); this.orbs.splice(i, 1); } }
+    for (let i = this.coins.length - 1; i >= 0; i--) { const c = this.coins[i]; const age = this.state.time - c.userData.born; if (age > pLife) { this.scene.remove(c); this.coins.splice(i, 1); continue; } if (age > pLife - 1) c.scale.setScalar(Math.max(0.05, pLife - age)); c.rotation.z += dt * 5; const to = P.copy(this.player.position).sub(c.position); to.y = 0; const d = to.length(); if (d < pickR) c.position.addScaledVector(to.normalize(), pull * dt); if (d < CONFIG.drops.grab) { this.state.gold += c.userData.gold; this.scene.remove(c); this.coins.splice(i, 1); } }
     const pr2 = 4 * md.pickup;
     for (let i = this.itemDrops.length - 1; i >= 0; i--) {
       const it = this.itemDrops[i]; const u = it.userData; u.life -= dt; u.ring.rotation.z += dt * 1.6; it.position.y = Math.sin(this.state.time * 2 + u.ph) * 0.12;
