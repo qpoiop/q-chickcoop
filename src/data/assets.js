@@ -42,8 +42,7 @@ export const ASSETS = {
     portal:    p('tools/desert_portal.glb'),
   },
 
-  // Level geometry. (city = first combat map, forestOpen = boss arena)
-  forestOpen: p('scene/low_poly_scene_forest_waterfall.glb'), // boss arena
+  // All maps are procedural arenas now (model:null) — no scene GLBs.
 
   // Audio
   bgm: p('bgm/leberch-comedy-cartoon-375836.mp3'),

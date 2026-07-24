@@ -44,28 +44,25 @@ export function tutorialLevel() {
   };
 }
 
-// BOSS / high-risk = the WATERFALL open forest (normalize pipeline, ~1:1 scale).
-// Guide anchors: Table_round spawn, Fountain (round → boss ring), Store shop,
-// Dumpster salvage. This map is texture-less flat-colour, so it wants brighter,
-// cooler light. Exit has no anchor → extraction placed manually near spawn.
+// BOSS = a menacing procedural colosseum (model:null, arena:true). The
+// forest_waterfall GLB was replaced for the same reason as the city map: as a
+// decorative scene only ~9% of it was walkable and harvested collision boxes
+// cramped movement — bad for a boss duel that needs open room to kite and dodge
+// telegraphs. A flat open arena gives the fight the space it needs.
 export function waterfallLevel() {
-  // scaled up ×2 (normalize 120→240, bounds ×2): the arena was way too small —
-  // you toured it in a few steps. Anchors below are the guide coords ×2.
-  const hx = 118, hz = 118;
+  const B = 54;
   return {
-    id: 'boss', B: 118, bounds: { hx, hz }, harvest: true,
-    // Town_plane is the play surface here, so bound play to the content bbox (+15)
-    // instead of density-trimming (which made extraction unreachable).
-    mapFit: { normalize: 240, walkTop: 12, boundToContent: 15 },
-    spawnStart: { x: -9.8, z: 10.8 }, safe: { x: -9.8, z: 10.8, r: 10 },
+    id: 'boss', B, bounds: { hx: B, hz: B }, arena: true, lavaRing: true,
+    floorColor: 0x241a2e, gridColor1: 0x5a3a7a, gridColor2: 0x2a1e38, accent: 0xc06bff, edgeColor: 0xff2d55,
+    spawnStart: { x: 0, z: 40 }, safe: { x: 0, z: 40, r: 8 },   // enter at the edge; a small safe pocket (no mob spawns)
     walls: [], platforms: [], covers: [], cores: [],
-    boss: true, bossSpawn: { x: -12.8, z: -4.4 },   // Fountain
-    extractionAfterBoss: { x: -9.8, z: 10.8 },        // back at the table (spawn)
-    shop: { x: -11.6, z: 22.4 },                      // Store
-    crates: [[-14, 23.2], [-25.6, -32.2], [-47, 5.4], [-6.6, 17.2]],
-    spawns: [[-40, -16], [20, -32], [-48, 6], [8, 20], [-26, -32]],
-    fog: { color: 0x0c1418, near: 160, far: 520 }, bg: 0x14202a,
-    light: { hemi: 1.15, dir: 2.3 },
+    boss: true, bossSpawn: { x: 0, z: -8 },            // boss holds the arena centre
+    extractionAfterBoss: { x: 0, z: 44 },              // by the entry edge
+    shop: { x: -38, z: 30 },
+    crates: [[-30, -20], [30, -20], [-22, 12], [22, 12], [0, -32]],
+    spawns: [[-48, -48], [48, -48], [-48, 48], [48, 48], [0, -50], [-50, 0], [50, 0]],  // perimeter adds
+    fog: { color: 0x140a1a, near: 140, far: 360 }, bg: 0x1a1022,
+    light: { hemi: 0.9, dir: 2.0 },
   };
 }
 
@@ -99,7 +96,7 @@ export function cityStageLevel() {
 export const MAPS = {
   tutorial: { id: 'tutorial', model: null, build: tutorialLevel },       // small tiled bay
   city: { id: 'city', model: null, build: cityStageLevel },     // first combat map — procedural arena
-  boss: { id: 'boss', model: ASSETS.forestOpen, build: waterfallLevel },     // waterfall forest GLB
+  boss: { id: 'boss', model: null, build: waterfallLevel },     // boss colosseum — procedural arena
 };
 
 // Procedural fallback arena (used only if a map GLB fails to load).
