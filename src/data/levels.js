@@ -44,52 +44,6 @@ export function tutorialLevel() {
   };
 }
 
-// MAIN = the URBAN city map (chicken_gun_fruzer city GLB). It is a long avenue
-// (~125×569 in model space, centered (5,-220), floor y=-18.6); a hand-tuned
-// transform drops a playable section onto the bounds. Building collision is
-// harvested (size-capped).
-export function cityLevel() {
-  const hx = 62, hz = 62;
-  return {
-    id: 'main', B: 62, bounds: { hx, hz }, harvest: true,
-    // Fit to the BUILDING block (House/Bank/Church cluster: center (6,-4.6),
-    // ~123×137, floor y=-18.6). scale/center/minY are MODEL-space; bumping the
-    // scale grows the whole city (wider streets to roam) — the ground raycast
-    // re-snaps Y afterwards. Meme props (Shrek head etc.) are stripped from the GLB.
-    mapFit: { scale: 1.5, center: { x: 6, z: -4.6 }, minY: -18.6 },
-    spawnStart: { x: 0, z: 48 },
-    walls: [], platforms: [], covers: [],
-    cores: [{ x: -34, z: -18 }, { x: 38, z: -16 }],
-    shop: { x: 18, z: 30 },   // walk up to the shop stall to buy weapons
-    portal: { x: 0, z: -50, to: 'boss' },
-    spawns: [[-54, -46], [54, -46], [-54, 40], [54, 40], [0, -56], [-58, 0], [58, 0]],
-    crates: [[-26, 16], [30, -12], [-10, -22], [22, 20], [6, 6], [-42, -6], [46, 10]],
-    fog: { color: 0x0a0e14, near: 110, far: 340 }, bg: 0x1a2230,
-    light: { hemi: 0.95, dir: 2.05 },
-  };
-}
-
-// --- BOSS: a menacing violet colosseum (pure procedural arena, no heavy GLB
-// so the portal transition is instant). Ring of pillars + red energy moat. ---
-export function bossArenaLevel() {
-  const B = 46;
-  const ring = [];
-  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; ring.push([Math.cos(a) * 26, Math.sin(a) * 26]); }
-  for (let i = 0; i < 6; i++) { const a = (i + 0.5) / 6 * Math.PI * 2; ring.push([Math.cos(a) * 13, Math.sin(a) * 13]); }
-  return {
-    id: 'boss', B, bounds: { hx: B, hz: B }, arena: true, lavaRing: true,
-    floorColor: 0x241a2e, gridColor1: 0x5a3a7a, gridColor2: 0x2a1e38, accent: 0xc06bff, edgeColor: 0xff2d55,
-    spawnStart: { x: 0, z: 34 }, safe: { x: 0, z: 34, r: 7 },
-    walls: [], covers: [], platforms: [], cores: [],   // no crystal pillars (removed per feedback)
-    boss: true, bossSpawn: { x: 0, z: -8 },
-    extractionAfterBoss: { x: 0, z: 38 },
-    spawns: [[-40, -34], [40, -34], [-40, 24], [40, 24], [0, -42], [-42, 0], [42, 0]],
-    crates: [[-26, 8], [26, 8], [-16, -20], [16, -20], [0, 10]],
-    fog: { color: 0x140a1a, near: 110, far: 340 }, bg: 0x1a1022,
-    light: { hemi: 0.6, dir: 1.6 },
-  };
-}
-
 // BOSS / high-risk = the WATERFALL open forest (normalize pipeline, ~1:1 scale).
 // Guide anchors: Table_round spawn, Fountain (round → boss ring), Store shop,
 // Dumpster salvage. This map is texture-less flat-colour, so it wants brighter,
