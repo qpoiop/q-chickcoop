@@ -65,9 +65,12 @@
   (1) FX 재질/링: additive 재질 스펙 12곳 복붙 + 확장 링 FX 중복 → `_fxMat`/`_burstRing`
   헬퍼로 통합(렌더 무변경). (2) 테마 색: `0x35e0d0`(13회) 등 엔진 hex 리터럴을
   `COLORS`(data/config.js) 팔레트로 추출, 전 엔진 참조 `COLORS.<name>`으로(값 동일, 렌더
-  무변경). 검증: 빌드 그린, 색 동일 렌더(#35e0d0 유지), 콘솔 에러 0. **잔여 후보: 게임
-  느낌 매직넘버(fx.shake/freeze/hurtT 등) → CONFIG, 인터랙터블 생성 중복(core/crate/shop),
-  2000줄 Game.js 모듈 분리.** 동작 안 바뀌게 검증하며 계속.
+  무변경). 검증: 빌드 그린, 색 동일 렌더(#35e0d0 유지), 콘솔 에러 0.
+  (3) 전투/픽업 상수: `hurtT=0.6`(피격 무적창, 2곳)→`CONFIG.player.hitCd`,
+  orb/coin 획득거리 `d<1.3`(2곳)→`CONFIG.drops.grab`. 값 동일, 동작 무변경.
+  **잔여 후보: 인터랙터블 생성 스켈레톤은 dedup ROI 낮음(모델/비콘 다 다름) — 보류.
+  fx.shake/freeze는 이벤트별 고유값(중복 아님) — 필요시 개별. 2000줄 Game.js 모듈 분리(대공사,
+  신중히).** 동작 안 바뀌게 검증하며 계속.
 - [x] **lightning 이펙트 GLB 없음 → 부팅마다 404** — `assets.fxModels`가
   `effect/lightningv2.glb`/`lightningv1.glb` 참조하나 `public/effect/` 자체가 없음.
   bolt는 완전 미사용(어떤 무기도 `fx:'lightning'` 안 씀), storm은 보스 등장 `_stormFX`가
