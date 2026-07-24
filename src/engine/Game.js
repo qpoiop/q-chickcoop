@@ -1740,7 +1740,9 @@ export class Game {
     // spawns
     this.game.grace = Math.max(0, (this.game.grace || 0) - dt);
     this.game.spawnT -= dt; const rate = Math.max(0.3, 1.3 - this.state.time / 80);
-    if (this.game.grace <= 0 && this.game.spawnT <= 0 && this.enemies.length < CONFIG.spawn.maxEnemies) {
+    // While a boss is alive, cap concurrent enemies low so its telegraphs read.
+    const enemyCap = this.state.bossActive ? CONFIG.spawn.bossMaxEnemies : CONFIG.spawn.maxEnemies;
+    if (this.game.grace <= 0 && this.game.spawnT <= 0 && this.enemies.length < enemyCap) {
       this._spawnEnemy(); this.game.spawnT = rate;
       // Wave rhythm: after a burst of `waveSize` spawns, a short lull so the player
       // gets breathing room to reposition / engage the tech tree (was relentless).
