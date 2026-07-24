@@ -115,31 +115,6 @@ export function waterfallLevel() {
   };
 }
 
-// MAIN = the MYSTICAL FOREST (main farming stage). Loaded with the normalize
-// pipeline (scale the long axis to 120, centre on origin); anchor coords below are
-// in that normalized space, taken from the map guide (FireCamp/Temple/Pentagramme…).
-// Collision comes from the walkable grid (trees/rocks read as tall → non-walkable).
-export function mysticForestLevel() {
-  // scaled up ×1.5 (normalize 120→180, bounds 58→66): the playable content was a
-  // tiny central strip. All anchors below are the guide coords ×1.5.
-  const hx = 66, hz = 66;
-  return {
-    id: 'main', B: 66, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 180, walkTop: 12, trimOpen: 0.9 },  // trimOpen: block the bare ground field (blue void); 0.9 = only the most-open cells, keep connecting paths
-    exposure: 1.4,    // brighter than default, but low enough that the shop top doesn't bloom out
-    spawnStart: { x: -13.8, z: -7.5 },                       // FireCamp
-    walls: [], platforms: [], covers: [],
-    // cores on OPPOSITE sides (Temple west, Mine east) so breaching both means
-    // crossing the whole map.
-    cores: [{ x: -34.7, z: 26.4 }, { x: 12.0, z: -6.0 }],    // Temple (W lab, visible), central-east lab
-    shop: { x: 2.3, z: -10.5 },                              // stall by the camp
-    portal: { x: -34.7, z: 26.4, to: 'city' },               // AT workbench A (Temple) — a visible structure, per feedback
-    crates: [[-42, 3], [-6, -36], [6, -30], [9, 12], [-39, 15]],  // probe-picked clear ground (was on a tower/rock/too far)
-    spawns: [[-27, -12], [12, -24], [-36, 6], [6, 18], [-21, -33], [24, 9], [-9, 33]],
-    fog: { color: 0x2a4636, near: 170, far: 520 }, bg: 0x36543f,
-    light: { hemi: 3.0, dir: 4.6 },   // brighter — the forest read too dark
-  };
-}
 
 // STAGE 3 = CITY-IN-NATURE (a_city_in_nature.glb — the biggest model, ~124×131
 // model units). Loaded via the normalize pipeline (long axis → 120, centred),

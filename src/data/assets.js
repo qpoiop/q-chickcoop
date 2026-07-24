@@ -47,14 +47,9 @@ export const ASSETS = {
     portal:    p('tools/desert_portal.glb'),
   },
 
-  // Level geometry.
-  cityMap:    p('scene/chicken_gun_fruzer_-_city.glb'),   // legacy urban stage
-  cityNature: p('scene/a_city_in_nature.glb'),            // stage 3 — city-in-nature (biggest model)
-  forestMain: p('scene/mystical_forest_cartoon.glb'),      // main farming forest
-  forestOpen: p('scene/low_poly_scene_forest_waterfall.glb'), // open high-risk area
-
-  // HUD showcase props
-  rawChicken: p('item/raw_chicken.glb'),   // health indicator by the HP bar
+  // Level geometry. (city = first combat map, forestOpen = boss arena)
+  cityNature: p('scene/a_city_in_nature.glb'),            // first combat map — city-in-nature (compressed)
+  forestOpen: p('scene/low_poly_scene_forest_waterfall.glb'), // boss arena
 
   // Audio
   bgm: p('bgm/leberch-comedy-cartoon-375836.mp3'),
