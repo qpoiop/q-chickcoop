@@ -87,6 +87,7 @@ function _beginCast(game, e, skill, to) {
   if (def.type === 'aoe') cast.telegraph = _ringTelegraph(game, e.position, def.radius, def.color);
   else if (def.type === 'dash') cast.telegraph = _laneTelegraph(game, e.position, to, def.range, def.width, def.color);
   else if (def.type === 'ranged') cast.telegraph = _ringTelegraph(game, e.position, 3.2, def.color);
+  else if (def.type === 'rain') cast.telegraph = _ringTelegraph(game, game.player.position, def.area, def.color); // bombardment zone
   e.userData.cast = cast;
 }
 
@@ -160,6 +161,20 @@ function _execute(game, e, c) {
     } else {
       const base = Math.atan2(c.dir.x, c.dir.z);
       for (let i = 0; i < def.count; i++) { const a = base + def.spread * (i - (def.count - 1) / 2) / ((def.count - 1) / 2 || 1); _bullet(game, origin, new THREE.Vector3(Math.sin(a), 0, Math.cos(a)), def); }
+    }
+  } else if (def.type === 'rain') {
+    // carpet bomb: a rapid staggered barrage of small blasts across the zone around
+    // the player. Reuses the meteor list (_updateMeteors detonates each on its fuse).
+    game.audio.boss(); game.fx.shake = Math.min(1, game.fx.shake + 0.3);
+    game._bossMeteors = game._bossMeteors || [];
+    const cx = game.player.position.x, cz = game.player.position.z;
+    const B = (game.L && game.L.bounds) ? game.L.bounds.hx - 4 : 40;
+    for (let i = 0; i < def.count; i++) {
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * def.area;
+      const x = Math.max(-B, Math.min(B, cx + Math.cos(a) * r));
+      const z = Math.max(-B, Math.min(B, cz + Math.sin(a) * r));
+      const tg = _ringTelegraph(game, { x, z }, def.blast, def.color);
+      game._bossMeteors.push({ tg, t: 0, dur: 0.35 + i * (def.stagger || 0.08), x, z, radius: def.blast, dmg: def.dmg, color: def.color });
     }
   }
 }

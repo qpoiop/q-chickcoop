@@ -14,7 +14,6 @@ export const TUTORIAL = [
   { text: 'FIGHT · defeat the training targets',                 textKo: '전투 · 훈련용 표적을 처치하라',              toast: '', toastKo: '', dummies: true },
   { text: 'SHOP · open the Shop and pick a weapon',              textKo: '상점 · 상점을 열고 무기를 골라라',           toast: '', toastKo: '' },
   { text: 'OPEN · crack open the salvage chest for scrap',       textKo: '상자 · 고철 상자를 열어라',                  toast: '', toastKo: '' },
-  { text: 'HACK · hold on the workbench to breach the core',     textKo: '해킹 · 워크벤치에서 홀드하여 코어를 해킹하라', toast: '', toastKo: '' },
   { text: 'UPGRADE · spend a skill point in the Tech Tree',      textKo: '강화 · 기술 트리에서 스킬 포인트를 찍어라',    toast: '', toastKo: '' },
   { text: 'PORTAL · go through the portal to the main map',      textKo: '포탈 · 포탈을 통해 메인 맵으로 이동하라',      toast: '', toastKo: '' },
 ];

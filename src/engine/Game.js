@@ -64,6 +64,7 @@ export class Game {
   // Memoized: ranks is replaced by reference on every skill buy / reset, so a
   // reference check lets the per-frame hot path skip the recompute + allocation.
   _mods() { if (this._modRanks !== this.state.ranks) { this._modRanks = this.state.ranks; this._modCache = computeModifiers(this.state.ranks); } return this._modCache; }
+  _diff() { return CONFIG.difficulty[this.diff] || CONFIG.difficulty.normal; }
   get isTouch() { return this.input ? this.input.isTouch : this._touchGuess; }
   // When the camera is flipped to the far side (camOffset.z<0), world +z reads as
   // "up-screen", so world-space movement/aim input must be negated to stay correct.
@@ -116,6 +117,7 @@ export class Game {
 
     this.enemies = []; this.bullets = []; this.enemyBullets = []; this.orbs = []; this.coins = []; this.parts = []; this.ghosts = []; this.fxSprites = []; this.dmgNums = [];
     this.aim = new THREE.Vector3(0, 0, 1); this.face = 0;
+    this.diff = 'normal'; // difficulty (picked on the home screen); scales enemy hp + player-incoming dmg
     this.vel = new THREE.Vector3(); this.ray = new THREE.Raycaster();
     this.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     this.clock = new THREE.Clock();
@@ -230,31 +232,8 @@ export class Game {
       this.obstacles.push(this._gateObs = { x: L.gate.x, z: L.gate.z, hw: gAcross ? 0.7 : gw / 2, hd: gAcross ? gw / 2 : 0.7 });
     }
 
-    // data cores — the hackable WORKBENCH (the provided lab model). No procedural
-    // crystal/marker on top; just the model + a ground light-ring rising beacon so
-    // it reads as interactable.
-    (L.cores || []).forEach((c, i) => {
-      const grp = new THREE.Group(); grp.position.set(c.x, 0, c.z);
-      grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera, not its back
-      let wbMixer = null;
-      const tm = this.toolModels && this.toolModels.workbench;
-      if (tm) {
-        const wb = cloneSkinned(tm.scene); wb.scale.setScalar(tm.fit);
-        if (tm.clips && tm.clips.length) { wbMixer = new THREE.AnimationMixer(wb); wbMixer.clipAction(tm.clips[0]).play(); wbMixer.update(0); }
-        // Ground to the real geometry bbox (measure what renders) BEFORE parenting,
-        // so the bench sits ON the floor instead of sinking — bind-pose boxes were off.
-        this._groundModel(wb); grp.add(wb);
-      } else {
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x1a2836, metalness: 0.5, roughness: 0.5 }));
-        base.position.y = 0.25; grp.add(base);
-      }
-      // interactable beacon: a glowing ground ring only (no vertical column/dome —
-      // the dome washed over the model and over-glowed). The RING is what glows.
-      const gring = this._beaconRing(COLORS.teal, 2.4);
-      grp.add(gring);
-      g.add(grp); this.obstacles.push({ x: c.x, z: c.z, hw: 1.6, hd: 1.6 });
-      this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: null, ring: null, gring, col: null, mark: null, wbMixer, active: true });
-    });
+    // (Data-core / hackable workbench removed — the main map is now a timed farming
+    // phase, no cores to breach.)
 
     // glowing map-transition portal (hidden until unlocked)
     this.portalObj = null;
@@ -264,7 +243,7 @@ export class Game {
     }
 
     // loot crates — a salvage CHEST you crack open for scrap
-    L.crates.forEach(([x, z]) => {
+    (L.crates || []).forEach(([x, z]) => {
       const grp = new THREE.Group(); grp.position.set(x, 0, z);
       grp.rotation.y = this._camFlip ? Math.PI : 0; // face the (flipped) camera
       let lid = null, lidRest = null;
@@ -322,7 +301,7 @@ export class Game {
     // hidden + non-interactable + its collider disabled until its step (see
     // _tutReveal, called from _tutAdvance).
     if (this._tut) {
-      const stepFor = { shop: 5, crate: 6, core: 7, portal: 9 };
+      const stepFor = { shop: 5, crate: 6, portal: 8 };   // HACK step removed → portal now step 8
       const cur = (this.tut && this.tut.step) || 0;
       for (const it of this.interact) {
         const s = stepFor[it.type]; if (s == null) continue;
@@ -1143,16 +1122,7 @@ export class Game {
   }
 
   _completeInteract(it) {
-    if (it.type === 'core' && !it.done) {
-      it.done = true;
-      // recolor the beacon ring group to the "breached" green
-      if (it.gring) it.gring.traverse((o) => { if (o.isMesh && o.material) o.material.color.set(COLORS.green); });
-      this.state.cores++; this._impact(it.mesh.position, COLORS.green, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
-      const need = (this.L.cores || []).length;
-      if (this.state.cores >= need) { this._activatePortal(); }
-      else { this.state.objectiveKey = 'obj.coreB'; }
-      if (this._tut && this.tut.step === 7) this._tutAdvance(); // tutorial HACK step
-    } else if (it.type === 'crate' && !it.done) {
+    if (it.type === 'crate' && !it.done) {
       it.done = true; const o = this.obstacles.find((x) => x.x === it.x && x.z === it.z); if (o) o.dead = true;
       // crack it open: play the chest's open clip once (fall back to a pop) and
       // spray scrap coins out of the lid for a tactile payout.
@@ -1221,9 +1191,10 @@ export class Game {
       if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
       if (this._dead) return;
       this._buildWorld(); this._buildPlayer(); this._validatePlacements();
+      this.game.farmT = 0;
       if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
       else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
-      else if (to === 'city') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
+      else if (level.farm) { this.state.objectiveKey = 'obj.farm'; this.game.grace = 1.5; this.game.farmT = CONFIG.farmTime; this.game.farmTo = level.farmTo || 'boss'; this._event(t('evt.farm')); }
       this.game.spawnT = 2.5; this.game.fireT = 0;
       await new Promise((r) => setTimeout(r, 260));
     } catch (err) {
@@ -1403,7 +1374,7 @@ export class Game {
     }
     const spot = this._spawnWalkable(sp[0], sp[1]);
     g.position.set(spot.x, 0, spot.z);
-    const hp = conf.hp * (1 + t / CONFIG.spawn.hpScale);
+    const hp = conf.hp * (1 + t / CONFIG.spawn.hpScale) * this._diff().hp;
     g.userData = Object.assign(g.userData || {}, {
       hp, maxHp: hp, spd: conf.spd, dmg: conf.dmg, r: conf.s + 0.35, tier,
       spin: (Math.random() - 0.5) * 3, mesh: glbMesh ? null : (g.userData.mesh || g.children[0]), mixer, glb: glbMesh, tint: conf.c,
@@ -1491,7 +1462,7 @@ export class Game {
     else { g = new THREE.Group(); const m = new THREE.Mesh(new THREE.IcosahedronGeometry(3.4, 0), new THREE.MeshStandardMaterial({ color: def.c, emissive: def.c, emissiveIntensity: 0.6, roughness: 0.4, metalness: 0.4 })); m.castShadow = true; m.position.y = 3.6; g.add(m); g.userData.mesh = m; }
     const bl = new THREE.PointLight(def.c, 2.4, 26); bl.position.set(0, 4, 0); g.add(bl);
     g.position.set(sp[0], 0, sp[1]);
-    const hp = def.hp * (1 + time / CONFIG.spawn.dmgScaleBoss);
+    const hp = def.hp * (1 + time / CONFIG.spawn.dmgScaleBoss) * this._diff().hp;
     g.userData = Object.assign(g.userData || {}, { hp, maxHp: hp, spd: def.spd, dmg: def.dmg, r: def.r, tier: 1, spin: 0, mesh: glb ? null : (g.userData.mesh || g.children[0]), mixer, glb, boss: true, tint: def.c });
     initBoss(this, g, def);
     this.scene.add(g); this.enemies.push(g); this.boss = g;
@@ -1642,7 +1613,7 @@ export class Game {
       this.state.gold = Math.max(this.state.gold, need + 10);
     }
     // Upgrade step: hand out a skill point so the Tech-Tree lesson can't soft-lock.
-    if (s === 8) this.state.skillPoints = Math.max(this.state.skillPoints, 1);
+    if (s === 7) this.state.skillPoints = Math.max(this.state.skillPoints, 1);
     if (step.dummies && !this.tut.dummied) {
       this.tut.dummied = true;
       for (let k = 0; k < 3; k++) { this._spawnEnemy(); const e = this.enemies[this.enemies.length - 1]; const a = k * 2.1; e.position.set(this.player.position.x + Math.cos(a) * 18, 0, this.player.position.z + Math.sin(a) * 18); e.userData.home = { x: e.position.x, z: e.position.z }; }
@@ -1711,6 +1682,11 @@ export class Game {
 
   _simulate(dt, rdt, md, fx) {
     this.state.time += dt;
+    // farm phase countdown → drop straight into the boss room when it runs out
+    if (this.game.farmT > 0) {
+      this.game.farmT -= dt;
+      if (this.game.farmT <= 0) { this.game.farmT = 0; this._event(t('evt.bossIn')); this._goToMap(this.game.farmTo || 'boss'); return; }
+    }
     // aim / facing
     if (!this.isTouch) {
       this.ray.setFromCamera(this.input.mouseNDC, this.cam); const hit = new THREE.Vector3();
@@ -1891,7 +1867,10 @@ export class Game {
         if (b.userData.hit.includes(e)) continue;
         if (b.position.distanceTo(e.position) < e.userData.r + 0.3) {
           e.userData.hp -= b.userData.dmg; b.userData.hit.push(e); e.userData.aggro = true;
-          this._impact(e.position, b.userData.crit ? 0xffffff : b.userData.col, b.userData.crit ? 7 : 4, 4); e.userData.hitT = 0.08; this.audio.hit();
+          const bossHit = !!e.userData.boss;
+          this._impact(e.position, b.userData.crit ? 0xffffff : b.userData.col, bossHit ? 10 : b.userData.crit ? 7 : 4, bossHit ? 6 : 4);
+          e.userData.hitT = bossHit ? 0.13 : 0.08; if (bossHit) this.fx.shake = Math.min(1, this.fx.shake + 0.03);
+          this.audio.hit();
           this._damageNumber({ x: e.position.x, y: (e.userData.r || 1) + 1, z: e.position.z }, b.userData.dmg, b.userData.crit);
           if (b.userData.pierce > 0) b.userData.pierce--; else dead = true; break;
         }
@@ -1989,7 +1968,7 @@ export class Game {
         this.scene.remove(e); this.enemies.splice(i, 1); this.fx.shake = Math.min(1, this.fx.shake + (u.tier === 1 ? 0.28 : 0.12)); this.fx.freeze = Math.max(this.fx.freeze, u.tier === 1 ? 0.07 : 0.035); continue;
       }
     }
-    if (dmgTaken > 0 && this.game.hurtT <= 0 && fx.iframe <= 0) { this.state.hp -= dmgTaken; this.game.hurtT = CONFIG.player.hitCd; this._flash(); this.audio.hurt(); this.fx.shake = Math.min(1, this.fx.shake + 0.35); this.fx.freeze = Math.max(this.fx.freeze, 0.05); this.fx.hitPunch = 1; this._showHitDir(); }
+    if (dmgTaken > 0 && this.game.hurtT <= 0 && fx.iframe <= 0) { this.state.hp -= dmgTaken * this._diff().dmg; this.game.hurtT = CONFIG.player.hitCd; this._flash(); this.audio.hurt(); this.fx.shake = Math.min(1, this.fx.shake + 0.35); this.fx.freeze = Math.max(this.fx.freeze, 0.05); this.fx.hitPunch = 1; this._showHitDir(); }
     this.game.hurtT = Math.max(0, this.game.hurtT - rdt);
     if (md.regen > 0 && this.state.hp < this.state.maxHp) this.state.hp = Math.min(this.state.maxHp, this.state.hp + md.regen * dt);
     const lr = this.dom.low; if (lr) lr.style.opacity = this.state.hp / this.state.maxHp < 0.3 ? (0.4 + 0.4 * Math.sin(this.state.time * 6)) : 0;
@@ -2019,7 +1998,7 @@ export class Game {
   _bossHitPlayer(dmg, fromPos) {
     if (this.game.hurtT > 0 || this.fx.iframe > 0 || this.game.grace > 0) return;
     const md = this._mods();
-    this.state.hp -= dmg * (1 - md.armor); this.game.hurtT = CONFIG.player.hitCd;
+    this.state.hp -= dmg * (1 - md.armor) * this._diff().dmg; this.game.hurtT = CONFIG.player.hitCd;
     this._flash(); this.audio.hurt(); this.fx.shake = Math.min(1, this.fx.shake + 0.4); this.fx.freeze = Math.max(this.fx.freeze, 0.05); this.fx.hitPunch = 1;
     if (fromPos) { this._hitFrom = fromPos.clone ? fromPos.clone() : new THREE.Vector3(fromPos.x, 0, fromPos.z); this._showHitDir(); }
     if (this.state.hp <= 0) { this.state.hp = 0; this._end(); }
@@ -2271,7 +2250,7 @@ export class Game {
     if (dHull > 0) { this.state.maxHp += dHull; this.state.hp += dHull; }
     this.audio.ui(); this.refresh();
     // Tutorial UPGRADE step completes when a skill point is spent.
-    if (this._tut && this.tut.step === 8) { this.openPanel('none'); this._tutAdvance(); }
+    if (this._tut && this.tut.step === 7) { this.openPanel('none'); this._tutAdvance(); }
   }
   pickWeapon(key) {
     const ww = this.WEAPONS[key]; const own = !!this.state.owned[key];

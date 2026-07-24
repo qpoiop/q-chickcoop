@@ -58,6 +58,11 @@ export class HUD {
     $('btnStart').onclick = () => g.start();
     $('btnRestart').onclick = () => g.restart();
     $('btnSkipTutStart').onclick = () => g.skipTutorial();
+    // difficulty picker (home)
+    const diffBtns = Array.from(document.querySelectorAll('.diff-btn'));
+    const paintDiff = () => diffBtns.forEach((b) => b.classList.toggle('sel', b.dataset.diff === g.diff));
+    diffBtns.forEach((b) => { b.onclick = () => { g.diff = b.dataset.diff; paintDiff(); }; });
+    paintDiff();
     $('hudSkipTut').onclick = () => g.skipTutorial();
     $('btnInventory').onclick = () => g.openPanel('inv');
     $('btnArsenal').onclick = () => g.openPanel('weapons');
@@ -110,8 +115,12 @@ export class HUD {
   }
 
   _objText() {
-    const k = this.g.state.objectiveKey || 'obj.coreA';
+    const k = this.g.state.objectiveKey || 'obj.farm';
     if (k.startsWith('tut:')) { const st = TUTORIAL[+k.slice(4)]; return getLang() === 'ko' ? st.textKo : st.text; }
+    if (k === 'obj.farm') {
+      const s = Math.max(0, Math.ceil(this.g.game.farmT || 0));
+      return t('obj.farm') + ' · ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
     return t(k);
   }
 

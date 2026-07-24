@@ -204,6 +204,15 @@
       <h1 style="margin:0;font-family:'Chakra Petch';font-weight:700;font-size:clamp(60px,13vw,150px);line-height:.9;letter-spacing:3px;color:#eef6fb;text-shadow:0 0 60px rgba(255,176,59,.45)">CHICK<span style="color:#ffb03b">COOP</span></h1>
     </div>
     <p data-i18n="home.desc" style="position:relative;max-width:600px;margin:0;font-size:16px;line-height:1.6;color:#c3d2de"></p>
+    <!-- difficulty selector -->
+    <div class="home-diff" style="position:relative;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap">
+      <span data-i18n="home.difficulty" style="color:#8fa3b3;font-size:13px;letter-spacing:.08em">DIFFICULTY</span>
+      <div id="diffPick" style="display:flex;gap:8px">
+        <button class="diff-btn" data-diff="easy" data-i18n="diff.easy">Easy</button>
+        <button class="diff-btn" data-diff="normal" data-i18n="diff.normal">Normal</button>
+        <button class="diff-btn" data-diff="hard" data-i18n="diff.hard">Hard</button>
+      </div>
+    </div>
     <!-- primary actions: Deploy (start) + a proper Skip-Tutorial button (not a tiny link) -->
     <div class="home-cta" style="position:relative;display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;justify-content:center;margin-top:8px">
       <button id="btnStart" data-i18n="home.deploy">Deploy</button>
