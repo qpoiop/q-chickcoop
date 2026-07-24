@@ -1244,7 +1244,7 @@ export class Game {
       if (key) { const w = this.WEAPONS[key]; this.state.owned = { ...this.state.owned, [key]: true }; this._event(t('evt.acquired', { name: locName(w) })); this.hud.pushLoot(w.icon, locName(w), w.color); }
       else { this.state.gold += 30; this._event(t('evt.scrap30')); this.hud.pushLoot('◈', '+30', '#ffb03b'); }
     } else if (kind === 'health') {
-      this.state.hp = Math.min(this.state.maxHp + Math.round(md.hp), this.state.hp + CONFIG.drops.healAmount); this._event(t('evt.hull', { n: CONFIG.drops.healAmount })); this.hud.pushLoot('✚', '+' + CONFIG.drops.healAmount, '#59ff9d');
+      this.state.hp = Math.min(this.state.maxHp, this.state.hp + CONFIG.drops.healAmount); this._event(t('evt.hull', { n: CONFIG.drops.healAmount })); this.hud.pushLoot('✚', '+' + CONFIG.drops.healAmount, '#59ff9d');
     } else { const amt = Math.ceil(20 * md.gold); this.state.gold += amt; this._event(t('evt.scrap')); this.hud.pushLoot('◈', '+' + amt, '#ffb03b'); }
     this.audio.pickup(); this.fx.shake = Math.min(0.5, this.fx.shake + 0.06); // gentle, no seizure on magnet pickups
     if (this._tut && this.tut.step === 3) this._tutAdvance();
@@ -2223,7 +2223,13 @@ export class Game {
     const cur = this.state.ranks[id] || 0; const idx = branch.nodes.indexOf(node);
     const prevOk = idx === 0 || ((this.state.ranks[branch.nodes[idx - 1].id] || 0) > 0);
     if (cur >= node.max || this.state.skillPoints < node.cost || !prevOk) return;
-    this.state.ranks = { ...this.state.ranks, [id]: cur + 1 }; this.state.skillPoints -= node.cost; this.audio.ui(); this.refresh();
+    const hullBefore = this._mods().hp;
+    this.state.ranks = { ...this.state.ranks, [id]: cur + 1 }; this.state.skillPoints -= node.cost;
+    // Reinforced Hull ('hp') raises actual max HP and grants the new hull now (like a
+    // level-up). Without this the +22/rank skill did nothing to the bar or the cap.
+    const dHull = Math.round(this._mods().hp - hullBefore);
+    if (dHull > 0) { this.state.maxHp += dHull; this.state.hp += dHull; }
+    this.audio.ui(); this.refresh();
     // Tutorial UPGRADE step completes when a skill point is spent.
     if (this._tut && this.tut.step === 8) { this.openPanel('none'); this._tutAdvance(); }
   }
