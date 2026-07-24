@@ -58,9 +58,22 @@
   waveSize7/lull2.4): 7스폰마다 2.4초 숨 돌릴 틈. 검증: gap 1.2×7→2.4 반복.
   잔여: 실기기 플레이로 lull 길이·waveSize 튜닝, 위협 텔레그래프 강화 등.
 - [ ] **구조물 내부/공간 활용** — 지붕만 보이는 건물들, 카메라/스케일 재고.
+- [ ] **lightning 이펙트 GLB 없음** — `assets.effectModels.bolt/storm`이
+  `effect/lightningv2.glb`/`lightningv1.glb`를 참조하나 `public/effect/`에 파일 없음 →
+  부팅마다 load fail(dev는 index.html 반환→JSON parse 에러 경고). fallback으로 게임은
+  정상. 조치: (a) 파일 추가, (b) effectModels에서 제거하고 절차적 폴백만 쓰기. 무해하나
+  콘솔 노이즈 + 매 부팅 헛요청.
 
 ## ✅ 닫힘 (최근)
 
+- [x] **미사용 죽은 GLB 에셋 제거 (~7.2MB)** — 참조 0인데 배포에 실려있던 파일 삭제:
+  raw_chicken.glb(3.4M, "HP바 인디케이터"라는데 코드 참조 0), chicken_gun_fruzer city
+  (1.4M, legacy cityMap), mystical_forest_cartoon(2.3M, 숲 제거 후 death), bubble_gun
+  (104K, 순수 고아). assets.js 엔트리(cityMap/forestMain/rawChicken) + 고아 빌더
+  `mysticForestLevel` 삭제. SW는 index.html만 precache(GLB는 on-demand)라 런타임 영향
+  0, 배포/레포만 슬림. 검증: 빌드 그린, city(1323 mesh)·boss(보스 모델 38 mesh) 정상,
+  콘솔 신규 에러 0. **잔여 발견: effect/lightningv1·v2.glb는 참조되나 파일 없음(부팅마다
+  load fail, fallback으로 무해) — 별도 항목.**
 - [x] **"맵이 안가져"(첫 맵 로드 실패)** — 숲 제거로 city가 첫 부팅-로드 맵이 됨. city
   GLB가 **16MB**(무압축 JPEG/PNG 텍스처 + f32 지오, 확장 없음) → 모바일에서 첫 맵이
   제때 안 받아져 안 보임. gltf-transform으로 재압축: 텍스처→webp(q85), 지오→meshopt+
