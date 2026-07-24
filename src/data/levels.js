@@ -126,7 +126,7 @@ export function cityStageLevel() {
   const hx = 58, hz = 58;
   return {
     id: 'city', B: 58, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 120, walkTop: 6, trimOpen: 0.9 },  // block open grass/void fields you can stroll into (roads survive — bordered by buildings)
+    mapFit: { normalize: 120, walkTop: 6 },  // no trimOpen: it punched holes in flat roads/plazas ("길인데 막힘"). Content fills the bounds, so the ±hx/hz clamp guards the edge instead.
     // spawn at the map's open central plaza (measured walkable centroid) — the
     // guessed edge coord snapped to a cramped corner. Anchors below are spread
     // across the (nearly map-wide) walkable area; _snapAnchors keeps reachable ones.
