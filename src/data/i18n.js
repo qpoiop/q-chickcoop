@@ -23,7 +23,7 @@ export function t(key, params) {
 const STR = {
   en: {
     'home.eyebrow': 'Barnyard Override · Action Prototype',
-    'home.desc': "You're a battle-chicken dropped into a lava-ringed shanty town. Roam the streets, hold off the swarm of rival birds, grab glowing weapon drops, and cash your scrap for bigger guns in the Arsenal. Level up a branching tech tree, breach the two cores to open the portal, then cross to the boss arena and survive to extract.",
+    'home.desc': "You're a battle-chicken dropped into a lava-ringed arena. Farm the swarm of rival birds for scrap and XP, crack salvage crates, buy bigger guns in the Arsenal, and grow a branching tech tree. When the timer runs out, take the portal to the boss room and take down a giant rooster to survive.",
     'home.deploy': 'Deploy', 'home.move': 'Move', 'home.aimfire': 'Aim + Hold Fire', 'home.dash': 'Dash', 'home.interact': 'Interact',
     'home.difficulty': 'DIFFICULTY', 'diff.easy': 'Easy', 'diff.normal': 'Normal', 'diff.hard': 'Hard',
     'home.mobile': 'Mobile', 'home.mLeft': 'Left stick — move', 'home.mRight': 'Right stick — aim & fire', 'home.mAuto': 'Auto-fire when idle · DASH / USE',
@@ -61,7 +61,7 @@ const STR = {
   },
   ko: {
     'home.eyebrow': '바냐드 오버라이드 · 액션 프로토타입',
-    'home.desc': '용암으로 둘러싸인 판자촌에 투입된 전투 치킨이다. 거리를 누비며 적 새떼를 막아내고, 빛나는 무기 드롭을 주워라. 모은 고철로 무기고에서 더 강한 총을 사고, 갈래형 기술 트리로 성장하라. 두 코어를 해킹해 포탈을 열고, 보스 아레나로 건너가 살아남아 탈출하라.',
+    'home.desc': '용암으로 둘러싸인 아레나에 투입된 전투 치킨이다. 몰려오는 적 새떼를 처치해 고철과 경험치를 파밍하고, 고철 상자를 열고, 무기고에서 더 강한 총을 사며 갈래형 기술 트리로 성장하라. 제한 시간이 끝나면 포탈로 건너가 거대 보스를 처치하고 살아남아라.',
     'home.deploy': '출격하기', 'home.move': '이동', 'home.aimfire': '조준 + 사격', 'home.dash': '대시', 'home.interact': '상호작용',
     'home.difficulty': '난이도', 'diff.easy': '쉬움', 'diff.normal': '보통', 'diff.hard': '어려움',
     'home.mobile': '모바일', 'home.mLeft': '왼쪽 스틱 — 이동', 'home.mRight': '오른쪽 스틱 — 조준 & 사격', 'home.mAuto': '정지 시 자동 사격 · DASH / USE',
