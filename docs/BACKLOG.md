@@ -61,6 +61,14 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] **보스전 중 잡몹 폭주** — 스폰 디렉터가 `maxEnemies`만 보고 `bossActive`는 안 봤음
+  → 보스전에도 잡몹이 16까지 스폰(측정: 15에 고정). 보스 텔레그래프(AoE/대시/난사)가
+  군중에 묻혀 "읽고 피하는" 보스 듀얼이 무너짐. `CONFIG.spawn.bossMaxEnemies`(6, 보스
+  포함) 추가, 보스 생존 중엔 이 값으로 캡. 검증: 보스맵 잡몹 15→5 캡(총 6, 보스 생존),
+  일반맵은 16 유지(영향 없음). 보스 사망/승리 경로 무변경.
+- [x] **진행 무결성 검증(체크포인트)** — main→city→boss→추출→승리 풀 루프 sim 검증:
+  세 맵 전 interactable walkable+지면(badAnchors 0), 보스 사망→추출 활성→objective 갱신,
+  추출 도달성(BFS)+`_win()` 정상. objective/이벤트 i18n 키 en/ko 완비. 리그레션 없음.
 - [x] **픽업(xp orb/coin) 누수** — 라이브 perf 감사에서 발견. (1) 드롭마다 geometry+
   material을 새로 할당하고 scene.remove 시 dispose 안 함(GPU 버퍼 누수), (2) 수집
   (d<1.3)될 때만 제거 → 멀리서 죽인 몹의 픽업은 영원히 잔류. 측정: geometries
