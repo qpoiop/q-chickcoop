@@ -32,9 +32,6 @@ export const ASSETS = {
     water: p('item/water_gun.glb'),
   },
 
-  // Combat FX — no GLBs (the lightning models were never shipped and 404'd every
-  // boot). The boss-entrance storm is procedural now (Game._stormFX).
-  fxModels: {},
 
   // Interaction props — the workbench you hack (data cores) + the salvage chest
   // you crack open for scrap.

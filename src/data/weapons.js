@@ -10,7 +10,6 @@
 //   dropChance: chance a slain mob drops this weapon if you don't own it yet
 //   overheat : optional { max, cool } — continuous-fire heat then forced cooldown
 //   bars     : normalized 0..1 stat bars for the Arsenal UI
-//   fx       : optional 'lightning' arc bolt on fire
 // ============================================================================
 
 export const WEAPONS = {

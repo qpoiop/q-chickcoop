@@ -136,7 +136,6 @@ export class Game {
     ]);
     this._loadEnemyModels();
     this._loadWeaponModels();
-    this._loadEffectModels();
     this._loadToolModels();
 
     this.game = { fireT: 0, spawnT: CONFIG.spawn.firstDelay, hurtT: 0, hudT: 0, ghostT: 0, grace: CONFIG.spawn.grace };
@@ -668,16 +667,6 @@ export class Game {
         });
       });
       this.toolModels[key] = { scene: g.scene, clips: g.animations, fit: fitScale(g.scene, H[key] || 2) };
-    }
-  }
-
-  async _loadEffectModels() {
-    if (this.fxModels) return; this.fxModels = {};
-    const lens = { bolt: 5.5, storm: 11 };
-    for (const [key, url] of Object.entries(ASSETS.fxModels)) {
-      const g = await loadGLB(url); if (this._dead) return; if (!g) continue;
-      tuneMaterials(g.scene, { additive: true, shadow: false });
-      this.fxModels[key] = { scene: g.scene, clips: g.animations, fit: fitScale(g.scene, lens[key] || 5) };
     }
   }
 
@@ -1343,7 +1332,6 @@ export class Game {
     this.fx.recoil = Math.min(0.7, this.fx.recoil + (bt.type === 'orb' ? 0.7 : bt.type === 'pellet' ? 0.55 : bt.type === 'drop' ? 0.08 : 0.24));
     this.fx.camKick.addScaledVector(this.aim, -(bt.type === 'orb' ? 0.6 : heavy ? 0.42 : bt.type === 'drop' ? 0.06 : 0.24));
     this.audio.shoot(this.state.weapon);
-    if (w.fx === 'lightning') { this.game._boltT = this.game._boltT || 0; if (this.state.time >= this.game._boltT) { this._lightningFX(); this.game._boltT = this.state.time + CONFIG.fx.boltInterval; } }
     // FIRE lesson now completes by destroying the scarecrow (see _updateTutorial);
     // count shots only as an anti-softlock fallback if the target is somehow gone.
     if (this._tut && this.tut.step === 1 && !this.tut.fireTarget) { this.tut.shots++; if (this.tut.shots >= 6) this._tutAdvance(); }
@@ -1469,14 +1457,6 @@ export class Game {
   }
 
   // ---------- FX ----------
-  _lightningFX() {
-    const rec = this.fxModels && this.fxModels.bolt; if (!rec || !this.player) return;
-    const inst = rec.scene.clone(true); inst.scale.setScalar(rec.fit);
-    inst.position.copy(this.player.position).add(new THREE.Vector3(this.aim.x, 0, this.aim.z).multiplyScalar(3.4)); inst.position.y = 1.1;
-    inst.rotation.y = this.face + Math.PI / 2;
-    inst.traverse((o) => { if (o.isMesh && o.material) o.material.opacity = 1; });
-    inst.userData = { life: 0.15, max: 0.15 }; this.fxSprites.push(inst); this.scene.add(inst);
-  }
   _stormFX(pos) {
     // Procedural boss-entrance shockwave (the storm GLB was never shipped): a few
     // expanding additive rings + a spark burst at the boss's feet.
@@ -1627,7 +1607,6 @@ export class Game {
   }
 
   // ---------- collision ----------
-  _inSafe(pos) { const s = this.L && this.L.safe; if (!s) return false; return Math.hypot(pos.x - s.x, pos.z - s.z) < s.r; }
   _keepOutSafe(pos, radius) { const s = this.L && this.L.safe; if (!s) return; const dx = pos.x - s.x, dz = pos.z - s.z, d = Math.hypot(dx, dz), min = s.r + (radius || 0); if (d < min && d > 0) { pos.x = s.x + dx / d * min; pos.z = s.z + dz / d * min; } }
   _collide(pos, radius) {
     // On natural (normalized) maps the walkable grid IS the terrain collision:

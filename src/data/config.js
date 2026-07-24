@@ -60,7 +60,4 @@ export const CONFIG = {
   // pickupLife = seconds an uncollected xp orb / coin lingers before it despawns
   // (prevents unbounded accumulation when kills happen far from the player).
   drops: { healthChance: 0.09, scrapChance: 0.12, healAmount: 35, pickupLife: 18, grab: 1.3 },  // grab = distance at which an orb/coin is collected
-
-  // Bloom-lightning FX cadence
-  fx: { boltInterval: 0.11 },
 };
