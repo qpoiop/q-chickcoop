@@ -10,7 +10,8 @@
 - `src/data/levels.js`
   - 레벨 빌더 함수(`mysticForestLevel()` 등) — 앵커/조명/경계 데이터 반환.
   - `MAPS` 레지스트리 — `{ id, model, build }`. `model:null`=순수 절차 아레나.
-  - 진행: 튜토리얼 → main(숲) → city(시티) → boss(폭포). 각 포탈의 `to`로 연결.
+  - 진행: 튜토리얼 → city(시티) → boss(폭포). 각 포탈의 `to`로 연결. (구 forest/main
+    맵은 제거됨 — `mysticForestLevel`/`ASSETS.forestMain`은 소스에 남았으나 MAPS 미등록.)
 - `Game._loadMapModel` → `_finishMapLoad` — GLB 로드/정규화/스폰/워크블 그리드.
 - `Game._buildWorld` — 앵커로 코어/포탈/상점/상자 배치, `_snapAnchors`로 스냅.
 
@@ -84,6 +85,6 @@
 | 맵 | 모델 | 정규화 | 성격 | 비고 |
 |----|------|--------|------|------|
 | tutorial | 없음(절차) | - | 훈련장 | 스텝 게이팅(포탈=스텝9) |
-| main | mystical_forest | 180 | 파밍 숲 | 중앙 거대 나무, 외곽 어두움/void |
-| city | a_city_in_nature | 120 | 시티(스테이지3) | 도로/개활, 풀 빌보드 |
+| city | a_city_in_nature | 120 | 시티(첫 전투맵) | 도로/개활, 풀 빌보드 |
+| ~~main~~ | ~~mystical_forest~~ | - | 제거됨 | 소스 잔존, MAPS 미등록 |
 | boss | forest_waterfall | 240 | 보스 아레나 | ×2 확대 |

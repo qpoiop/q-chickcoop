@@ -1147,7 +1147,10 @@ export class Game {
       // Chest loot table: always some scrap + xp, and a LOW chance of the next
       // weapon (chests are now the only weapon source).
       const nextW = WEAPON_DROP_ORDER.find((k) => !this.state.owned[k]);
-      if (nextW && Math.random() < 0.25) { this._spawnItemDrop(cp, 'weapon'); this._event(t('evt.acquired', { name: locName(this.WEAPONS[nextW]) })); }
+      // Spawn the weapon pickup; the "Acquired" toast fires when it's actually
+      // collected (_collectItem), not here — otherwise it announced twice (once
+      // prematurely at crate-open, again on pickup).
+      if (nextW && Math.random() < 0.25) this._spawnItemDrop(cp, 'weapon');
       else this._event(t('evt.salvage'));
       const payout = Math.ceil((10 + Math.random() * 14) * md.gold);
       for (let k = 0; k < 4; k++) this._drop(new THREE.Vector3(it.x + (Math.random() - 0.5) * 1.4, 0, it.z + (Math.random() - 0.5) * 1.4), 1);

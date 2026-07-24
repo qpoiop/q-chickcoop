@@ -61,6 +61,16 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] **첫 숲(main) 맵 제거** — 요청. 진행 튜토리얼→**시티**→보스(구 튜토→숲→시티→보스).
+  levels 튜토 포탈→'city', MAPS에서 'main' 삭제; Game 시작·튜토완료·부팅워밍·objective
+  게이트 전부 'city'. `mysticForestLevel`/`forestMain`은 소스 잔존(참조 없음, 복원 가능).
+  검증: 튜토 스킵→시티 바로(코어A/상자 배치, 스샷), 시티→보스, 보스 로드. **주의: 아래
+  숲 관련 닫힘 항목(숲 trimOpen/밝기/상자)은 이제 죽은 맵 이력 — 시티/보스에만 적용.**
+- [x] **무기 드롭 "획득" 토스트 2번** — 상자 개봉 시 `evt.acquired`를 미리 쏘고(줍기 전),
+  실제 줍기(`_collectItem`)에서 또 쏨 → 이중+조기 안내. 개봉은 픽업만 스폰, 토스트는
+  줍는 순간 1회만. 검증: 상자개봉 이벤트 0 → 줍기 시 acquired 1회, owned에 nerf 추가.
+  (부수 감사: 무기 5종 bullet type 전부 `_makeBullet` 처리됨('beam' 포함, 헤더 주석만
+  구식), 스위칭 cycleWeapon/selectWeaponSlot/아설널 탭 정상, 드롭 순서 nerf→laser 정상.)
 - [x] **강화 장갑(Reinforced Hull) 스킬이 최대 체력을 안 올림** — 'hp' 노드는 "+22
   최대 체력/랭크" 광고인데 `state.maxHp`는 baseMaxHp에서 레벨업으로만 증가, `md.hp`는
   체력 픽업 오버힐 캡(1247)으로만 쓰여 HP바·힐캡·재생캡에 전혀 반영 안 됨 → 최대 5포인트
