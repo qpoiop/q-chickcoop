@@ -76,6 +76,10 @@
   `fx:'lightning'` 안 쓰고 GLB도 이미 제거됨(dead+broken). `_inSafe`(참조 0, `_keepOutSafe`는
   유지). weapons 스키마 주석 정리. 보스 storm(_stormFX 절차적)은 무관·정상. 검증: 빌드
   그린, 잔존 참조 0, 부팅·보스맵·storm 정상, 콘솔 에러 0.
+  (5) 죽은 레벨 빌더: `cityLevel`(구 chicken_gun_fruzer 도시)·`bossArenaLevel`(구 절차
+  콜로세움) 참조 0 제거. 라이브는 tutorial/cityStage/waterfall + arenaLevel(GLB실패
+  폴백, 유지). `CONFIG.spawn.bossFirst/bossRepeat`(구 타임드 보스 스폰, 미사용) 제거.
+  검증: 빌드 그린, 3맵 로드+walkable+인터랙터블, 폴백 정상, 콘솔 에러 0.
 - [x] **lightning 이펙트 GLB 없음 → 부팅마다 404** — `assets.fxModels`가
   `effect/lightningv2.glb`/`lightningv1.glb` 참조하나 `public/effect/` 자체가 없음.
   bolt는 완전 미사용(어떤 무기도 `fx:'lightning'` 안 씀), storm은 보스 등장 `_stormFX`가
