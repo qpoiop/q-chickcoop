@@ -132,7 +132,7 @@ export class Game {
     // during the tutorial — the tutorial can be skipped straight into the city).
     const essentials = Promise.all([
       this._loadPlayerModel(),
-      this._warmMap(MAPS.main.model),
+      this._warmMap(MAPS.city.model),
     ]);
     this._loadEnemyModels();
     this._loadWeaponModels();
@@ -1203,7 +1203,7 @@ export class Game {
       this._buildWorld(); this._buildPlayer(); this._validatePlacements();
       if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
       else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
-      else if (to === 'main' || to === 'city') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
+      else if (to === 'city') { this.state.objectiveKey = 'obj.coreA'; this.game.grace = 1.5; }
       this.game.spawnT = 2.5; this.game.fireT = 0;
       await new Promise((r) => setTimeout(r, 260));
     } catch (err) {
@@ -1575,7 +1575,7 @@ export class Game {
     if (this.dom.fade) { this.dom.fade.style.transition = 'none'; this.dom.fade.style.opacity = 1; }
     if (this.dom.trans) this.dom.trans.style.display = 'grid';
     this.refresh();
-    this._goToMap(this._tut ? 'tutorial' : 'main');
+    this._goToMap(this._tut ? 'tutorial' : 'city');
   }
 
   _tutAdvance() {
@@ -1583,7 +1583,7 @@ export class Game {
     if (s >= TUTORIAL.length) {
       this._tut = false; this._tutSeen = true; this.state.tutorial = false;
       this._event(t('evt.tutDone'));
-      this._goToMap('main'); // training done → cross into the city
+      this._goToMap('city'); // training done → cross into the city
       return;
     }
     const step = TUTORIAL[s]; this.state.objectiveKey = 'tut:' + s; this._event(getLang() === 'ko' ? (step.toastKo || '') : (step.toast || '')); this.tut.killBase = this.state.kills; this.tut.timer = 0;

@@ -34,7 +34,7 @@ export function tutorialLevel() {
     covers: [],   // no crystal-pillars in the training bay — kept clean
     cores: [{ x: 12, z: 4 }],  // workbench to hack (tutorial HACK step)
     shop: { x: -12, z: -6 },   // shop stall (tutorial SHOP step) — was missing
-    portal: { x: 0, z: -15, to: 'main' }, // exit portal (tutorial's final step)
+    portal: { x: 0, z: -15, to: 'city' }, // exit portal (tutorial's final step)
     spawns: [[-20, -12], [20, -12], [0, -16], [-20, 5], [20, 5]],
     crates: [[12, -8]],      // salvage chest to open (tutorial OPEN step)
     // brighter, less void-like training bay (was ~72% near-black — read as an empty
@@ -172,8 +172,7 @@ export function cityStageLevel() {
 // pure procedural arena (no GLB). Referenced by Game map handling.
 export const MAPS = {
   tutorial: { id: 'tutorial', model: null, build: tutorialLevel },       // small tiled bay
-  main: { id: 'main', model: ASSETS.forestMain, build: mysticForestLevel }, // mystical forest GLB
-  city: { id: 'city', model: ASSETS.cityNature, build: cityStageLevel },     // stage 3 — city-in-nature
+  city: { id: 'city', model: ASSETS.cityNature, build: cityStageLevel },     // first combat map — city-in-nature
   boss: { id: 'boss', model: ASSETS.forestOpen, build: waterfallLevel },     // waterfall forest GLB
 };
 
