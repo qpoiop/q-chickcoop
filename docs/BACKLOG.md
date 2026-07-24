@@ -61,6 +61,13 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] **강화 장갑(Reinforced Hull) 스킬이 최대 체력을 안 올림** — 'hp' 노드는 "+22
+  최대 체력/랭크" 광고인데 `state.maxHp`는 baseMaxHp에서 레벨업으로만 증가, `md.hp`는
+  체력 픽업 오버힐 캡(1247)으로만 쓰여 HP바·힐캡·재생캡에 전혀 반영 안 됨 → 최대 5포인트
+  "+110" 죽은 스킬. 수정: `buySkill`이 hull 델타(computeModifiers.hp 전/후)를 maxHp+hp에
+  적용(레벨업처럼 즉시 부여), 픽업 라인은 잉여 `+md.hp` 제거하고 실제 maxHp로 클램프.
+  검증: Hull×3(hp=60) → maxHp 100→166·hp 60→126, dmg×2 → md.dmg 1→1.36·maxHp 유지
+  (교차·중복 없음). **부수 감사: 15개 mod 전부 engine에서 소비됨(죽은 스킬 hull뿐이었음).**
 - [x] **보스전 중 잡몹 폭주** — 스폰 디렉터가 `maxEnemies`만 보고 `bossActive`는 안 봤음
   → 보스전에도 잡몹이 16까지 스폰(측정: 15에 고정). 보스 텔레그래프(AoE/대시/난사)가
   군중에 묻혀 "읽고 피하는" 보스 듀얼이 무너짐. `CONFIG.spawn.bossMaxEnemies`(6, 보스
