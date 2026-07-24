@@ -32,6 +32,10 @@ export const CONFIG = {
   // Spawning / difficulty curve
   spawn: {
     firstDelay: 3.2, grace: 2.8, tutGrace: 9999, maxEnemies: 16,
+    // Concurrent enemy cap WHILE a boss is alive (boss counts toward it). Lower so
+    // the boss's telegraphed attacks stay readable instead of drowning in trash —
+    // still some add pressure, but the duel is the focus.
+    bossMaxEnemies: 6,
     waveSize: 7, lull: 2.4,   // after every `waveSize` spawns, a `lull`-sec breather (rhythm, room for strategy)
     hpScale: 110, dmgScaleBoss: 120,
     bossFirst: 60, bossRepeat: 95,
