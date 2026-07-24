@@ -32,7 +32,7 @@ export function tutorialLevel() {
     spawnStart: { x: 0, z: 10 },
     walls: [], platforms: [],
     covers: [],   // no crystal-pillars in the training bay — kept clean
-    cores: [{ x: 12, z: 4 }],  // workbench to hack (tutorial HACK step)
+    cores: [],
     shop: { x: -12, z: -6 },   // shop stall (tutorial SHOP step) — was missing
     portal: { x: 0, z: -15, to: 'city' }, // exit portal (tutorial's final step)
     spawns: [[-20, -12], [20, -12], [0, -16], [-20, 5], [20, 5]],
@@ -50,18 +50,17 @@ export function tutorialLevel() {
 // cramped movement — bad for a boss duel that needs open room to kite and dodge
 // telegraphs. A flat open arena gives the fight the space it needs.
 export function waterfallLevel() {
-  const B = 54;
+  const B = 78;   // enlarged so a 5x-scaled boss has room to fight around
   return {
     id: 'boss', B, bounds: { hx: B, hz: B }, arena: true, lavaRing: true,
     floorColor: 0x241a2e, gridColor1: 0x5a3a7a, gridColor2: 0x2a1e38, accent: 0xc06bff, edgeColor: 0xff2d55,
-    spawnStart: { x: 0, z: 40 }, safe: { x: 0, z: 40, r: 8 },   // enter at the edge; a small safe pocket (no mob spawns)
+    spawnStart: { x: 0, z: 60 }, safe: { x: 0, z: 60, r: 8 },   // enter at the edge; a small safe pocket
     walls: [], platforms: [], covers: [], cores: [],
-    boss: true, bossSpawn: { x: 0, z: -8 },            // boss holds the arena centre
-    extractionAfterBoss: { x: 0, z: 44 },              // by the entry edge
-    shop: { x: -38, z: 30 },
-    crates: [[-30, -20], [30, -20], [-22, 12], [22, 12], [0, -32]],
-    spawns: [[-48, -48], [48, -48], [-48, 48], [48, 48], [0, -50], [-50, 0], [50, 0]],  // perimeter adds
-    fog: { color: 0x140a1a, near: 140, far: 360 }, bg: 0x1a1022,
+    // boss-only room: NO crates / shop / cores. Just the boss and the exit.
+    boss: true, bossSpawn: { x: 0, z: -16 },           // boss holds the arena centre
+    extractionAfterBoss: { x: 0, z: 66 },              // by the entry edge
+    spawns: [[-64, -64], [64, -64], [-64, 64], [64, 64], [0, -70], [-70, 0], [70, 0]],  // perimeter adds
+    fog: { color: 0x140a1a, near: 180, far: 460 }, bg: 0x1a1022,
     light: { hemi: 0.9, dir: 2.0 },
   };
 }
@@ -79,12 +78,13 @@ export function cityStageLevel() {
   const hx = 34, hz = 62;   // long lane (advance down -z), narrower across
   return {
     id: 'city', B: 62, bounds: { hx, hz }, arena: true, lavaRing: true,
+    // FARM map: no cores/portal. Survive + loot for CONFIG.farmTime, then auto-sent
+    // to the boss room. (farm:true drives the timer + 'farm as much as you can' prompt.)
+    farm: true, farmTo: 'boss',
     floorColor: 0x263349, gridColor1: 0x5a7ba0, gridColor2: 0x2c3d56, accent: 0x35e0d0, edgeColor: 0xffb84a,
     spawnStart: { x: 0, z: 54 },                      // START at the near edge, not the centre
-    walls: [], platforms: [], covers: [],
+    walls: [], platforms: [], covers: [], cores: [],
     shop: { x: 24, z: 46 },                           // by the entrance — gear up before pushing in
-    cores: [{ x: -16, z: 4 }, { x: 18, z: -38 }],     // breach forward: one mid-lane, one deep
-    portal: { x: 0, z: -58, to: 'boss' },             // EXIT at the far end of the lane
     crates: [[-24, 32], [22, 14], [-14, -16], [16, -46], [0, -30]],
     // spawns spread DOWN the lane (ahead of the advancing player) so combat is
     // continuous as you push forward — not a single perimeter ring.

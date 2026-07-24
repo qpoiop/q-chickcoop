@@ -36,7 +36,18 @@ export const CONFIG = {
     autoAimStick: 0.6,
     // faceAim false → the body turns toward the MOVEMENT (left-stick) direction;
     // the gun/aim ring still tracks the aim independently.
-    baseMaxHp: 100, height: 2.5, faceAim: false,
+    baseMaxHp: 100, height: 2.5, faceAim: true,   // body faces AIM, not movement (left stick doesn't turn you)
+  },
+
+  // Farming phase before the boss (main map): survive/loot for `farmTime` sec, then
+  // you're sent straight to the boss room.
+  farmTime: 180,
+
+  // Difficulty multipliers (picked on the home screen). Scales enemy hp / damage.
+  difficulty: {
+    easy:   { hp: 0.7, dmg: 0.7, nameKo: '쉬움', name: 'Easy' },
+    normal: { hp: 1.0, dmg: 1.0, nameKo: '보통', name: 'Normal' },
+    hard:   { hp: 1.6, dmg: 1.5, nameKo: '어려움', name: 'Hard' },
   },
 
   // Progression

@@ -304,3 +304,10 @@ body.touch #hudHint { display:none !important; }
 .card { background:rgba(11,18,26,.7); border:1px solid #223140; padding:18px; }
 .card-title { font-family:'Chakra Petch'; font-weight:600; font-size:14px; letter-spacing:2px; color:#dfeef6;
   text-transform:uppercase; padding-bottom:10px; border-bottom:1px solid #223140; margin-bottom:12px; }
+
+/* home difficulty picker */
+.diff-btn { font-family:'Rajdhani',sans-serif; font-weight:600; font-size:14px; letter-spacing:.05em;
+  color:#9fb4c4; background:rgba(20,30,42,.7); border:1px solid #2a3a4a; border-radius:7px;
+  padding:7px 16px; cursor:pointer; transition:all .15s; }
+.diff-btn:hover { color:#dbe8f2; border-color:#3a5266; }
+.diff-btn.sel { color:#06131c; background:#35e0d0; border-color:#35e0d0; box-shadow:0 0 14px rgba(53,224,208,.5); }
