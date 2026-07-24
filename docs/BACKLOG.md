@@ -58,14 +58,16 @@
   waveSize7/lull2.4): 7스폰마다 2.4초 숨 돌릴 틈. 검증: gap 1.2×7→2.4 반복.
   잔여: 실기기 플레이로 lull 길이·waveSize 튜닝, 위협 텔레그래프 강화 등.
 - [ ] **구조물 내부/공간 활용** — 지붕만 보이는 건물들, 카메라/스케일 재고.
-- [ ] **lightning 이펙트 GLB 없음** — `assets.effectModels.bolt/storm`이
-  `effect/lightningv2.glb`/`lightningv1.glb`를 참조하나 `public/effect/`에 파일 없음 →
-  부팅마다 load fail(dev는 index.html 반환→JSON parse 에러 경고). fallback으로 게임은
-  정상. 조치: (a) 파일 추가, (b) effectModels에서 제거하고 절차적 폴백만 쓰기. 무해하나
-  콘솔 노이즈 + 매 부팅 헛요청.
 
 ## ✅ 닫힘 (최근)
 
+- [x] **lightning 이펙트 GLB 없음 → 부팅마다 404** — `assets.fxModels`가
+  `effect/lightningv2.glb`/`lightningv1.glb` 참조하나 `public/effect/` 자체가 없음.
+  bolt는 완전 미사용(어떤 무기도 `fx:'lightning'` 안 씀), storm은 보스 등장 `_stormFX`가
+  쓰지만 모델 없어 무음(guard). `fxModels: {}`로 비우고(404 제거), `_stormFX`를 절차적
+  충격파(확장 additive 링 3 + 스파크, 기존 fxSprites {life,max,grow} 계약 재사용)로 재작성.
+  검증: 부팅 콘솔 클린(lightning fetch-fail 사라짐), _stormFX 링 3개 생성·보스 스폰 시
+  발동, 에러 0.
 - [x] **"길인데 막혀서 안가져"(시티 도로가 walkable에서 막힘)** — 로드 실패 아니라 이동
   막힘. 원인: `mapFit.trimOpen`(밀도 트림)이 "너무 열린 셀=void 벌판"을 제거하는데,
   시티는 그 평평-열린 셀이 곧 **도로/광장**이라 걷는 길에 구멍을 냄(주석은 "roads
