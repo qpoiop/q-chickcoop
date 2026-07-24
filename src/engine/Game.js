@@ -1383,6 +1383,7 @@ export class Game {
     // Melee mobs get a ground danger-ring that only shows during the wind-up so
     // the player can read the incoming strike and dodge (the GLB models otherwise
     // telegraph with just a 20% scale bump — too subtle top-down). Shared geo/mat.
+    g.add(this._enemyRing(conf.c, conf.s + 0.35)); // tier-colored ground marker (enemy vs player readability)
     if (!conf.ranged) { const tr = this._makeTeleRing(); g.add(tr); g.userData.teleRing = tr; }
     const hb = this._makeHpBar(conf.c); g.userData.hpBar = hb.group; g.userData.hpFill = hb.fill; g.userData.barY = tier === 2 ? 2.0 : 2.7;
     this.scene.add(hb.group);
@@ -1398,6 +1399,19 @@ export class Game {
     const tr = new THREE.Mesh(this._teleGeo, this._teleMat);
     tr.rotation.x = -Math.PI / 2; tr.position.y = 0.06; tr.visible = false;
     return tr;
+  }
+
+  // Tier-colored ground ring under an enemy — the enemy models are all yellow
+  // chicks (look like the player + each other), so this is the readability marker:
+  // enemies always wear a coloured ring, the player wears teal. Shared geo, per-
+  // colour material cache. `r` scales it to the enemy's radius.
+  _enemyRing(color, r) {
+    this._enemyRingGeo = this._enemyRingGeo || new THREE.RingGeometry(0.74, 1.0, 28);
+    this._enemyRingMat = this._enemyRingMat || {};
+    if (!this._enemyRingMat[color]) this._enemyRingMat[color] = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false });
+    const ring = new THREE.Mesh(this._enemyRingGeo, this._enemyRingMat[color]);
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; ring.scale.setScalar(r); ring.renderOrder = 2;
+    return ring;
   }
 
   // A straw training dummy for the FIRE lesson: a cross-post scarecrow placed far
