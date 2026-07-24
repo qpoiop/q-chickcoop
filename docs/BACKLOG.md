@@ -66,6 +66,15 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] **"길인데 막혀서 안가져"(시티 도로가 walkable에서 막힘)** — 로드 실패 아니라 이동
+  막힘. 원인: `mapFit.trimOpen`(밀도 트림)이 "너무 열린 셀=void 벌판"을 제거하는데,
+  시티는 그 평평-열린 셀이 곧 **도로/광장**이라 걷는 길에 구멍을 냄(주석은 "roads
+  survive"라 잘못 단언). 시티는 콘텐츠가 bounds를 꽉 채움(지면 x56/z56 vs ±58)이라
+  ±hx/hz 클램프가 이미 가장자리를 막음 → trimOpen 불필요. 제거. 실건물은 walkable
+  그리드(높은 지오)+env 콜라이더가 계속 막음. 검증: 막혔던 동쪽 도로대 1/36→34/36
+  walkable, walkFrac 0.48→0.72, 전 앵커 도달(BFS), bounds 밖 non-walkable 유지(void
+  이동 없음), 탑다운 스샷 도로망 열림. **교훈: 도로/광장 있는 도시맵엔 trimOpen 쓰지
+  말 것 — 열린 길을 void로 오인해 구멍냄. 콘텐츠가 bounds를 채우면 클램프로 충분.**
 - [x] **미사용 죽은 GLB 에셋 제거 (~7.2MB)** — 참조 0인데 배포에 실려있던 파일 삭제:
   raw_chicken.glb(3.4M, "HP바 인디케이터"라는데 코드 참조 0), chicken_gun_fruzer city
   (1.4M, legacy cityMap), mystical_forest_cartoon(2.3M, 숲 제거 후 death), bubble_gun
