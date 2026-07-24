@@ -4,7 +4,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { CONFIG } from '../data/config.js';
+import { CONFIG, COLORS } from '../data/config.js';
 import { WEAPONS, WEAPON_MODEL_MAP, WEAPON_DROP_ORDER } from '../data/weapons.js';
 import { BRANCHES, computeModifiers } from '../data/skills.js';
 import { ENEMY_TIERS, BOSSES, pickTier } from '../data/enemies.js';
@@ -104,7 +104,7 @@ export class Game {
     dir.position.set(20, 44, 12); dir.castShadow = true; dir.shadow.mapSize.set(1024, 1024); // 1k is plenty top-down; 2k is a big perf cost
     const sc = dir.shadow.camera; sc.left = -80; sc.right = 80; sc.top = 80; sc.bottom = -80; sc.far = 150;
     scene.add(dir);
-    const rim = new THREE.PointLight(0x35e0d0, 0.5, 18); rim.position.set(0, 5, 0); scene.add(rim); this.rim = rim;
+    const rim = new THREE.PointLight(COLORS.teal, 0.5, 18); rim.position.set(0, 5, 0); scene.add(rim); this.rim = rim;
 
     this.scene = scene; this.cam = cam; this.rend = rend;
 
@@ -177,13 +177,13 @@ export class Game {
     // Procedural props: full ground for a modelless level, or a readable arena
     // floor/grid/pillars laid over a backdrop map (L.arena).
     if (!this.map || L.arena) {
-      const accent = L.accent || 0x35e0d0;
+      const accent = L.accent || COLORS.teal;
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(L.B * 2 + 4, L.B * 2 + 4),
         new THREE.MeshStandardMaterial({ color: L.floorColor || 0x0c141d, roughness: 1, metalness: 0.1 }));
       floor.rotation.x = -Math.PI / 2; floor.position.y = L.arena ? 0.01 : 0; floor.receiveShadow = true; g.add(floor);
       const grid = new THREE.GridHelper(L.B * 2, 52, L.gridColor1 || 0x1f3d4c, L.gridColor2 || 0x14232e); grid.position.y = 0.03; g.add(grid);
       const wmat = new THREE.MeshStandardMaterial({ color: 0x1a2836, roughness: 0.7, metalness: 0.35, emissive: 0x0a1a22, emissiveIntensity: 0.4 });
-      const emat = new THREE.MeshStandardMaterial({ color: 0x35e0d0, emissive: 0x35e0d0, emissiveIntensity: 1.4, transparent: true, opacity: 0.5 });
+      const emat = new THREE.MeshStandardMaterial({ color: COLORS.teal, emissive: COLORS.teal, emissiveIntensity: 1.4, transparent: true, opacity: 0.5 });
       L.walls.forEach((w) => {
         const m = new THREE.Mesh(new THREE.BoxGeometry(w.w, w.h, w.d), wmat);
         m.position.set(w.x, w.h / 2, w.z); m.castShadow = true; m.receiveShadow = true; g.add(m);
@@ -224,7 +224,7 @@ export class Game {
     // security gate (optional)
     this.gate = null; this._gateObs = null; this.gateOpen = true;
     if (L.gate) {
-      const gmat = new THREE.MeshStandardMaterial({ color: 0xff3b6b, emissive: 0xff3b6b, emissiveIntensity: 1.1, transparent: true, opacity: 0.72 });
+      const gmat = new THREE.MeshStandardMaterial({ color: COLORS.pink, emissive: COLORS.pink, emissiveIntensity: 1.1, transparent: true, opacity: 0.72 });
       const gAcross = L.gate.across, gw = L.gate.w;
       const gate = new THREE.Mesh(new THREE.BoxGeometry(gAcross ? 1.4 : gw, 4, gAcross ? gw : 1.4), gmat);
       gate.position.set(L.gate.x, 2, L.gate.z); g.add(gate); this.gate = gate; this.gateOpen = false;
@@ -251,7 +251,7 @@ export class Game {
       }
       // interactable beacon: a glowing ground ring only (no vertical column/dome —
       // the dome washed over the model and over-glowed). The RING is what glows.
-      const gring = this._beaconRing(0x35e0d0, 2.4);
+      const gring = this._beaconRing(COLORS.teal, 2.4);
       grp.add(gring);
       g.add(grp); this.obstacles.push({ x: c.x, z: c.z, hw: 1.6, hd: 1.6 });
       this.interact.push({ type: 'core', id: 'Core ' + (i ? 'B' : 'A'), x: c.x, z: c.z, r: 3.6, done: false, mesh: grp, glow: null, ring: null, gring, col: null, mark: null, wbMixer, active: true });
@@ -260,7 +260,7 @@ export class Game {
     // glowing map-transition portal (hidden until unlocked)
     this.portalObj = null;
     if (L.portal) {
-      const pg = this._makePortal(L.portal, 0x35e0d0); pg.visible = false; g.add(pg); this.portalObj = pg;
+      const pg = this._makePortal(L.portal, COLORS.teal); pg.visible = false; g.add(pg); this.portalObj = pg;
       this.interact.push({ type: 'portal', id: 'Portal', to: L.portal.to, x: L.portal.x, z: L.portal.z, r: 3.4, done: false, active: false, mesh: pg });
     }
 
@@ -283,7 +283,7 @@ export class Game {
         m.position.y = 0.8; grp.add(m);
       }
       // same glowing ground ring as the cores so the chest reads as interactable
-      const cgr = this._beaconRing(0xffd23f, 1.8); grp.add(cgr);
+      const cgr = this._beaconRing(COLORS.gold, 1.8); grp.add(cgr);
       g.add(grp);
       this.obstacles.push({ x, z, hw: 0.8, hd: 0.8 }); this.interact.push({ type: 'crate', id: 'Salvage', x, z, r: 2.6, done: false, mesh: grp, lid, lidRest, lidT: 0, gring: cgr, active: true });
     });
@@ -301,17 +301,17 @@ export class Game {
         s.traverse((o) => { if (o.name === 'Sketchfab_model') o.rotation.set(0, 0, 0); });
         this._groundModel(s); grp.add(s);
       } else {
-        const m = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 2), new THREE.MeshStandardMaterial({ color: 0x2a2036, emissive: 0x35e0d0, emissiveIntensity: 0.2 }));
+        const m = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 2), new THREE.MeshStandardMaterial({ color: 0x2a2036, emissive: COLORS.teal, emissiveIntensity: 0.2 }));
         m.position.y = 1.5; grp.add(m);
       }
-      const sgr = this._beaconRing(0x35e0d0, 2.4); grp.add(sgr);
+      const sgr = this._beaconRing(COLORS.teal, 2.4); grp.add(sgr);
       g.add(grp); this.obstacles.push({ x: L.shop.x, z: L.shop.z, hw: 1.6, hd: 1.4 });
       this.interact.push({ type: 'shop', id: 'Shop', x: L.shop.x, z: L.shop.z, r: 3.4, done: false, mesh: grp, sgr, gring: sgr, active: true });
     }
 
     // safe-zone ring
     if (L.safe) {
-      const ring = new THREE.Mesh(new THREE.RingGeometry(L.safe.r - 0.5, L.safe.r, 48), new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(L.safe.r - 0.5, L.safe.r, 48), new THREE.MeshBasicMaterial({ color: COLORS.teal, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
       ring.rotation.x = -Math.PI / 2; ring.position.set(L.safe.x, 0.04, L.safe.z); g.add(ring);
       const disc = new THREE.Mesh(new THREE.CircleGeometry(L.safe.r, 48), new THREE.MeshBasicMaterial({ color: 0x0e2a2e, transparent: true, opacity: 0.28 }));
       disc.rotation.x = -Math.PI / 2; disc.position.set(L.safe.x, 0.03, L.safe.z); g.add(disc);
@@ -550,15 +550,15 @@ export class Game {
     } else {
       const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.6, 1, 6, 12), new THREE.MeshStandardMaterial({ color: 0x123038, emissive: 0x0e3030, emissiveIntensity: 0.5, roughness: 0.4, metalness: 0.5 }));
       body.position.y = 1.1; body.castShadow = true; faceG.add(body); p.userData.body = body;
-      const core = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 16), new THREE.MeshStandardMaterial({ color: 0x9ffcf0, emissive: 0x35e0d0, emissiveIntensity: 2.4 }));
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 16), new THREE.MeshStandardMaterial({ color: 0x9ffcf0, emissive: COLORS.teal, emissiveIntensity: 2.4 }));
       core.position.y = 1.4; faceG.add(core); this.core = core;
-      const gun = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 1.6), new THREE.MeshStandardMaterial({ color: 0xdfeef6, emissive: 0x35e0d0, emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.3 }));
+      const gun = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 1.6), new THREE.MeshStandardMaterial({ color: 0xdfeef6, emissive: COLORS.teal, emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.3 }));
       gun.position.set(0, 1.05, 0.95); aimG.add(gun); this.gun = gun;
       const fin = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.5, 4), new THREE.MeshBasicMaterial({ color: 0x7ff2e8 }));
       fin.rotation.x = Math.PI / 2; fin.position.set(0, 1.05, 1.9); aimG.add(fin);
     }
     // character ground indicator (always shows where the player is)
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x35e0d0, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+    const ringMat = new THREE.MeshBasicMaterial({ color: COLORS.teal, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.98, 32), ringMat);
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; ring.renderOrder = 2; p.add(ring); this.playerRing = ring;
     const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0x7ff2e8, transparent: true, opacity: 0.9, depthWrite: false }));
@@ -1144,8 +1144,8 @@ export class Game {
     if (it.type === 'core' && !it.done) {
       it.done = true;
       // recolor the beacon ring group to the "breached" green
-      if (it.gring) it.gring.traverse((o) => { if (o.isMesh && o.material) o.material.color.set(0x59ff9d); });
-      this.state.cores++; this._impact(it.mesh.position, 0x59ff9d, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
+      if (it.gring) it.gring.traverse((o) => { if (o.isMesh && o.material) o.material.color.set(COLORS.green); });
+      this.state.cores++; this._impact(it.mesh.position, COLORS.green, 20, 7); this.fx.shake = 0.5; this._event(t('evt.breached', { id: it.id })); this.audio.levelUp();
       const need = (this.L.cores || []).length;
       if (this.state.cores >= need) { this._activatePortal(); }
       else { this.state.objectiveKey = 'obj.coreB'; }
@@ -1157,7 +1157,7 @@ export class Game {
       if (it.lid) { it.chestOpening = true; it.lidT = 0; } // procedural lid pop (see _simulate)
       else it.mesh.visible = false;
       const cp = new THREE.Vector3(it.x, 1, it.z);
-      this._impact(cp, 0xffd23f, 16, 6); this.fx.shake = 0.28; this.audio.pickup();
+      this._impact(cp, COLORS.gold, 16, 6); this.fx.shake = 0.28; this.audio.pickup();
       const md = this._mods();
       // Chest loot table: always some scrap + xp, and a LOW chance of the next
       // weapon (chests are now the only weapon source).
@@ -1238,7 +1238,7 @@ export class Game {
   // Spawn the green extraction portal after the boss dies on the boss map.
   _revealExtraction() {
     const pos = this.L.extractionAfterBoss || { x: 0, z: 34 };
-    const pg = this._makePortal(pos, 0x59ff9d); this.worldG.add(pg); this.portalObj = pg;
+    const pg = this._makePortal(pos, COLORS.green); this.worldG.add(pg); this.portalObj = pg;
     this.interact.push({ type: 'extract', id: 'Extraction', x: pos.x, z: pos.z, r: 3.6, done: false, active: true, mesh: pg });
     this.state.objectiveKey = 'obj.extract'; this._event(t('evt.extract')); this.fx.shake = 0.6;
   }
@@ -1287,7 +1287,7 @@ export class Game {
     // NOTE: no per-bullet PointLight — dozens of dynamic lights from a fast
     // weapon tank the framerate. Emissive materials + bloom read as glow.
     if (bt.type === 'pellet') {
-      b = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12), new THREE.MeshStandardMaterial({ color: crit ? 0xffffff : 0xffd98a, emissive: 0xffb03b, emissiveIntensity: 2.6, roughness: 0.4 }));
+      b = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12), new THREE.MeshStandardMaterial({ color: crit ? 0xffffff : 0xffd98a, emissive: COLORS.amber, emissiveIntensity: 2.6, roughness: 0.4 }));
     } else if (bt.type === 'orb') {
       const size = bt.size || 1.1;
       b = new THREE.Mesh(new THREE.SphereGeometry(size, 18, 18), new THREE.MeshStandardMaterial({ color: bt.color || '#1a1030', emissive: 0x2a1050, emissiveIntensity: 0.8, roughness: 0.25, metalness: 0.4 }));
@@ -1405,7 +1405,7 @@ export class Game {
   _makeTeleRing() {
     if (!this._teleGeo) {
       this._teleGeo = new THREE.RingGeometry(0.82, 1.0, 32);
-      this._teleMat = this._fxMat(0xff2d55, 0.6, { side: true });
+      this._teleMat = this._fxMat(COLORS.red, 0.6, { side: true });
     }
     const tr = new THREE.Mesh(this._teleGeo, this._teleMat);
     tr.rotation.x = -Math.PI / 2; tr.position.y = 0.06; tr.visible = false;
@@ -1480,7 +1480,7 @@ export class Game {
   _stormFX(pos) {
     // Procedural boss-entrance shockwave (the storm GLB was never shipped): a few
     // expanding additive rings + a spark burst at the boss's feet.
-    for (let k = 0; k < 3; k++) this._burstRing(pos, k ? 0xff7a5c : 0xffb03b, { life: 0.7 + k * 0.15, grow: 10 + k * 6, y: 0.15 + k * 0.05 });
+    for (let k = 0; k < 3; k++) this._burstRing(pos, k ? COLORS.coral : COLORS.amber, { life: 0.7 + k * 0.15, grow: 10 + k * 6, y: 0.15 + k * 0.05 });
     this._impact(new THREE.Vector3(pos.x, 1.2, pos.z), 0xff5533, 26, 7);
   }
   _pulse(el, to, ms) { if (!el) return; el.style.opacity = to; setTimeout(() => { el.style.opacity = 0; }, ms); }
@@ -1518,7 +1518,7 @@ export class Game {
     const b = this.player.userData.body;
     const geo = b ? b.geometry : (this._ghostGeo || (this._ghostGeo = new THREE.CapsuleGeometry(0.5, (CONFIG.player.height || 1.9) * 0.5, 4, 8)));
     const y = b ? 1.1 : (CONFIG.player.height || 1.9) * 0.55;
-    const gm = new THREE.Mesh(geo, this._fxMat(0x35e0d0, 0.45));
+    const gm = new THREE.Mesh(geo, this._fxMat(COLORS.teal, 0.45));
     gm.position.copy(this.player.position); gm.position.y = y; gm.rotation.y = this.bodyFace || 0;
     gm.userData = { life: 0.3 }; this.scene.add(gm); this.ghosts.push(gm);
   }
@@ -1955,7 +1955,7 @@ export class Game {
         this.game.streakT = 2.8;
         if (this.state.killStreak > (this.state.streakBest || 0)) this.state.streakBest = this.state.killStreak;
         if (this.state.killStreak >= 2) this.hud.showCombo(this.state.killStreak);
-        this._impact(e.position, (u.mesh && u.mesh.material) ? u.mesh.material.color.getHex() : (u.tint || 0xff3b6b), u.boss ? 40 : 11, u.boss ? 11 : 6);
+        this._impact(e.position, (u.mesh && u.mesh.material) ? u.mesh.material.color.getHex() : (u.tint || COLORS.pink), u.boss ? 40 : 11, u.boss ? 11 : 6);
         this._drop(e.position, u.tier);
         // No weapon drops from kills (the drop had no visible gun model) — weapons
         // now come from cracking chests. Kills give xp + a chance of health/scrap.
@@ -2218,9 +2218,9 @@ export class Game {
     // allocating them per drop leaked GPU buffers that scene.remove never frees.
     if (!this._orbGeo) {
       this._orbGeo = new THREE.IcosahedronGeometry(0.16, 0);
-      this._orbMat = new THREE.MeshStandardMaterial({ color: 0x59ff9d, emissive: 0x59ff9d, emissiveIntensity: 1.8 });
+      this._orbMat = new THREE.MeshStandardMaterial({ color: COLORS.green, emissive: COLORS.green, emissiveIntensity: 1.8 });
       this._coinGeo = new THREE.CylinderGeometry(0.17, 0.17, 0.08, 10);
-      this._coinMat = new THREE.MeshStandardMaterial({ color: 0xffd23f, emissive: 0xffd23f, emissiveIntensity: 0.9, metalness: 0.8 });
+      this._coinMat = new THREE.MeshStandardMaterial({ color: COLORS.gold, emissive: COLORS.gold, emissiveIntensity: 0.9, metalness: 0.8 });
     }
     const orb = new THREE.Mesh(this._orbGeo, this._orbMat);
     orb.position.copy(pos); orb.position.y = 0.6; orb.userData = { xp: (3 + tier * 4) * md.xp, born: this.state.time }; this.scene.add(orb); this.orbs.push(orb);
@@ -2230,8 +2230,8 @@ export class Game {
   // Level-up world burst: expanding green ring + spark shower at the player.
   _levelBurst() {
     if (!this.player) return; const p = this.player.position;
-    this._burstRing(p, 0x59ff9d, { life: 0.6, grow: 7, opacity: 0.95 });
-    this._impact(new THREE.Vector3(p.x, 1, p.z), 0x59ff9d, 26, 7);
+    this._burstRing(p, COLORS.green, { life: 0.6, grow: 7, opacity: 0.95 });
+    this._impact(new THREE.Vector3(p.x, 1, p.z), COLORS.green, 26, 7);
   }
 
   // ---------- purchases (called from Panels) ----------
