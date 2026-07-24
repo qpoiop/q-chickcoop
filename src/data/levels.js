@@ -70,30 +70,27 @@ export function waterfallLevel() {
 }
 
 
-// STAGE 3 = CITY-IN-NATURE (a_city_in_nature.glb — the biggest model, ~124×131
-// model units). Loaded via the normalize pipeline (long axis → 120, centred),
-// same as the forests, so movement/camera/ranges all carry over untouched. Node
-// names are meaningless in this GLB, so anchors are hand-placed in normalized
-// space and _snapAnchors pulls each onto reachable street ground at load. Flow:
-// forest (breach cores → portal) → CITY (breach cores → portal) → boss room.
+// STAGE 1 = combat arena (procedural, model:null). The a_city_in_nature GLB was
+// replaced: as a decorative scene it played badly — hills/foliage occluded the
+// camera, harvested collision blocked movement everywhere, spawn/anchors landed
+// in awkward spots, and the layout let you just hack the nearest core and leave.
+// A flat arena fixes all of that: no occlusion, walk anywhere, a visible boundary
+// ring, a dead-centre spawn, and the two cores on OPPOSITE corners so you must
+// cross the whole arena (and fight) to breach both before the portal opens.
 export function cityStageLevel() {
-  const hx = 58, hz = 58;
+  const hx = 46, hz = 46;
   return {
-    id: 'city', B: 58, bounds: { hx, hz }, harvest: true,
-    mapFit: { normalize: 120, walkTop: 6 },  // no trimOpen: it punched holes in flat roads/plazas ("길인데 막힘"). Content fills the bounds, so the ±hx/hz clamp guards the edge instead.
-    // spawn at the map's open central plaza (measured walkable centroid) — the
-    // guessed edge coord snapped to a cramped corner. Anchors below are spread
-    // across the (nearly map-wide) walkable area; _snapAnchors keeps reachable ones.
-    spawnStart: { x: 5, z: -1 },
-    walls: [], platforms: [], covers: [],
-    cores: [{ x: -30, z: -12 }, { x: 41, z: 2 }],   // hack targets, opposite ends (B was on a rooftop y=4.8 → probe-picked clear ground)
-    shop: { x: 16, z: 22 },
-    portal: { x: 11, z: 41, to: 'boss' },             // was on a rooftop y=3.3 → probe-picked clear ground, far from spawn
-    crates: [[-18, 10], [22, 6], [-8, -20], [12, -28], [-1, 56], [30, 20]],  // was [-28,18] under a building (topmost y=6.2) → probe-picked open ground
-    spawns: [[-46, -38], [46, -38], [-46, 34], [46, 34], [0, -48], [-50, 0], [50, 0]],
-    fog: { color: 0x16202c, near: 130, far: 420 }, bg: 0x24303f,
-    exposure: 1.4,   // city read too dark (avg luminance ~34 vs forest ~57; 53% near-black)
-    light: { hemi: 1.9, dir: 3.2 },
+    id: 'city', B: 46, bounds: { hx, hz }, arena: true, lavaRing: true,
+    floorColor: 0x263349, gridColor1: 0x5a7ba0, gridColor2: 0x2c3d56, accent: 0x35e0d0, edgeColor: 0xffb84a,
+    spawnStart: { x: 0, z: 0 },                       // dead centre — unambiguous
+    walls: [], platforms: [], covers: [],             // covers:[] = no accent pillars (kept clean)
+    cores: [{ x: -32, z: -22 }, { x: 32, z: 22 }],    // opposite corners → cross the arena to breach both
+    shop: { x: 30, z: -26 },
+    portal: { x: 0, z: -38, to: 'boss' },             // opens after both cores; flat ground, clearly visible
+    crates: [[-26, 22], [24, -12], [-30, 4], [10, 32], [0, -20]],
+    spawns: [[-42, -42], [42, -42], [-42, 42], [42, 42], [0, -44], [0, 44], [-44, 0], [44, 0]],  // perimeter — mobs come from the arena edges
+    fog: { color: 0x141d2c, near: 130, far: 340 }, bg: 0x1c2740,
+    light: { hemi: 1.7, dir: 2.9 },
   };
 }
 
@@ -101,7 +98,7 @@ export function cityStageLevel() {
 // pure procedural arena (no GLB). Referenced by Game map handling.
 export const MAPS = {
   tutorial: { id: 'tutorial', model: null, build: tutorialLevel },       // small tiled bay
-  city: { id: 'city', model: ASSETS.cityNature, build: cityStageLevel },     // first combat map — city-in-nature
+  city: { id: 'city', model: null, build: cityStageLevel },     // first combat map — procedural arena
   boss: { id: 'boss', model: ASSETS.forestOpen, build: waterfallLevel },     // waterfall forest GLB
 };
 
