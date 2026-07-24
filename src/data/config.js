@@ -51,7 +51,6 @@ export const CONFIG = {
     bossMaxEnemies: 6,
     waveSize: 7, lull: 2.4,   // after every `waveSize` spawns, a `lull`-sec breather (rhythm, room for strategy)
     hpScale: 110, dmgScaleBoss: 120,
-    bossFirst: 60, bossRepeat: 95,
   },
 
   // Drops from a slain non-boss enemy. Weapon drop chance is per-weapon
