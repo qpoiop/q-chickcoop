@@ -3,6 +3,18 @@
 // engine code; systems read from CONFIG so balancing is a data edit.
 // ============================================================================
 
+// Theme palette — the recurring accent colors used across FX/beacons/UI. Named
+// so engine code references COLORS.teal instead of copy-pasting hex literals.
+export const COLORS = {
+  teal:  0x35e0d0, // primary accent: cores, portals, beacons
+  green: 0x59ff9d, // xp / heal / level-up / extraction
+  gold:  0xffd23f, // coins, crate salvage
+  amber: 0xffb03b, // scrap, boss B
+  pink:  0xff3b6b, // grunt / danger
+  red:   0xff2d55, // telegraph, boss A
+  coral: 0xff7a5c, // brute, boss-entrance storm
+};
+
 export const CONFIG = {
   // Character model presentation (was DC editor props in the prototype)
   model: { useModel: true, scale: 1, lift: 0, yaw: 180, gunYaw: 0 },
