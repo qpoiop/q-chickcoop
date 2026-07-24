@@ -51,6 +51,10 @@ export const CONFIG = {
     bossMaxEnemies: 6,
     waveSize: 7, lull: 2.4,   // after every `waveSize` spawns, a `lull`-sec breather (rhythm, room for strategy)
     hpScale: 110, dmgScaleBoss: 120,
+    // Mobs spawn on a ring this far from the player (just past the view), biased
+    // toward the way they're heading — so combat follows you as you advance instead
+    // of sitting dormant at fixed map corners. `ringSpread` = half-arc (radians).
+    ring: 24, ringSpread: 1.3,
   },
 
   // Drops from a slain non-boss enemy. Weapon drop chance is per-weapon

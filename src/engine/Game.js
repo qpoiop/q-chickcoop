@@ -1358,9 +1358,24 @@ export class Game {
     return { group: wrap, mixer };
   }
 
+  // Where a new mob comes in: a ring around the player, biased toward the way the
+  // player is heading, so combat follows the advance instead of sitting at fixed
+  // corners. Falls back to the level's fixed spawn points if the ring is blocked.
+  _enemySpawnPoint() {
+    if (!this.player || !this._walk) return this.L.spawns[Math.floor(Math.random() * this.L.spawns.length)];
+    const pp = this.player.position, R = CONFIG.spawn.ring, spread = CONFIG.spawn.ringSpread;
+    let base = this.vel && this.vel.lengthSq() > 1 ? Math.atan2(this.vel.x, this.vel.z) : Math.random() * Math.PI * 2;
+    for (let i = 0; i < 12; i++) {
+      const ang = base + (Math.random() - 0.5) * 2 * spread;
+      const x = pp.x + Math.sin(ang) * R, z = pp.z + Math.cos(ang) * R;
+      if (this._walkable(x, z)) return [x, z];
+    }
+    return this.L.spawns[Math.floor(Math.random() * this.L.spawns.length)];
+  }
+
   _spawnEnemy() {
     const t = this.state.time;
-    const sp = this.L.spawns[Math.floor(Math.random() * this.L.spawns.length)];
+    const sp = this._enemySpawnPoint();
     const tier = pickTier(t, Math.random());
     const conf = ENEMY_TIERS[tier];
     let g, mixer = null, glbMesh = false;
@@ -1377,7 +1392,7 @@ export class Game {
     g.userData = Object.assign(g.userData || {}, {
       hp, maxHp: hp, spd: conf.spd, dmg: conf.dmg, r: conf.s + 0.35, tier,
       spin: (Math.random() - 0.5) * 3, mesh: glbMesh ? null : (g.userData.mesh || g.children[0]), mixer, glb: glbMesh, tint: conf.c,
-      home: { x: sp[0], z: sp[1] }, aggro: false, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
+      home: { x: sp[0], z: sp[1] }, aggro: true, sightR: conf.sight, ph: Math.random() * 6.28, lungeT: 0, atkT: 0,
       atkRange: conf.atkRange, windup: conf.windup, atkCd: conf.atkCd, ranged: !!conf.ranged, keep: conf.keep || 0, projSpeed: conf.projSpeed || 20, fireT: 0, windT: 0,
     });
     // Melee mobs get a ground danger-ring that only shows during the wind-up so
