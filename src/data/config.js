@@ -29,6 +29,7 @@ export const CONFIG = {
   player: {
     radius: 0.7, moveSpeed: 10.2, sprintMul: 1.35, accel: 16,
     dashSpeed: 34, dashTime: 0.22, iframe: 0.32, dashRegen: 1.0,
+    hitCd: 0.6,   // invulnerability window (sec) after taking a hit — blocks rapid multi-hit death
     // Touch auto-aim hysteresis: a rival target must be within this fraction of
     // the current target's distance to steal the lock. <1 = sticky (no aim
     // oscillation between two near-equidistant mobs); 1 = always-nearest (jitter).
@@ -58,7 +59,7 @@ export const CONFIG = {
   // roll afterwards. healAmount = HP restored by a health pickup.
   // pickupLife = seconds an uncollected xp orb / coin lingers before it despawns
   // (prevents unbounded accumulation when kills happen far from the player).
-  drops: { healthChance: 0.09, scrapChance: 0.12, healAmount: 35, pickupLife: 18 },
+  drops: { healthChance: 0.09, scrapChance: 0.12, healAmount: 35, pickupLife: 18, grab: 1.3 },  // grab = distance at which an orb/coin is collected
 
   // Bloom-lightning FX cadence
   fx: { boltInterval: 0.11 },
