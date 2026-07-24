@@ -71,22 +71,25 @@ export function waterfallLevel() {
 // replaced: as a decorative scene it played badly — hills/foliage occluded the
 // camera, harvested collision blocked movement everywhere, spawn/anchors landed
 // in awkward spots, and the layout let you just hack the nearest core and leave.
-// A flat arena fixes all of that: no occlusion, walk anywhere, a visible boundary
-// ring, a dead-centre spawn, and the two cores on OPPOSITE corners so you must
-// cross the whole arena (and fight) to breach both before the portal opens.
+// DIRECTIONAL LEVEL: a long avenue you START at the near edge and PUSH FORWARD
+// through (advance along -z). Mobs spawn ahead and to the sides so advancing =
+// fighting; the two cores sit further down the lane (mid + deep) and the exit
+// portal is at the FAR end — you fight the length of the map to reach it.
 export function cityStageLevel() {
-  const hx = 46, hz = 46;
+  const hx = 34, hz = 62;   // long lane (advance down -z), narrower across
   return {
-    id: 'city', B: 46, bounds: { hx, hz }, arena: true, lavaRing: true,
+    id: 'city', B: 62, bounds: { hx, hz }, arena: true, lavaRing: true,
     floorColor: 0x263349, gridColor1: 0x5a7ba0, gridColor2: 0x2c3d56, accent: 0x35e0d0, edgeColor: 0xffb84a,
-    spawnStart: { x: 0, z: 0 },                       // dead centre — unambiguous
-    walls: [], platforms: [], covers: [],             // covers:[] = no accent pillars (kept clean)
-    cores: [{ x: -32, z: -22 }, { x: 32, z: 22 }],    // opposite corners → cross the arena to breach both
-    shop: { x: 30, z: -26 },
-    portal: { x: 0, z: -38, to: 'boss' },             // opens after both cores; flat ground, clearly visible
-    crates: [[-26, 22], [24, -12], [-30, 4], [10, 32], [0, -20]],
-    spawns: [[-42, -42], [42, -42], [-42, 42], [42, 42], [0, -44], [0, 44], [-44, 0], [44, 0]],  // perimeter — mobs come from the arena edges
-    fog: { color: 0x141d2c, near: 130, far: 340 }, bg: 0x1c2740,
+    spawnStart: { x: 0, z: 54 },                      // START at the near edge, not the centre
+    walls: [], platforms: [], covers: [],
+    shop: { x: 24, z: 46 },                           // by the entrance — gear up before pushing in
+    cores: [{ x: -16, z: 4 }, { x: 18, z: -38 }],     // breach forward: one mid-lane, one deep
+    portal: { x: 0, z: -58, to: 'boss' },             // EXIT at the far end of the lane
+    crates: [[-24, 32], [22, 14], [-14, -16], [16, -46], [0, -30]],
+    // spawns spread DOWN the lane (ahead of the advancing player) so combat is
+    // continuous as you push forward — not a single perimeter ring.
+    spawns: [[-26, 34], [26, 34], [-28, 8], [28, 8], [-26, -20], [26, -20], [0, -40], [-24, -50], [24, -50]],
+    fog: { color: 0x141d2c, near: 160, far: 400 }, bg: 0x1c2740,
     light: { hemi: 1.7, dir: 2.9 },
   };
 }
