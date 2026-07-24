@@ -43,7 +43,6 @@ export const ASSETS = {
   },
 
   // Level geometry. (city = first combat map, forestOpen = boss arena)
-  cityNature: p('scene/a_city_in_nature.glb'),            // first combat map — city-in-nature (compressed)
   forestOpen: p('scene/low_poly_scene_forest_waterfall.glb'), // boss arena
 
   // Audio
