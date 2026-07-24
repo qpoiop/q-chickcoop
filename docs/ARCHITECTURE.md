@@ -98,6 +98,20 @@ public/              GLB/오디오/아이콘 (dist로 그대로 복사)
   탭 불필요).
 - 배포 전 `npm run build`로 컴파일 확인. 데이터 변경도 빌드로 문법 확인.
 
+## 7.5 에셋 무게 (맵 GLB)
+
+- **첫 부팅-로드 맵 GLB는 작아야 한다.** 부팅 시 `_warmMap(MAPS.<first>.model)`을
+  essential로 기다리므로, 무거우면 모바일에서 "맵 안 가져"가 된다. Sketchfab 원본은
+  보통 무압축(JPEG/PNG 텍스처 + f32 지오, 확장 없음) → 수십 MB.
+- **재압축 절차**(gltf-transform, three GLTFLoader가 기본 지원하는 것만):
+  ```
+  npx @gltf-transform/cli webp in.glb tmp.glb --quality 85   # 텍스처 → webp
+  npx @gltf-transform/cli meshopt tmp.glb out.glb            # 지오 → meshopt+quantize
+  ```
+  결과 확장: EXT_meshopt_compression(디코더 loaders.js에 이미 연결)·EXT_texture_webp
+  (브라우저 네이티브)·KHR_mesh_quantization(three 기본). **KTX/Basis는 디코더 미연결
+  → 쓰지 말 것.** 실측: city 16.4MB→3.6MB. 검증은 §8 방식 + walkFrac/anchor 동일 확인.
+
 ## 8. 성능 / 누수 감사 (라이브 probe)
 
 RAF는 백그라운드 탭에서 스로틀되니 프레임타임을 RAF로 재지 말고 **동기 루프로 직접

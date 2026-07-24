@@ -61,6 +61,13 @@
 
 ## ✅ 닫힘 (최근)
 
+- [x] **"맵이 안가져"(첫 맵 로드 실패)** — 숲 제거로 city가 첫 부팅-로드 맵이 됨. city
+  GLB가 **16MB**(무압축 JPEG/PNG 텍스처 + f32 지오, 확장 없음) → 모바일에서 첫 맵이
+  제때 안 받아져 안 보임. gltf-transform으로 재압축: 텍스처→webp(q85), 지오→meshopt+
+  quantization. **16.4MB→3.6MB**(77%↓, 구 숲보다 가벼움). 세 확장(EXT_meshopt_
+  compression/EXT_texture_webp/KHR_mesh_quantization) 전부 three GLTFLoader 기본 지원
+  (meshopt 디코더 이미 연결됨). 검증: mesh 1323·walk 0.44·anchors 10·bad 0 = 지오
+  동일, 텍스처 에러 0, 스샷 정상. 원본 백업 scratchpad/city_orig.glb.
 - [x] **첫 숲(main) 맵 제거** — 요청. 진행 튜토리얼→**시티**→보스(구 튜토→숲→시티→보스).
   levels 튜토 포탈→'city', MAPS에서 'main' 삭제; Game 시작·튜토완료·부팅워밍·objective
   게이트 전부 'city'. `mysticForestLevel`/`forestMain`은 소스 잔존(참조 없음, 복원 가능).
