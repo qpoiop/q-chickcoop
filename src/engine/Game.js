@@ -1463,10 +1463,15 @@ export class Game {
     inst.userData = { life: 0.15, max: 0.15 }; this.fxSprites.push(inst); this.scene.add(inst);
   }
   _stormFX(pos) {
-    const rec = this.fxModels && this.fxModels.storm; if (!rec) return;
-    const inst = rec.scene.clone(true); inst.scale.setScalar(rec.fit); inst.position.copy(pos); inst.position.y = 0.2;
-    let mixer = null; if (rec.clips.length) { mixer = new THREE.AnimationMixer(inst); mixer.clipAction(rec.clips[0]).play(); }
-    inst.userData = { life: 1.2, max: 1.2, mixer }; this.fxSprites.push(inst); this.scene.add(inst);
+    // Procedural boss-entrance shockwave (the storm GLB was never shipped): a few
+    // expanding additive rings + a spark burst at the boss's feet.
+    for (let k = 0; k < 3; k++) {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.6, 1.0, 40), new THREE.MeshBasicMaterial({ color: k ? 0xff7a5c : 0xffb03b, transparent: true, opacity: 0.9, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+      ring.rotation.x = -Math.PI / 2; ring.position.set(pos.x, 0.15 + k * 0.05, pos.z);
+      const life = 0.7 + k * 0.15; ring.userData = { life, max: life, grow: 10 + k * 6 };
+      this.fxSprites.push(ring); this.scene.add(ring);
+    }
+    this._impact(new THREE.Vector3(pos.x, 1.2, pos.z), 0xff5533, 26, 7);
   }
   _pulse(el, to, ms) { if (!el) return; el.style.opacity = to; setTimeout(() => { el.style.opacity = 0; }, ms); }
   _flash() { this._pulse(this.dom.flash, 0.9, 110); }
