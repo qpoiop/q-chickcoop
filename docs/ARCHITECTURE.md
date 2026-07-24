@@ -89,6 +89,10 @@ public/              GLB/오디오/아이콘 (dist로 그대로 복사)
   `depthTest:true`(나무/건물이 자연스럽게 가림, 흰색 덧그리기 X).
 - **오버레이는 불투명해야 가린다.** `transOverlay`가 배경 없이 스피너만이라 튜토
   맵이 비쳐 깜빡. → 불투명 배경 + 시작 오버레이 숨기기 **전에** 띄움.
+- **FX 재질/링은 헬퍼로.** additive 글로우 재질은 인라인 `new MeshBasicMaterial({…
+  AdditiveBlending…})` 금지 → `_fxMat(color, opacity, {side, tone})`. 확장 링 충격파는
+  `_burstRing(pos, color, {inner,outer,life,grow,opacity,y})`(fxSprites 계약). 스펙이
+  12곳 복붙돼 있던 걸 통합함 — 새 FX도 이 헬퍼 사용(하드코딩 재발 방지).
 
 ## 7. 커밋 / 배포
 
