@@ -238,8 +238,9 @@ export class Game {
     // glowing map-transition portal (hidden until unlocked)
     this.portalObj = null;
     if (L.portal) {
-      const pg = this._makePortal(L.portal, COLORS.teal); pg.visible = false; g.add(pg); this.portalObj = pg;
-      this.interact.push({ type: 'portal', id: 'Portal', to: L.portal.to, x: L.portal.x, z: L.portal.z, r: 3.4, done: false, active: false, mesh: pg });
+      const on = !!L.farm; // farm map: portal is always open (enter the boss any time)
+      const pg = this._makePortal(L.portal, COLORS.teal); pg.visible = on; g.add(pg); this.portalObj = pg;
+      this.interact.push({ type: 'portal', id: 'Portal', to: L.portal.to, x: L.portal.x, z: L.portal.z, r: 3.4, done: false, active: on, mesh: pg });
     }
 
     // loot crates — a salvage CHEST you crack open for scrap
@@ -1131,14 +1132,9 @@ export class Game {
       const cp = new THREE.Vector3(it.x, 1, it.z);
       this._impact(cp, COLORS.gold, 16, 6); this.fx.shake = 0.28; this.audio.pickup();
       const md = this._mods();
-      // Chest loot table: always some scrap + xp, and a LOW chance of the next
-      // weapon (chests are now the only weapon source).
-      const nextW = WEAPON_DROP_ORDER.find((k) => !this.state.owned[k]);
-      // Spawn the weapon pickup; the "Acquired" toast fires when it's actually
-      // collected (_collectItem), not here — otherwise it announced twice (once
-      // prematurely at crate-open, again on pickup).
-      if (nextW && Math.random() < 0.25) this._spawnItemDrop(cp, 'weapon');
-      else this._event(t('evt.salvage'));
+      // Chest loot: scrap + xp only. (No weapon drops from crates — weapons are the
+      // shop's job now.)
+      this._event(t('evt.salvage'));
       const payout = Math.ceil((10 + Math.random() * 14) * md.gold);
       for (let k = 0; k < 4; k++) this._drop(new THREE.Vector3(it.x + (Math.random() - 0.5) * 1.4, 0, it.z + (Math.random() - 0.5) * 1.4), 1);
       this.state.gold += payout; this._gainXp(8 * md.xp); this.hud.pushLoot('◈', '+' + payout, '#ffd23f');
@@ -1191,7 +1187,7 @@ export class Game {
       if (entry.model) await this._loadMapModel(entry.model, level); else this._applyLevelEnv(level);
       if (this._dead) return;
       this._buildWorld(); this._buildPlayer(); this._validatePlacements();
-      this.game.farmT = 0;
+      this.game.farmT = 0; this.game.farmEnded = false;
       if (level.boss) { this.state.objectiveKey = 'obj.boss'; this.game.grace = 2.5; this._spawnBoss(); }
       else if (to === 'tutorial') { this.state.objectiveKey = 'tut:0'; this.game.grace = CONFIG.spawn.tutGrace; }
       else if (level.farm) { this.state.objectiveKey = 'obj.farm'; this.game.grace = 1.5; this.game.farmT = CONFIG.farmTime; this.game.farmTo = level.farmTo || 'boss'; this._event(t('evt.farm')); }
@@ -1682,10 +1678,16 @@ export class Game {
 
   _simulate(dt, rdt, md, fx) {
     this.state.time += dt;
-    // farm phase countdown → drop straight into the boss room when it runs out
+    // farm phase countdown → when it runs out, clear all mobs + stop spawns and tell
+    // the player to take the (always-open) portal to the boss. Not an auto-transition.
     if (this.game.farmT > 0) {
       this.game.farmT -= dt;
-      if (this.game.farmT <= 0) { this.game.farmT = 0; this._event(t('evt.bossIn')); this._goToMap(this.game.farmTo || 'boss'); return; }
+      if (this.game.farmT <= 0) {
+        this.game.farmT = 0; this.game.farmEnded = true;
+        this.enemies.slice().forEach((e) => { if (e.userData.hpBar) this.scene.remove(e.userData.hpBar); this.scene.remove(e); });
+        this.enemies.length = 0;
+        this.state.objectiveKey = 'obj.portalBoss'; this._event(t('evt.farmEnd'));
+      }
     }
     // aim / facing
     if (!this.isTouch) {
@@ -1759,7 +1761,7 @@ export class Game {
     this.game.spawnT -= dt; const rate = Math.max(0.3, 1.3 - this.state.time / 80);
     // While a boss is alive, cap concurrent enemies low so its telegraphs read.
     const enemyCap = this.state.bossActive ? CONFIG.spawn.bossMaxEnemies : CONFIG.spawn.maxEnemies;
-    if (this.game.grace <= 0 && this.game.spawnT <= 0 && this.enemies.length < enemyCap) {
+    if (!this.game.farmEnded && this.game.grace <= 0 && this.game.spawnT <= 0 && this.enemies.length < enemyCap) {
       this._spawnEnemy(); this.game.spawnT = rate;
       // Wave rhythm: after a burst of `waveSize` spawns, a short lull so the player
       // gets breathing room to reposition / engage the tech tree (was relentless).
@@ -1989,7 +1991,9 @@ export class Game {
       const b = this.enemyBullets[i]; b.position.addScaledVector(b.userData.dir, b.userData.vel * dt); b.userData.life -= dt;
       let dead = b.userData.life <= 0;
       if (!dead) for (const o of this.obstacles) { if (o.dead) continue; if (o === this._gateObs && this.gateOpen) continue; if (Math.abs(b.position.x - o.x) < o.hw + 0.2 && Math.abs(b.position.z - o.z) < o.hd + 0.2) { dead = true; this._impact(b.position, b.material.color.getHex(), 3, 2); break; } }
-      if (!dead && b.position.distanceTo(this.player.position) < CONFIG.player.radius + 0.5) { this._bossHitPlayer(b.userData.dmg, b.position); dead = true; }
+      // 2D (XZ) hit test — bullets fly at y≈1.4 but the player pivot is at y=0, so a
+      // 3D distance never dropped below the threshold and enemy shots NEVER connected.
+      if (!dead && Math.hypot(b.position.x - this.player.position.x, b.position.z - this.player.position.z) < CONFIG.player.radius + 0.6) { this._bossHitPlayer(b.userData.dmg, b.position); dead = true; }
       if (dead) { this.scene.remove(b); this.enemyBullets.splice(i, 1); }
     }
   }
