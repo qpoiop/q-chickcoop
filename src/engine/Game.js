@@ -343,6 +343,19 @@ export class Game {
     }
   }
 
+  // Soft radial starburst for the muzzle flash — a solid plane read as an ugly
+  // white square; this reads as an actual flash. Cached (one texture).
+  _muzzleTexture() {
+    if (this._muzTex) return this._muzTex;
+    const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d');
+    const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.3, 'rgba(255,255,255,0.8)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    x.strokeStyle = 'rgba(255,255,255,0.85)'; x.lineWidth = 2.5;
+    for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI; x.beginPath(); x.moveTo(32 - Math.cos(a) * 30, 32 - Math.sin(a) * 30); x.lineTo(32 + Math.cos(a) * 30, 32 + Math.sin(a) * 30); x.stroke(); }
+    const t = new THREE.CanvasTexture(cv); this._muzTex = t; return t;
+  }
+
   _iconTexture(glyph, color) {
     const key = glyph + color; if (this._iconTex[key]) return this._iconTex[key];
     const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d');
@@ -569,9 +582,9 @@ export class Game {
     const sp = (ov && ov.map === this.mapId) ? ov : ((this.L && this.L.spawnStart) ? this.L.spawnStart : { x: 0, z: 34 });
     p.position.set(sp.x, 0, sp.z); this.scene.add(p); this.player = p;
 
-    this.muzzle = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), this._fxMat(0xffffff, 0));
-    this.muzzle.rotation.x = -Math.PI / 2; aimG.add(this.muzzle); this.muzzle.position.set(0, 1.05, 2.1);
-    this.gunLight = new THREE.PointLight(0x7ff2e8, 0, 10); this.gunLight.position.set(0, 1.2, 1.6); aimG.add(this.gunLight);
+    this.muzzle = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), new THREE.MeshBasicMaterial({ map: this._muzzleTexture(), color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    this.muzzle.rotation.x = -Math.PI / 2; aimG.add(this.muzzle); this.muzzle.position.set(0, 1.1, 2.0); // at the shot line (where projectiles leave)
+    this.gunLight = new THREE.PointLight(0x7ff2e8, 0, 10); this.gunLight.position.set(0, 1.2, 1.7); aimG.add(this.gunLight);
 
     if (this.mixer && this.chickenModel && !this.chicken.fit) this._calibrateHero();
     this._attachGun(this.state.weapon);
@@ -1323,8 +1336,10 @@ export class Game {
     if (aa && (!aa.isRunning() || aa.time > aa.getClip().duration * 0.45)) {
       aa.reset(); aa.setEffectiveWeight(0.9); aa.setEffectiveTimeScale(1.35); aa.play();
     }
-    this.fx.muzzle = bt.type === 'pellet' ? 0.09 : 0.06;
-    this.gunLight.color.set(parseInt(w.color.slice(1), 16)); this.gunLight.intensity = bt.type === 'pellet' ? 2.8 : 2.2;
+    this.fx.muzzle = bt.type === 'pellet' ? 0.11 : 0.08;
+    const wcol = parseInt(w.color.slice(1), 16);
+    this.muzzle.material.color.set(wcol); this.muzzle.rotation.z = Math.random() * 6.28; // spin so repeats don't look stamped
+    this.gunLight.color.set(wcol); this.gunLight.intensity = bt.type === 'pellet' ? 3.2 : 2.6;
     if (bt.type === 'pellet') this._impact(origin.clone().add(new THREE.Vector3(this.aim.x, 0, this.aim.z).multiplyScalar(1.8)).setY(1.05), 0xffcf6a, 4, 3);
     const heavy = w.proj > 1 || bt.type === 'orb' || bt.type === 'pellet';
     this.fx.shake = Math.min(1, this.fx.shake + (heavy ? 0.12 : 0.05));
@@ -1760,7 +1775,7 @@ export class Game {
     // overheat cooldown (water jet): lock while cooling, bleed heat when idle
     if (this.game.heatLock) { this.game.heatT -= dt; if (this.game.heatT <= 0) { this.game.heatLock = false; this.game.heat = 0; } }
     else if (this.game.heat > 0 && !wantFire) this.game.heat = Math.max(0, this.game.heat - dt * 1.5);
-    fx.muzzle = Math.max(0, fx.muzzle - rdt); this.muzzle.material.opacity = fx.muzzle * 10; this.muzzle.scale.setScalar(0.6 + fx.muzzle * 6);
+    fx.muzzle = Math.max(0, fx.muzzle - rdt); this.muzzle.material.opacity = Math.min(1, fx.muzzle * 11); this.muzzle.scale.setScalar(0.5 + fx.muzzle * 5);
     this.gunLight.intensity = Math.max(0, this.gunLight.intensity - rdt * 30);
 
     // spawns
